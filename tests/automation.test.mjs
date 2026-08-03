@@ -33,6 +33,26 @@ test("permits ordinary commands with no UI actions", () => {
   assert.deepEqual(plan.actions, []);
 });
 
+test("carries an unresolved company name to the Godel tab resolver", () => {
+  const source = intent("EM");
+  source.security = {
+    spoken_name: "Lantheus Holdings", ticker: null, venue: null,
+    asset_class: null, needs_resolution: true
+  };
+  const plan = buildAutomationPlan(source);
+  assert.equal(plan.terminal_command, null);
+  assert.equal(plan.security_query, "Lantheus Holdings");
+  assert.deepEqual(plan.arguments, []);
+  const parsed = core.parseMarker(`GV1:${JSON.stringify(plan)}`);
+  assert.equal(parsed.security_query, "Lantheus Holdings");
+});
+
+test("validates canonical security identifiers filled by Godel", () => {
+  assert.equal(core.canonicalSecurityPrefix("lnth us equity"), "LNTH US EQ");
+  assert.equal(core.canonicalSecurityPrefix("BRK/B US EQ"), "BRK/B US EQ");
+  assert.throws(() => core.canonicalSecurityPrefix("Lantheus"), /complete security identifier/);
+});
+
 test("rejects UI actions outside the initial allowlist", () => {
   const source = intent("DES", [{ feature: "anything", operation: "click", value: "x" }]);
   assert.throws(() => buildAutomationPlan(source), /unknown UI feature|not allowlisted/);

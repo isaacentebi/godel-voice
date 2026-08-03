@@ -24,7 +24,14 @@
   function validatePlan(plan) {
     if (!plan || plan.version !== 1) throw new Error("Unsupported Godel voice plan version");
     if (!COMMANDS.has(plan.command)) throw new Error(`Unknown Godel command: ${plan.command}`);
-    if (typeof plan.terminal_command !== "string" || !plan.terminal_command.trim()) throw new Error("Missing terminal command");
+    const terminalCommand = typeof plan.terminal_command === "string" ? plan.terminal_command.trim() : null;
+    const securityQuery = typeof plan.security_query === "string" ? plan.security_query.trim() : null;
+    if (!terminalCommand && !securityQuery) throw new Error("Missing terminal command or security query");
+    if (terminalCommand && /[\r\n]/.test(terminalCommand)) throw new Error("Invalid terminal command");
+    if (securityQuery && (securityQuery.length > 120 || /[\r\n]/.test(securityQuery))) throw new Error("Invalid security query");
+    if (!Array.isArray(plan.arguments ?? []) || (plan.arguments ?? []).length > 8 || (plan.arguments ?? []).some(value => typeof value !== "string")) {
+      throw new Error("Invalid command arguments");
+    }
     if (!Array.isArray(plan.actions) || plan.actions.length > 12) throw new Error("Invalid action list");
     if (plan.actions.length && !AUTOMATED.has(plan.command)) throw new Error(`Automation is not enabled for ${plan.command}`);
 
@@ -40,7 +47,9 @@
     return {
       version: 1,
       command: plan.command,
-      terminal_command: plan.terminal_command.trim(),
+      terminal_command: terminalCommand,
+      security_query: securityQuery,
+      arguments: plan.arguments ?? [],
       actions: plan.actions.map(action => ({
         feature: String(action.feature).toLowerCase(),
         operation: String(action.operation).toLowerCase(),
@@ -49,5 +58,18 @@
     };
   }
 
-  return { PREFIX, parseMarker, validatePlan };
+  function canonicalSecurityPrefix(value) {
+    const tokens = String(value ?? "").trim().toUpperCase().split(/\s+/).filter(Boolean);
+    if (tokens.length < 3) throw new Error("Godel did not return a complete security identifier");
+    const assetAliases = { EQUITY: "EQ", STOCK: "EQ", EQUITIES: "EQ", STOCKS: "EQ" };
+    const assetClass = assetAliases[tokens.at(-1)] ?? tokens.at(-1);
+    const venue = tokens.at(-2);
+    const identifier = tokens.slice(0, -2).join(" ");
+    if (!/^[A-Z0-9][A-Z0-9.\-/ ]{0,48}$/.test(identifier)) throw new Error("Godel returned an invalid security identifier");
+    if (!/^[A-Z0-9]{1,10}$/.test(venue)) throw new Error("Godel returned an invalid venue");
+    if (!/^[A-Z]{2,8}$/.test(assetClass)) throw new Error("Godel returned an invalid asset class");
+    return `${identifier} ${venue} ${assetClass}`;
+  }
+
+  return { PREFIX, parseMarker, validatePlan, canonicalSecurityPrefix };
 });

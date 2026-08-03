@@ -111,7 +111,7 @@ cd /Users/isaacentebi/Documents/Codex/2026-08-03/ok/outputs/godel-voice-spec
 npm run setup
 ```
 
-Then open Arc's extensions page and reload **Godel Voice Executor** once. Version 0.2 requests the Chromium `debugger` permission because its `Input` domain provides tab-addressed key and mouse events. Arc may display a brief debugging notice while a plan is executing; the extension detaches after every input batch.
+Then open Arc's extensions page and reload **Godel Voice Executor** once. Version 0.3 requests the Chromium `debugger` permission because its `Input` domain provides tab-addressed key and mouse events. Arc may display a brief debugging notice while a plan is executing; the extension detaches after every input batch.
 
 Load `extension/` as an unpacked extension in Arc. Its host access is limited to Godel plus the loopback handoff at `127.0.0.1:17841`.
 
@@ -125,7 +125,7 @@ If a panel or control cannot be found uniquely, execution stops and shows a visi
 
 ## Safety and unresolved securities
 
-The model is not allowed to guess tickers from company names. Until a security resolver supplies a verified ticker, venue and asset class, the intent retains the spoken company name with `needs_resolution: true`, and terminal rendering is blocked.
+Common, unambiguous company names are resolved through a small deterministic local alias table. For everything else, the intent retains the spoken company name with `needs_resolution: true`. The Arc extension searches that name through Godel's own command-bar security results, requires a unique match, lets Godel fill its canonical identifier/venue/asset-class prefix, validates the filled value, and only then appends and submits the requested command. Multiple matches stop execution instead of choosing silently.
 
 Opening a Godel window is treated differently from consequential activity inside it. Sending chat messages, modifying subscriptions or billing, connecting brokerages, changing profiles, submitting bug reports and mutating alerts require explicit intent and an execution-time confirmation layer.
 
@@ -141,8 +141,8 @@ No API key is required for building or testing the registry. A key is only neede
 
 ## Next phase
 
-1. Add a verified company/security resolver.
-2. Run the evaluation set against candidate models on Cerebras, Groq and OpenRouter.
-3. Measure exact-command accuracy, clarification quality and p50/p95 latency.
+1. Add a friendly choice prompt for genuinely ambiguous Godel security matches.
+2. Run the evaluation set against future candidate models on Cerebras, Groq and OpenRouter.
+3. Continue measuring exact-command accuracy, clarification quality and p50/p95 latency.
 4. Add panel adapters beyond the initial HMS, GR and GF allowlist.
 5. Expand regression fixtures as Godel changes individual widget controls.
