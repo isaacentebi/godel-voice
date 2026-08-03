@@ -1,0 +1,15 @@
+{
+  "name": "godel-voice-spec",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node src/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "compile": "node --env-file-if-exists=.env src/compiler.mjs",
+    "compile:plain": "node src/compiler.mjs",
+    "eval:noisy": "node --env-file-if-exists=.env src/evaluate-noisy.mjs",
+    "consume": "node src/consume-intent.mjs",
+    "marker": "node src/consume-intent.mjs --marker"
+  },
+  "engines": {"node": ">=22"}
+}

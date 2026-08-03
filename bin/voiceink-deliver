@@ -1,0 +1,15 @@
+#!/bin/zsh
+set -euo pipefail
+
+project_dir="${0:A:h:h}"
+marker="$(/usr/bin/env node "$project_dir/src/consume-intent.mjs" --marker)"
+printf "%s" "$marker" | /usr/bin/pbcopy
+/usr/bin/osascript <<'APPLESCRIPT'
+tell application "System Events"
+  keystroke "`"
+  delay 0.1
+  keystroke "v" using command down
+  delay 0.2
+  key code 36
+end tell
+APPLESCRIPT

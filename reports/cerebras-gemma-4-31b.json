@@ -1,0 +1,924 @@
+{
+  "generated_at": "2026-08-03T19:46:08.415Z",
+  "model": "google/gemma-4-31b-it",
+  "total": 64,
+  "passed": 11,
+  "failed": 53,
+  "accuracy": 0.171875,
+  "providers": {
+    "Cerebras": 11,
+    "unknown": 53
+  },
+  "latency_ms": {
+    "p50": 807,
+    "p95": 1557
+  },
+  "results": [
+    {
+      "id": "Q-phonetic",
+      "utterance": "uh quick coat for amazon please",
+      "expected": "Q",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 317
+    },
+    {
+      "id": "DES-misspell",
+      "utterance": "open the company discription for apple",
+      "expected": "DES",
+      "actual": "DES",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "DES",
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "business overview",
+              "operation": "select",
+              "value": "business overview"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested company description, which is the business overview feature of the DES command."
+        },
+        "terminalCommand": "AAPL US EQ DES",
+        "inference": {
+          "model": "google/gemma-4-31b-it",
+          "provider": "Cerebras",
+          "latency_ms": 807,
+          "prompt_tokens": 5039,
+          "completion_tokens": 122,
+          "cost": 0.00517039
+        }
+      }
+    },
+    {
+      "id": "FA-noisy",
+      "utterance": "can i get nvidia financals um income statment",
+      "expected": "FA",
+      "actual": "FA",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "FA",
+          "security": {
+            "spoken_name": "nvidia",
+            "ticker": "NVDA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "income statement",
+              "operation": "select",
+              "value": "income statement"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested financials and specifically the income statement for NVDA."
+        },
+        "terminalCommand": "NVDA US EQ FA",
+        "inference": {
+          "model": "google/gemma-4-31b-it",
+          "provider": "Cerebras",
+          "latency_ms": 1545,
+          "prompt_tokens": 5043,
+          "completion_tokens": 119,
+          "cost": 0.00516988
+        }
+      }
+    },
+    {
+      "id": "ERN-noisy",
+      "utterance": "meta earnins estimates and the beat miss history",
+      "expected": "ERN",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 464
+    },
+    {
+      "id": "EM-phonetic",
+      "utterance": "open amazon earnins metrics sorry matrix",
+      "expected": "EM",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 475
+    },
+    {
+      "id": "SI-misspell",
+      "utterance": "tesla short intrest days to cover",
+      "expected": "SI",
+      "actual": "SI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "SI",
+          "security": {
+            "spoken_name": "tesla",
+            "ticker": "TSLA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested short interest and days to cover for TSLA, which maps to the SI command."
+        },
+        "terminalCommand": "TSLA US EQ SI",
+        "inference": {
+          "model": "google/gemma-4-31b-it",
+          "provider": "Cerebras",
+          "latency_ms": 1557,
+          "prompt_tokens": 5040,
+          "completion_tokens": 106,
+          "cost": 0.00514754
+        }
+      }
+    },
+    {
+      "id": "GR-noisy",
+      "utterance": "ratio chart spy verses q q q with rolling carrelation",
+      "expected": "GR",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 222
+    },
+    {
+      "id": "ANR-noisy",
+      "utterance": "microsoft analyst raitings upgrades and price targets",
+      "expected": "ANR",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 215
+    },
+    {
+      "id": "DVD-phonetic",
+      "utterance": "coke divident yeeld and payment history",
+      "expected": "DVD",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 232
+    },
+    {
+      "id": "QM-noisy",
+      "utterance": "open my coat monitor uh quote monitor",
+      "expected": "QM",
+      "actual": "QM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "QM",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User corrected 'coat monitor' to 'quote monitor', which maps to the QM command."
+        },
+        "terminalCommand": "QM",
+        "inference": {
+          "model": "google/gemma-4-31b-it",
+          "provider": "Cerebras",
+          "latency_ms": 1018,
+          "prompt_tokens": 5017,
+          "completion_tokens": 71,
+          "cost": 0.00507262
+        }
+      }
+    },
+    {
+      "id": "FOCUS-noisy",
+      "utterance": "give me the little live price focus thing for oracle",
+      "expected": "FOCUS",
+      "actual": "FOCUS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "FOCUS",
+          "security": {
+            "spoken_name": "oracle",
+            "ticker": "ORCL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested the 'live price focus thing' for Oracle, which maps to the FOCUS command."
+        },
+        "terminalCommand": "ORCL US EQ FOCUS",
+        "inference": {
+          "model": "google/gemma-4-31b-it",
+          "provider": "Cerebras",
+          "latency_ms": 568,
+          "prompt_tokens": 5043,
+          "completion_tokens": 84,
+          "cost": 0.00511773
+        }
+      }
+    },
+    {
+      "id": "TAS-phonetic",
+      "utterance": "apple time and sells trade tape",
+      "expected": "TAS",
+      "actual": "TAS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "TAS",
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested 'trade tape' for Apple, which maps to the TAS command."
+        },
+        "terminalCommand": "AAPL US EQ TAS",
+        "inference": {
+          "model": "google/gemma-4-31b-it",
+          "provider": "Cerebras",
+          "latency_ms": 826,
+          "prompt_tokens": 5038,
+          "completion_tokens": 102,
+          "cost": 0.0051396
+        }
+      }
+    },
+    {
+      "id": "HCP-noisy",
+      "utterance": "historic change persent for reddit over three months",
+      "expected": "HCP",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":60,\"retry_after_seconds_raw\":60,\"headers\":{\"Retry-After\":\"60\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 177
+    },
+    {
+      "id": "WEI-noisy",
+      "utterance": "show the world stock indexes screen",
+      "expected": "WEI",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":60,\"retry_after_seconds_raw\":60,\"headers\":{\"Retry-After\":\"60\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 493
+    },
+    {
+      "id": "WEIF-noisy",
+      "utterance": "world equity index fewchers by region",
+      "expected": "WEIF",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 2607
+    },
+    {
+      "id": "IMAP-noisy",
+      "utterance": "which s and p sectors are driving todays move wheel map",
+      "expected": "IMAP",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 2386
+    },
+    {
+      "id": "HMAP-noisy",
+      "utterance": "heat map my biotech watch list then table view",
+      "expected": "HMAP",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 197
+    },
+    {
+      "id": "GLCO-noisy",
+      "utterance": "global commodities fewchers energy metals agriculture",
+      "expected": "GLCO",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 211
+    },
+    {
+      "id": "FX-noisy",
+      "utterance": "open the four x currency cross matrix",
+      "expected": "FX",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 189
+    },
+    {
+      "id": "MOST-noisy",
+      "utterance": "most active tech gainers over two billon market cap",
+      "expected": "MOST",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 195
+    },
+    {
+      "id": "MOSO-noisy",
+      "utterance": "most active options contracts market wide",
+      "expected": "MOSO",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 171
+    },
+    {
+      "id": "HDS-noisy",
+      "utterance": "who owns nvidia show instatutional holders",
+      "expected": "HDS",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 178
+    },
+    {
+      "id": "HLDR-noisy",
+      "utterance": "what stocks does berkshire own latest holdins",
+      "expected": "HLDR",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 208
+    },
+    {
+      "id": "N-noisy",
+      "utterance": "news for my farmer watch list exclude class actions",
+      "expected": "N",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 187
+    },
+    {
+      "id": "NI-noisy",
+      "utterance": "search the news for anti trust regulation",
+      "expected": "NI",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 133
+    },
+    {
+      "id": "TOP-noisy",
+      "utterance": "read the top fifteen rooters stories",
+      "expected": "TOP",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 162
+    },
+    {
+      "id": "RES-noisy",
+      "utterance": "find sell side reserch reports on oracle",
+      "expected": "RES",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 177
+    },
+    {
+      "id": "TREND-noisy",
+      "utterance": "whats trendin most searched on godel",
+      "expected": "TREND",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 148
+    },
+    {
+      "id": "HALT-noisy",
+      "utterance": "show only the active market holts",
+      "expected": "HALT",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 154
+    },
+    {
+      "id": "ALLQ-phonetic",
+      "utterance": "all coats and venues for apple",
+      "expected": "ALLQ",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 130
+    },
+    {
+      "id": "SECF-noisy",
+      "utterance": "security finder search gold man corporate bonds on trace",
+      "expected": "SECF",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 148
+    },
+    {
+      "id": "WJI-phonetic",
+      "utterance": "open the wojack sentiment index",
+      "expected": "WJI",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 164
+    },
+    {
+      "id": "EQS-noisy",
+      "utterance": "screen us tech stocks forward p e under ten",
+      "expected": "EQS",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 153
+    },
+    {
+      "id": "OMON-noisy",
+      "utterance": "apple option chain calls only with gamma",
+      "expected": "OMON",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 141
+    },
+    {
+      "id": "OVME-phonetic",
+      "utterance": "black shoals implied vol calculator",
+      "expected": "OVME",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 137
+    },
+    {
+      "id": "CALC-noisy",
+      "utterance": "open the finance calculater time value money",
+      "expected": "CALC",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 161
+    },
+    {
+      "id": "BROK-noisy",
+      "utterance": "open read only brockerage connections",
+      "expected": "BROK",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 153
+    },
+    {
+      "id": "AUM-phonetic",
+      "utterance": "show my connected broker a u m",
+      "expected": "AUM",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 179
+    },
+    {
+      "id": "G-noisy",
+      "utterance": "chart apple in five minit candles",
+      "expected": "G",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 174
+    },
+    {
+      "id": "HMS-noisy",
+      "utterance": "compare apple microsoft nvidia historical on one chart",
+      "expected": "HMS",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 131
+    },
+    {
+      "id": "HP-noisy",
+      "utterance": "historical one minit o h l c v prices for bitcoin",
+      "expected": "HP",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 143
+    },
+    {
+      "id": "GF-noisy",
+      "utterance": "graph fundementals revenue and ebit da for microsoft",
+      "expected": "GF",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 150
+    },
+    {
+      "id": "CF-noisy",
+      "utterance": "apple sec fillings only eight kays",
+      "expected": "CF",
+      "actual": "CF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "CF",
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "filing type filter",
+              "operation": "select",
+              "value": "8-K"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested SEC filings (CF) for Apple (AAPL) specifically filtered for 8-K filings."
+        },
+        "terminalCommand": "AAPL US EQ CF",
+        "inference": {
+          "model": "google/gemma-4-31b-it",
+          "provider": "Cerebras",
+          "latency_ms": 839,
+          "prompt_tokens": 5039,
+          "completion_tokens": 130,
+          "cost": 0.00518231
+        }
+      }
+    },
+    {
+      "id": "IPO-noisy",
+      "utterance": "upcoming eye p o offerings and after market performance",
+      "expected": "IPO",
+      "actual": "IPO",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "IPO",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User is requesting upcoming IPOs and their aftermarket performance, which maps directly to the IPO command."
+        },
+        "terminalCommand": "IPO",
+        "inference": {
+          "model": "google/gemma-4-31b-it",
+          "provider": "Cerebras",
+          "latency_ms": 617,
+          "prompt_tokens": 5019,
+          "completion_tokens": 72,
+          "cost": 0.00507609
+        }
+      }
+    },
+    {
+      "id": "TRAN-noisy",
+      "utterance": "latest apple earnins call trans cript",
+      "expected": "TRAN",
+      "actual": "TRAN",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "TRAN",
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested earnings call transcript for Apple (AAPL)."
+        },
+        "terminalCommand": "AAPL US EQ TRAN",
+        "inference": {
+          "model": "google/gemma-4-31b-it",
+          "provider": "Cerebras",
+          "latency_ms": 533,
+          "prompt_tokens": 5039,
+          "completion_tokens": 96,
+          "cost": 0.00513165
+        }
+      }
+    },
+    {
+      "id": "PAT-noisy",
+      "utterance": "find similar historical price pattrens for tesla",
+      "expected": "PAT",
+      "actual": "PAT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "PAT",
+          "security": {
+            "spoken_name": "tesla",
+            "ticker": "TSLA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User is requesting historical price patterns for Tesla, which maps to the PAT command."
+        },
+        "terminalCommand": "TSLA US EQ PAT",
+        "inference": {
+          "model": "google/gemma-4-31b-it",
+          "provider": "Cerebras",
+          "latency_ms": 741,
+          "prompt_tokens": 5041,
+          "completion_tokens": 81,
+          "cost": 0.00511128
+        }
+      }
+    },
+    {
+      "id": "PRT-noisy",
+      "utterance": "batch rank systematic pattrens and realised outcomes",
+      "expected": "PRT",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":60,\"retry_after_seconds_raw\":60,\"headers\":{\"Retry-After\":\"60\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 187
+    },
+    {
+      "id": "MAP-noisy",
+      "utterance": "world map which stock exchanges are open right now",
+      "expected": "MAP",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":60,\"retry_after_seconds_raw\":60,\"headers\":{\"Retry-After\":\"60\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 150
+    },
+    {
+      "id": "CITADEL-noisy",
+      "utterance": "open the sit a dell overview",
+      "expected": "CITADEL",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":60,\"retry_after_seconds_raw\":60,\"headers\":{\"Retry-After\":\"60\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 144
+    },
+    {
+      "id": "KELLY-noisy",
+      "utterance": "kelly cry tear ion position sizing game",
+      "expected": "KELLY",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":60,\"retry_after_seconds_raw\":60,\"headers\":{\"Retry-After\":\"60\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 160
+    },
+    {
+      "id": "HELP-noisy",
+      "utterance": "help me with terminal comands and key strokes",
+      "expected": "HELP",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":60,\"retry_after_seconds_raw\":60,\"headers\":{\"Retry-After\":\"60\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 173
+    },
+    {
+      "id": "CHAT-noisy",
+      "utterance": "open the godel chat rooms",
+      "expected": "CHAT",
+      "actual": "CHAT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "CHAT",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User wants to open the chat rooms."
+        },
+        "terminalCommand": "CHAT",
+        "inference": {
+          "model": "google/gemma-4-31b-it",
+          "provider": "Cerebras",
+          "latency_ms": 587,
+          "prompt_tokens": 5016,
+          "completion_tokens": 48,
+          "cost": 0.00503736
+        }
+      }
+    },
+    {
+      "id": "ACM-noisy",
+      "utterance": "open acount management billing and invoices",
+      "expected": "ACM",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":60,\"retry_after_seconds_raw\":60,\"headers\":{\"Retry-After\":\"60\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 137
+    },
+    {
+      "id": "PDF-noisy",
+      "utterance": "open terminal settings appearance and keybord prefs",
+      "expected": "PDF",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":60,\"retry_after_seconds_raw\":60,\"headers\":{\"Retry-After\":\"60\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 128
+    },
+    {
+      "id": "AL-noisy",
+      "utterance": "open alerts for apple dont create one yet",
+      "expected": "AL",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 147
+    },
+    {
+      "id": "NOTE-noisy",
+      "utterance": "open my notes for apple",
+      "expected": "NOTE",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 182
+    },
+    {
+      "id": "ENT-noisy",
+      "utterance": "show my exchange feed entitelements",
+      "expected": "ENT",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 140
+    },
+    {
+      "id": "CHANGE-noisy",
+      "utterance": "whats new open the change log",
+      "expected": "CHANGE",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 125
+    },
+    {
+      "id": "ERR-noisy",
+      "utterance": "open bug report support but dont send anythin",
+      "expected": "ERR",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 135
+    },
+    {
+      "id": "ambiguous-earnings",
+      "utterance": "uh show me amazon earnins",
+      "expected": "clarify",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 151
+    },
+    {
+      "id": "self-correct-news",
+      "utterance": "show top news no wait search news for anti trust",
+      "expected": "NI",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 167
+    },
+    {
+      "id": "self-correct-chart",
+      "utterance": "compare apple to microsoft no sorry just chart apple five minutes",
+      "expected": "G",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 232
+    },
+    {
+      "id": "filler-option-chain",
+      "utterance": "could you like pull up um the apple calls chain",
+      "expected": "OMON",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 176
+    },
+    {
+      "id": "confuse-holders",
+      "utterance": "berkshire holders i mean what does berkshire hold",
+      "expected": "HLDR",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Cerebras\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\",\"retry_after_seconds\":59,\"retry_after_seconds_raw\":59,\"headers\":{\"Retry-After\":\"59\"}}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 137
+    }
+  ]
+}

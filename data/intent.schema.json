@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GodelVoiceIntent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "confidence", "command", "security", "query", "arguments", "post_open_actions", "clarification", "reason"],
+  "properties": {
+    "kind": {"type": "string", "enum": ["execute", "clarify", "unsupported"]},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "command": {"type": ["string", "null"]},
+    "query": {"type": ["string", "null"], "description": "Free-text placed before query-scope commands such as NI or SECF; null for other scopes."},
+    "security": {
+      "anyOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["spoken_name", "ticker", "venue", "asset_class", "needs_resolution"],
+          "properties": {
+            "spoken_name": {"type": ["string", "null"]},
+            "ticker": {"type": ["string", "null"]},
+            "venue": {"type": ["string", "null"]},
+            "asset_class": {"type": ["string", "null"], "description": "Godel CLI asset-class code; use EQ for equities/stocks."},
+            "needs_resolution": {"type": "boolean"}
+          }
+        }
+      ]
+    },
+    "arguments": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
+    "post_open_actions": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["feature", "operation", "value"],
+        "properties": {
+          "feature": {"type": "string"},
+          "operation": {"type": "string"},
+          "value": {"type": ["string", "number", "boolean", "null"]}
+        }
+      }
+    },
+    "clarification": {"type": ["string", "null"]},
+    "reason": {"type": "string", "maxLength": 240}
+  }
+}

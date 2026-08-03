@@ -1,0 +1,2395 @@
+{
+  "generated_at": "2026-08-03T19:48:26.373Z",
+  "model": "google/gemini-3.5-flash",
+  "total": 64,
+  "passed": 62,
+  "failed": 2,
+  "accuracy": 0.96875,
+  "providers": {
+    "Google AI Studio": 62,
+    "unknown": 2
+  },
+  "latency_ms": {
+    "p50": 1461,
+    "p95": 2038
+  },
+  "results": [
+    {
+      "id": "Q-phonetic",
+      "utterance": "uh quick coat for amazon please",
+      "expected": "Q",
+      "actual": "Q",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "Q",
+          "query": null,
+          "security": {
+            "spoken_name": "amazon",
+            "ticker": "AMZN",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Interpreted 'quick coat' as 'quick quote' (Q) for the resolved security AMZN."
+        },
+        "terminalCommand": "AMZN US EQ Q",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1859,
+          "prompt_tokens": 4941,
+          "completion_tokens": 88,
+          "cost": 0.0082035
+        }
+      }
+    },
+    {
+      "id": "DES-misspell",
+      "utterance": "open the company discription for apple",
+      "expected": "DES",
+      "actual": "DES",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "DES",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open the company overview and description (DES) for the resolved security AAPL."
+        },
+        "terminalCommand": "AAPL US EQ DES",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1470,
+          "prompt_tokens": 4941,
+          "completion_tokens": 81,
+          "cost": 0.0081405
+        }
+      }
+    },
+    {
+      "id": "FA-noisy",
+      "utterance": "can i get nvidia financals um income statment",
+      "expected": "FA",
+      "actual": "FA",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "FA",
+          "query": null,
+          "security": {
+            "spoken_name": "nvidia",
+            "ticker": "NVDA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "income statement",
+              "operation": "select",
+              "value": null
+            }
+          ],
+          "clarification": null,
+          "reason": "Open FA for NVDA and select the income statement view."
+        },
+        "terminalCommand": "NVDA US EQ FA",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1743,
+          "prompt_tokens": 4945,
+          "completion_tokens": 91,
+          "cost": 0.0082365
+        }
+      }
+    },
+    {
+      "id": "ERN-noisy",
+      "utterance": "meta earnins estimates and the beat miss history",
+      "expected": "ERN",
+      "actual": "ERN",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "ERN",
+          "query": null,
+          "security": {
+            "spoken_name": "meta",
+            "ticker": "META",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "The user requested earnings estimates and beat/miss history for Meta, which maps directly to the ERN command."
+        },
+        "terminalCommand": "META US EQ ERN",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1944,
+          "prompt_tokens": 4943,
+          "completion_tokens": 88,
+          "cost": 0.00583185
+        }
+      }
+    },
+    {
+      "id": "EM-phonetic",
+      "utterance": "open amazon earnins metrics sorry matrix",
+      "expected": "EM",
+      "actual": "EM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "EM",
+          "query": null,
+          "security": {
+            "spoken_name": "amazon",
+            "ticker": "AMZN",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User corrected 'earnins metrics' to 'matrix', which maps to the EM (Estimates Matrix) command for AMZN."
+        },
+        "terminalCommand": "AMZN US EQ EM",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1332,
+          "prompt_tokens": 4942,
+          "completion_tokens": 93,
+          "cost": 0.00587535
+        }
+      }
+    },
+    {
+      "id": "SI-misspell",
+      "utterance": "tesla short intrest days to cover",
+      "expected": "SI",
+      "actual": "SI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "SI",
+          "query": null,
+          "security": {
+            "spoken_name": "tesla",
+            "ticker": "TSLA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open short interest (SI) command for TSLA to view short interest and days to cover."
+        },
+        "terminalCommand": "TSLA US EQ SI",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1706,
+          "prompt_tokens": 4942,
+          "completion_tokens": 85,
+          "cost": 0.00580335
+        }
+      }
+    },
+    {
+      "id": "GR-noisy",
+      "utterance": "ratio chart spy verses q q q with rolling carrelation",
+      "expected": "GR",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for GR: SPY; unsupported argument for GR: QQQ",
+      "elapsed_ms": 1483
+    },
+    {
+      "id": "ANR-noisy",
+      "utterance": "microsoft analyst raitings upgrades and price targets",
+      "expected": "ANR",
+      "actual": "ANR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "ANR",
+          "query": null,
+          "security": {
+            "spoken_name": "microsoft",
+            "ticker": "MSFT",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Opened analyst recommendations and price targets (ANR) for Microsoft (MSFT)."
+        },
+        "terminalCommand": "MSFT US EQ ANR",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1456,
+          "prompt_tokens": 4944,
+          "completion_tokens": 83,
+          "cost": 0.00578835
+        }
+      }
+    },
+    {
+      "id": "DVD-phonetic",
+      "utterance": "coke divident yeeld and payment history",
+      "expected": "DVD",
+      "actual": "DVD",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "DVD",
+          "query": null,
+          "security": {
+            "spoken_name": "coke",
+            "ticker": "KO",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open dividend history and yield details for Coke (KO)."
+        },
+        "terminalCommand": "KO US EQ DVD",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1301,
+          "prompt_tokens": 4944,
+          "completion_tokens": 77,
+          "cost": 0.00573435
+        }
+      }
+    },
+    {
+      "id": "QM-noisy",
+      "utterance": "open my coat monitor uh quote monitor",
+      "expected": "QM",
+      "actual": "QM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "QM",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Resolved voice correction from 'coat monitor' to 'quote monitor' which maps to the QM command."
+        },
+        "terminalCommand": "QM",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1447,
+          "prompt_tokens": 4919,
+          "completion_tokens": 61,
+          "cost": 0.0055542
+        }
+      }
+    },
+    {
+      "id": "FOCUS-noisy",
+      "utterance": "give me the little live price focus thing for oracle",
+      "expected": "FOCUS",
+      "actual": "FOCUS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "FOCUS",
+          "query": null,
+          "security": {
+            "spoken_name": "oracle",
+            "ticker": "ORCL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open FOCUS command for resolved security ORCL US EQ."
+        },
+        "terminalCommand": "ORCL US EQ FOCUS",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1461,
+          "prompt_tokens": 4945,
+          "completion_tokens": 77,
+          "cost": 0.00573585
+        }
+      }
+    },
+    {
+      "id": "TAS-phonetic",
+      "utterance": "apple time and sells trade tape",
+      "expected": "TAS",
+      "actual": "TAS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "TAS",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open the streaming trade tape (TAS) for Apple (AAPL)."
+        },
+        "terminalCommand": "AAPL US EQ TAS",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1865,
+          "prompt_tokens": 4940,
+          "completion_tokens": 78,
+          "cost": 0.00573735
+        }
+      }
+    },
+    {
+      "id": "HCP-noisy",
+      "utterance": "historic change persent for reddit over three months",
+      "expected": "HCP",
+      "actual": "HCP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "HCP",
+          "query": null,
+          "security": {
+            "spoken_name": "reddit",
+            "ticker": "RDDT",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "period",
+              "operation": "select",
+              "value": "3M"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested historical change percent (HCP) for Reddit (RDDT) over a three-month period."
+        },
+        "terminalCommand": "RDDT US EQ HCP",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 3255,
+          "prompt_tokens": 4944,
+          "completion_tokens": 103,
+          "cost": 0.00596835
+        }
+      }
+    },
+    {
+      "id": "WEI-noisy",
+      "utterance": "show the world stock indexes screen",
+      "expected": "WEI",
+      "actual": "WEI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "WEI",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open the world equity indices monitor screen."
+        },
+        "terminalCommand": "WEI",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1534,
+          "prompt_tokens": 4918,
+          "completion_tokens": 49,
+          "cost": 0.0054447
+        }
+      }
+    },
+    {
+      "id": "WEIF-noisy",
+      "utterance": "world equity index fewchers by region",
+      "expected": "WEIF",
+      "actual": "WEIF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "WEIF",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Mapped 'world equity index fewchers' to WEIF (world equity-index futures)."
+        },
+        "terminalCommand": "WEIF",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 2393,
+          "prompt_tokens": 4919,
+          "completion_tokens": 60,
+          "cost": 0.0055452
+        }
+      }
+    },
+    {
+      "id": "IMAP-noisy",
+      "utterance": "which s and p sectors are driving todays move wheel map",
+      "expected": "IMAP",
+      "actual": "IMAP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "IMAP",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "index",
+              "operation": "select",
+              "value": "S&P 500"
+            },
+            {
+              "feature": "view",
+              "operation": "select",
+              "value": "map"
+            }
+          ],
+          "clarification": null,
+          "reason": "User wants to see which S&P sectors are driving today's move using the wheel map, which maps directly to the IMAP command."
+        },
+        "terminalCommand": "IMAP",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1448,
+          "prompt_tokens": 4923,
+          "completion_tokens": 77,
+          "cost": 0.0057042
+        }
+      }
+    },
+    {
+      "id": "HMAP-noisy",
+      "utterance": "heat map my biotech watch list then table view",
+      "expected": "HMAP",
+      "actual": "HMAP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.9,
+          "command": "HMAP",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "universe",
+              "operation": "select",
+              "value": "watchlist"
+            },
+            {
+              "feature": "view",
+              "operation": "select",
+              "value": "table"
+            }
+          ],
+          "clarification": null,
+          "reason": "Opens the heatmap command configured for watchlists and switches the view to table mode."
+        },
+        "terminalCommand": "HMAP",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1472,
+          "prompt_tokens": 4921,
+          "completion_tokens": 82,
+          "cost": 0.0057462
+        }
+      }
+    },
+    {
+      "id": "GLCO-noisy",
+      "utterance": "global commodities fewchers energy metals agriculture",
+      "expected": "GLCO",
+      "actual": "GLCO",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "GLCO",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Opened global commodities monitor (GLCO) based on the request for global commodities futures."
+        },
+        "terminalCommand": "GLCO",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1761,
+          "prompt_tokens": 4919,
+          "completion_tokens": 59,
+          "cost": 0.0055362
+        }
+      }
+    },
+    {
+      "id": "FX-noisy",
+      "utterance": "open the four x currency cross matrix",
+      "expected": "FX",
+      "actual": "FX",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "FX",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested the FX currency cross matrix, which maps directly to the FX command."
+        },
+        "terminalCommand": "FX",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1821,
+          "prompt_tokens": 4919,
+          "completion_tokens": 57,
+          "cost": 0.0055182
+        }
+      }
+    },
+    {
+      "id": "MOST-noisy",
+      "utterance": "most active tech gainers over two billon market cap",
+      "expected": "MOST",
+      "actual": "MOST",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.9,
+          "command": "MOST",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "ranking",
+              "operation": "select",
+              "value": "gainers"
+            },
+            {
+              "feature": "minimum market cap",
+              "operation": "select",
+              "value": 2000000000
+            },
+            {
+              "feature": "sector filter",
+              "operation": "select",
+              "value": "Technology"
+            }
+          ],
+          "clarification": null,
+          "reason": "Opens the MOST active ranking tool configured for gainers with a minimum market cap of 2 billion and filtered to the technology sector."
+        },
+        "terminalCommand": "MOST",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 2031,
+          "prompt_tokens": 4923,
+          "completion_tokens": 92,
+          "cost": 0.0058392
+        }
+      }
+    },
+    {
+      "id": "MOSO-noisy",
+      "utterance": "most active options contracts market wide",
+      "expected": "MOSO",
+      "actual": "MOSO",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "MOSO",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Opened the most active options contracts ranking tool (MOSO)."
+        },
+        "terminalCommand": "MOSO",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1477,
+          "prompt_tokens": 4918,
+          "completion_tokens": 54,
+          "cost": 0.0054897
+        }
+      }
+    },
+    {
+      "id": "HDS-noisy",
+      "utterance": "who owns nvidia show instatutional holders",
+      "expected": "HDS",
+      "actual": "HDS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "HDS",
+          "query": null,
+          "security": {
+            "spoken_name": "nvidia",
+            "ticker": "NVDA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "HDS displays institutional owners and holdings for a security."
+        },
+        "terminalCommand": "NVDA US EQ HDS",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1445,
+          "prompt_tokens": 4943,
+          "completion_tokens": 78,
+          "cost": 0.00574185
+        }
+      }
+    },
+    {
+      "id": "HLDR-noisy",
+      "utterance": "what stocks does berkshire own latest holdins",
+      "expected": "HLDR",
+      "actual": "HLDR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "HLDR",
+          "query": null,
+          "security": {
+            "spoken_name": "berkshire",
+            "ticker": "BRK.B",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open the HLDR command for Berkshire (BRK.B) to view its latest portfolio holdings."
+        },
+        "terminalCommand": "BRK.B US EQ HLDR",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1572,
+          "prompt_tokens": 4948,
+          "completion_tokens": 91,
+          "cost": 0.00586635
+        }
+      }
+    },
+    {
+      "id": "N-noisy",
+      "utterance": "news for my farmer watch list exclude class actions",
+      "expected": "N",
+      "actual": "N",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "N",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "watchlist scope",
+              "operation": "select",
+              "value": "my farmer"
+            },
+            {
+              "feature": "class action",
+              "operation": "select",
+              "value": "hide"
+            }
+          ],
+          "clarification": null,
+          "reason": "Opened news feed scoped to the 'my farmer' watchlist with class actions excluded."
+        },
+        "terminalCommand": "N",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1494,
+          "prompt_tokens": 4921,
+          "completion_tokens": 61,
+          "cost": 0.0055572
+        }
+      }
+    },
+    {
+      "id": "NI-noisy",
+      "utterance": "search the news for anti trust regulation",
+      "expected": "NI",
+      "actual": "NI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "NI",
+          "query": "anti trust regulation",
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested a news search for a free-text query, which maps to the NI command."
+        },
+        "terminalCommand": "anti trust regulation NI",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1555,
+          "prompt_tokens": 4919,
+          "completion_tokens": 62,
+          "cost": 0.0055632
+        }
+      }
+    },
+    {
+      "id": "TOP-noisy",
+      "utterance": "read the top fifteen rooters stories",
+      "expected": "TOP",
+      "actual": "TOP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "TOP",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Resolved 'rooters' to Reuters and mapped 'top fifteen stories' to the TOP command."
+        },
+        "terminalCommand": "TOP",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1498,
+          "prompt_tokens": 4919,
+          "completion_tokens": 60,
+          "cost": 0.0055452
+        }
+      }
+    },
+    {
+      "id": "RES-noisy",
+      "utterance": "find sell side reserch reports on oracle",
+      "expected": "RES",
+      "actual": "RES",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "RES",
+          "query": null,
+          "security": {
+            "spoken_name": "oracle",
+            "ticker": "ORCL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open research reports (RES) for the resolved security Oracle (ORCL US EQ EQ)."
+        },
+        "terminalCommand": "ORCL US EQ RES",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1701,
+          "prompt_tokens": 4944,
+          "completion_tokens": 84,
+          "cost": 0.008172
+        }
+      }
+    },
+    {
+      "id": "TREND-noisy",
+      "utterance": "whats trendin most searched on godel",
+      "expected": "TREND",
+      "actual": "TREND",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "TREND",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User wants to see what is trending or most searched on Godel, which maps directly to the TREND command."
+        },
+        "terminalCommand": "TREND",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1236,
+          "prompt_tokens": 4920,
+          "completion_tokens": 63,
+          "cost": 0.0055737
+        }
+      }
+    },
+    {
+      "id": "HALT-noisy",
+      "utterance": "show only the active market holts",
+      "expected": "HALT",
+      "actual": "HALT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "HALT",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "tab",
+              "operation": "select",
+              "value": "Active"
+            }
+          ],
+          "clarification": null,
+          "reason": "Corrected phonetic 'holts' to 'halts' and selected the 'Active' tab as requested."
+        },
+        "terminalCommand": "HALT",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1400,
+          "prompt_tokens": 4919,
+          "completion_tokens": 76,
+          "cost": 0.0056892
+        }
+      }
+    },
+    {
+      "id": "ALLQ-phonetic",
+      "utterance": "all coats and venues for apple",
+      "expected": "ALLQ",
+      "actual": "ALLQ",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "ALLQ",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Interpreted 'all coats' as 'all quotes' (ALLQ) for the resolved security AAPL."
+        },
+        "terminalCommand": "AAPL US EQ ALLQ",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 2686,
+          "prompt_tokens": 4940,
+          "completion_tokens": 90,
+          "cost": 0.00584535
+        }
+      }
+    },
+    {
+      "id": "SECF-noisy",
+      "utterance": "security finder search gold man corporate bonds on trace",
+      "expected": "SECF",
+      "actual": "SECF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "SECF",
+          "query": "gold man corporate bonds on trace",
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "tab",
+              "operation": "select",
+              "value": "Corporate Bonds"
+            }
+          ],
+          "clarification": null,
+          "reason": "User wants to search for Goldman corporate bonds on TRACE using the security finder."
+        },
+        "terminalCommand": "gold man corporate bonds on trace SECF",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1423,
+          "prompt_tokens": 4921,
+          "completion_tokens": 77,
+          "cost": 0.0057012
+        }
+      }
+    },
+    {
+      "id": "WJI-phonetic",
+      "utterance": "open the wojack sentiment index",
+      "expected": "WJI",
+      "actual": "WJI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "WJI",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Opened the Wojak sentiment gauge (WJI) based on the user's request."
+        },
+        "terminalCommand": "WJI",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1281,
+          "prompt_tokens": 4918,
+          "completion_tokens": 60,
+          "cost": 0.0055437
+        }
+      }
+    },
+    {
+      "id": "EQS-noisy",
+      "utterance": "screen us tech stocks forward p e under ten",
+      "expected": "EQS",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unknown UI feature for EQS: list filters:sector; unknown UI feature for EQS: range filters:forward/trailing P/E",
+      "elapsed_ms": 1619
+    },
+    {
+      "id": "OMON-noisy",
+      "utterance": "apple option chain calls only with gamma",
+      "expected": "OMON",
+      "actual": "OMON",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "OMON",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "mode",
+              "operation": "select",
+              "value": "Calls"
+            },
+            {
+              "feature": "Greek visibility",
+              "operation": "select",
+              "value": "Gamma"
+            }
+          ],
+          "clarification": null,
+          "reason": "Opened option chain for AAPL filtered to calls only with gamma visible."
+        },
+        "terminalCommand": "AAPL US EQ OMON",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1536,
+          "prompt_tokens": 4941,
+          "completion_tokens": 81,
+          "cost": 0.00576585
+        }
+      }
+    },
+    {
+      "id": "OVME-phonetic",
+      "utterance": "black shoals implied vol calculator",
+      "expected": "OVME",
+      "actual": "OVME",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "OVME",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Opened the Black-Scholes option pricing and implied volatility calculator (OVME)."
+        },
+        "terminalCommand": "OVME",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1234,
+          "prompt_tokens": 4918,
+          "completion_tokens": 58,
+          "cost": 0.0055257
+        }
+      }
+    },
+    {
+      "id": "CALC-noisy",
+      "utterance": "open the finance calculater time value money",
+      "expected": "CALC",
+      "actual": "CALC",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "CALC",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested the finance calculator for time value of money, which maps directly to the CALC command."
+        },
+        "terminalCommand": "CALC",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1548,
+          "prompt_tokens": 4920,
+          "completion_tokens": 62,
+          "cost": 0.0055647
+        }
+      }
+    },
+    {
+      "id": "BROK-noisy",
+      "utterance": "open read only brockerage connections",
+      "expected": "BROK",
+      "actual": "BROK",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "BROK",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open the brokerage integration interface (BROK) as requested."
+        },
+        "terminalCommand": "BROK",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1672,
+          "prompt_tokens": 4919,
+          "completion_tokens": 55,
+          "cost": 0.0055002
+        }
+      }
+    },
+    {
+      "id": "AUM-phonetic",
+      "utterance": "show my connected broker a u m",
+      "expected": "AUM",
+      "actual": "AUM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "AUM",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "tab",
+              "operation": "select",
+              "value": "Personal"
+            }
+          ],
+          "clarification": null,
+          "reason": "Open connected brokerage AUM with the personal linked-account value tab selected."
+        },
+        "terminalCommand": "AUM",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1268,
+          "prompt_tokens": 4919,
+          "completion_tokens": 69,
+          "cost": 0.0056262
+        }
+      }
+    },
+    {
+      "id": "G-noisy",
+      "utterance": "chart apple in five minit candles",
+      "expected": "G",
+      "actual": "G",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "G",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [
+            "5m"
+          ],
+          "post_open_actions": [
+            {
+              "feature": "style",
+              "operation": "select",
+              "value": "Candles"
+            }
+          ],
+          "clarification": null,
+          "reason": "Open TradingView chart for AAPL with 5-minute resolution and candle style."
+        },
+        "terminalCommand": "AAPL US EQ G 5m",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1503,
+          "prompt_tokens": 4941,
+          "completion_tokens": 97,
+          "cost": 0.00590985
+        }
+      }
+    },
+    {
+      "id": "HMS-noisy",
+      "utterance": "compare apple microsoft nvidia historical on one chart",
+      "expected": "HMS",
+      "actual": "HMS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "HMS",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "add/remove securities",
+              "operation": "select",
+              "value": "AAPL"
+            },
+            {
+              "feature": "add/remove securities",
+              "operation": "select",
+              "value": "MSFT"
+            },
+            {
+              "feature": "add/remove securities",
+              "operation": "select",
+              "value": "NVDA"
+            }
+          ],
+          "clarification": null,
+          "reason": "Open HMS multi-security comparison chart and add AAPL, MSFT, and NVDA."
+        },
+        "terminalCommand": "HMS",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1448,
+          "prompt_tokens": 4920,
+          "completion_tokens": 82,
+          "cost": 0.0057447
+        }
+      }
+    },
+    {
+      "id": "HP-noisy",
+      "utterance": "historical one minit o h l c v prices for bitcoin",
+      "expected": "HP",
+      "actual": "HP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "HP",
+          "query": null,
+          "security": {
+            "spoken_name": "bitcoin",
+            "ticker": "BTCUSD",
+            "venue": "GBL",
+            "asset_class": "CRYPTO",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "resolution",
+              "operation": "select",
+              "value": "1M"
+            }
+          ],
+          "clarification": null,
+          "reason": "Open historical prices (HP) for BTCUSD and select the 1-minute resolution."
+        },
+        "terminalCommand": "BTCUSD GBL CRYPTO HP",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1731,
+          "prompt_tokens": 4949,
+          "completion_tokens": 100,
+          "cost": 0.00594885
+        }
+      }
+    },
+    {
+      "id": "GF-noisy",
+      "utterance": "graph fundementals revenue and ebit da for microsoft",
+      "expected": "GF",
+      "actual": "GF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "GF",
+          "query": null,
+          "security": {
+            "spoken_name": "microsoft",
+            "ticker": "MSFT",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open the fundamentals chart (GF) for MSFT to graph revenue and EBITDA."
+        },
+        "terminalCommand": "MSFT US EQ GF",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1250,
+          "prompt_tokens": 4946,
+          "completion_tokens": 82,
+          "cost": 0.00578235
+        }
+      }
+    },
+    {
+      "id": "CF-noisy",
+      "utterance": "apple sec fillings only eight kays",
+      "expected": "CF",
+      "actual": "CF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "CF",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "filing type filter",
+              "operation": "select",
+              "value": "8-K"
+            }
+          ],
+          "clarification": null,
+          "reason": "Open SEC filings for Apple filtered to 8-K reports."
+        },
+        "terminalCommand": "AAPL US EQ CF",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1368,
+          "prompt_tokens": 4941,
+          "completion_tokens": 95,
+          "cost": 0.00589185
+        }
+      }
+    },
+    {
+      "id": "IPO-noisy",
+      "utterance": "upcoming eye p o offerings and after market performance",
+      "expected": "IPO",
+      "actual": "IPO",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "IPO",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open the IPO command to view upcoming offerings and aftermarket performance."
+        },
+        "terminalCommand": "IPO",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1258,
+          "prompt_tokens": 4921,
+          "completion_tokens": 53,
+          "cost": 0.0054852
+        }
+      }
+    },
+    {
+      "id": "TRAN-noisy",
+      "utterance": "latest apple earnins call trans cript",
+      "expected": "TRAN",
+      "actual": "TRAN",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "TRAN",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Resolved 'apple' to AAPL US EQ and mapped 'earnins call trans cript' to the TRAN command."
+        },
+        "terminalCommand": "AAPL US EQ TRAN",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1310,
+          "prompt_tokens": 4941,
+          "completion_tokens": 89,
+          "cost": 0.00583785
+        }
+      }
+    },
+    {
+      "id": "PAT-noisy",
+      "utterance": "find similar historical price pattrens for tesla",
+      "expected": "PAT",
+      "actual": "PAT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "PAT",
+          "query": null,
+          "security": {
+            "spoken_name": "tesla",
+            "ticker": "TSLA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open PAT command for TSLA to find historical price patterns and forecast returns."
+        },
+        "terminalCommand": "TSLA US EQ PAT",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1545,
+          "prompt_tokens": 4943,
+          "completion_tokens": 81,
+          "cost": 0.00576885
+        }
+      }
+    },
+    {
+      "id": "PRT-noisy",
+      "utterance": "batch rank systematic pattrens and realised outcomes",
+      "expected": "PRT",
+      "actual": "PRT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "PRT",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Maps directly to PRT command for batching and ranking systematic patterns with realized outcomes."
+        },
+        "terminalCommand": "PRT",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1540,
+          "prompt_tokens": 4920,
+          "completion_tokens": 60,
+          "cost": 0.0055467
+        }
+      }
+    },
+    {
+      "id": "MAP-noisy",
+      "utterance": "world map which stock exchanges are open right now",
+      "expected": "MAP",
+      "actual": "MAP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "MAP",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open the world map of stock exchanges showing current open/closed trading status."
+        },
+        "terminalCommand": "MAP",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1458,
+          "prompt_tokens": 4921,
+          "completion_tokens": 56,
+          "cost": 0.0055122
+        }
+      }
+    },
+    {
+      "id": "CITADEL-noisy",
+      "utterance": "open the sit a dell overview",
+      "expected": "CITADEL",
+      "actual": "CITADEL",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "CITADEL",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Resolved phonetic near-match 'sit a dell' to the CITADEL command."
+        },
+        "terminalCommand": "CITADEL",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1266,
+          "prompt_tokens": 4918,
+          "completion_tokens": 58,
+          "cost": 0.0055257
+        }
+      }
+    },
+    {
+      "id": "KELLY-noisy",
+      "utterance": "kelly cry tear ion position sizing game",
+      "expected": "KELLY",
+      "actual": "KELLY",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "KELLY",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Mapped 'kelly cry tear ion' to the KELLY interactive game command."
+        },
+        "terminalCommand": "KELLY",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1435,
+          "prompt_tokens": 4919,
+          "completion_tokens": 58,
+          "cost": 0.0055272
+        }
+      }
+    },
+    {
+      "id": "HELP-noisy",
+      "utterance": "help me with terminal comands and key strokes",
+      "expected": "HELP",
+      "actual": "HELP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "HELP",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested help with terminal commands and keystrokes, which maps directly to the HELP command."
+        },
+        "terminalCommand": "HELP",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1348,
+          "prompt_tokens": 4921,
+          "completion_tokens": 60,
+          "cost": 0.0055482
+        }
+      }
+    },
+    {
+      "id": "CHAT-noisy",
+      "utterance": "open the godel chat rooms",
+      "expected": "CHAT",
+      "actual": "CHAT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "CHAT",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Opens the public and symbol chat rooms."
+        },
+        "terminalCommand": "CHAT",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1426,
+          "prompt_tokens": 4918,
+          "completion_tokens": 49,
+          "cost": 0.0054447
+        }
+      }
+    },
+    {
+      "id": "ACM-noisy",
+      "utterance": "open acount management billing and invoices",
+      "expected": "ACM",
+      "actual": "ACM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "ACM",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "manage billing",
+              "operation": "select",
+              "value": null
+            },
+            {
+              "feature": "invoice history",
+              "operation": "select",
+              "value": null
+            }
+          ],
+          "clarification": null,
+          "reason": "Opened account management (ACM) with billing and invoice history features selected."
+        },
+        "terminalCommand": "ACM",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1335,
+          "prompt_tokens": 4919,
+          "completion_tokens": 81,
+          "cost": 0.0057342
+        }
+      }
+    },
+    {
+      "id": "PDF-noisy",
+      "utterance": "open terminal settings appearance and keybord prefs",
+      "expected": "PDF",
+      "actual": "PDF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "PDF",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open terminal appearance, layout, keyboard, and command preferences."
+        },
+        "terminalCommand": "PDF",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1316,
+          "prompt_tokens": 4920,
+          "completion_tokens": 53,
+          "cost": 0.0054837
+        }
+      }
+    },
+    {
+      "id": "AL-noisy",
+      "utterance": "open alerts for apple dont create one yet",
+      "expected": "AL",
+      "actual": "AL",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "AL",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open the alerts manager (AL) for Apple (AAPL US EQ) without creating any new alerts."
+        },
+        "terminalCommand": "AAPL US EQ AL",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1444,
+          "prompt_tokens": 4942,
+          "completion_tokens": 85,
+          "cost": 0.00580335
+        }
+      }
+    },
+    {
+      "id": "NOTE-noisy",
+      "utterance": "open my notes for apple",
+      "expected": "NOTE",
+      "actual": "NOTE",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "NOTE",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open persistent notes linked to the resolved security AAPL."
+        },
+        "terminalCommand": "AAPL US EQ NOTE",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 2038,
+          "prompt_tokens": 4939,
+          "completion_tokens": 76,
+          "cost": 0.00571785
+        }
+      }
+    },
+    {
+      "id": "ENT-noisy",
+      "utterance": "show my exchange feed entitelements",
+      "expected": "ENT",
+      "actual": "ENT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "ENT",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested to view exchange feed entitlements, which maps directly to the ENT command."
+        },
+        "terminalCommand": "ENT",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1180,
+          "prompt_tokens": 4919,
+          "completion_tokens": 58,
+          "cost": 0.0055272
+        }
+      }
+    },
+    {
+      "id": "CHANGE-noisy",
+      "utterance": "whats new open the change log",
+      "expected": "CHANGE",
+      "actual": "CHANGE",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "CHANGE",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested to open the product changelog."
+        },
+        "terminalCommand": "CHANGE",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1403,
+          "prompt_tokens": 4918,
+          "completion_tokens": 50,
+          "cost": 0.0054537
+        }
+      }
+    },
+    {
+      "id": "ERR-noisy",
+      "utterance": "open bug report support but dont send anythin",
+      "expected": "ERR",
+      "actual": "ERR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "ERR",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Opened the bug report and support interface without submitting any data."
+        },
+        "terminalCommand": "ERR",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1276,
+          "prompt_tokens": 4921,
+          "completion_tokens": 53,
+          "cost": 0.0054852
+        }
+      }
+    },
+    {
+      "id": "ambiguous-earnings",
+      "utterance": "uh show me amazon earnins",
+      "expected": "clarify",
+      "actual": "clarify",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "clarify",
+          "confidence": 0.9,
+          "command": null,
+          "query": null,
+          "security": {
+            "spoken_name": "amazon",
+            "ticker": "AMZN",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": "Would you like to view Amazon's earnings consensus and beat/miss history (ERN), historical fundamentals and estimates matrix (EM), or read their earnings call transcripts (TRAN)?",
+          "reason": "The term 'earnings' is ambiguous among ERN, EM, and TRAN. Clarification is required to determine the correct command."
+        },
+        "terminalCommand": null,
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1599,
+          "prompt_tokens": 4941,
+          "completion_tokens": 181,
+          "cost": 0.00666585
+        }
+      }
+    },
+    {
+      "id": "self-correct-news",
+      "utterance": "show top news no wait search news for anti trust",
+      "expected": "NI",
+      "actual": "NI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "NI",
+          "query": "anti trust",
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "The user explicitly corrected their request from 'top news' to 'search news for anti trust', which maps to the NI command with 'anti trust' as the query."
+        },
+        "terminalCommand": "anti trust NI",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1447,
+          "prompt_tokens": 4922,
+          "completion_tokens": 76,
+          "cost": 0.0056937
+        }
+      }
+    },
+    {
+      "id": "self-correct-chart",
+      "utterance": "compare apple to microsoft no sorry just chart apple five minutes",
+      "expected": "G",
+      "actual": "G",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "G",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [
+            "5m"
+          ],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "The user corrected their request from comparing Apple and Microsoft to charting Apple on a 5-minute interval."
+        },
+        "terminalCommand": "AAPL US EQ G 5m",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1316,
+          "prompt_tokens": 4945,
+          "completion_tokens": 88,
+          "cost": 0.00583485
+        }
+      }
+    },
+    {
+      "id": "filler-option-chain",
+      "utterance": "could you like pull up um the apple calls chain",
+      "expected": "OMON",
+      "actual": "OMON",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "OMON",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "mode",
+              "operation": "select",
+              "value": "Calls"
+            }
+          ],
+          "clarification": null,
+          "reason": "Open option chain for AAPL filtered to calls."
+        },
+        "terminalCommand": "AAPL US EQ OMON",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1481,
+          "prompt_tokens": 4944,
+          "completion_tokens": 88,
+          "cost": 0.00583335
+        }
+      }
+    },
+    {
+      "id": "confuse-holders",
+      "utterance": "berkshire holders i mean what does berkshire hold",
+      "expected": "HLDR",
+      "actual": "HLDR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "HLDR",
+          "query": null,
+          "security": {
+            "spoken_name": "berkshire",
+            "ticker": "BRK.B",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "The user corrected their request from 'berkshire holders' (which would be HDS) to 'what does berkshire hold', which maps to HLDR."
+        },
+        "terminalCommand": "BRK.B US EQ HLDR",
+        "inference": {
+          "model": "google/gemini-3.5-flash",
+          "provider": "Google AI Studio",
+          "latency_ms": 1333,
+          "prompt_tokens": 4950,
+          "completion_tokens": 104,
+          "cost": 0.00598635
+        }
+      }
+    }
+  ]
+}

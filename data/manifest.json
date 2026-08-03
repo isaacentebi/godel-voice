@@ -1,0 +1,11 @@
+{
+  "version": "2026-08-03",
+  "canonical_commands": 59,
+  "accepted_command_tokens": 69,
+  "documented_commands": 47,
+  "live_undocumented_commands": 12,
+  "catalog_characters": 14241,
+  "catalog_approx_tokens": 3561,
+  "full_system_prompt_characters": 21139,
+  "full_system_prompt_approx_tokens": 5285
+}

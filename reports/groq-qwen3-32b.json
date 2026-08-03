@@ -1,0 +1,1926 @@
+{
+  "generated_at": "2026-08-03T19:47:22.824Z",
+  "model": "qwen/qwen3-32b",
+  "total": 64,
+  "passed": 47,
+  "failed": 17,
+  "accuracy": 0.734375,
+  "providers": {
+    "Groq": 47,
+    "unknown": 17
+  },
+  "latency_ms": {
+    "p50": 1535,
+    "p95": 2358
+  },
+  "results": [
+    {
+      "id": "Q-phonetic",
+      "utterance": "uh quick coat for amazon please",
+      "expected": "Q",
+      "actual": "Q",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "Q",
+          "security": {
+            "spoken_name": "amazon",
+            "ticker": "AMZN",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Interpreted 'quick coat' as Q (quick quote) for resolved security AMZN. Phonetically 'coat' maps to 'quote'."
+        },
+        "terminalCommand": "AMZN US EQ Q",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 2192,
+          "prompt_tokens": 4800,
+          "completion_tokens": 435,
+          "cost": 0.00142593
+        }
+      }
+    },
+    {
+      "id": "DES-misspell",
+      "utterance": "open the company discription for apple",
+      "expected": "DES",
+      "actual": "DES",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "DES",
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "DES is the canonical command for company overviews including business description"
+        },
+        "terminalCommand": "AAPL US EQ DES",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1881,
+          "prompt_tokens": 4801,
+          "completion_tokens": 323,
+          "cost": 0.00143438
+        }
+      }
+    },
+    {
+      "id": "FA-noisy",
+      "utterance": "can i get nvidia financals um income statment",
+      "expected": "FA",
+      "actual": "FA",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "FA",
+          "security": {
+            "spoken_name": "nvidia",
+            "ticker": "NVDA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "income statement",
+              "operation": "select",
+              "value": "income statement"
+            }
+          ],
+          "clarification": null,
+          "reason": "Selected FA (Financials) for NVDA with income statement view as requested"
+        },
+        "terminalCommand": "NVDA US EQ FA",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 2115,
+          "prompt_tokens": 4806,
+          "completion_tokens": 437,
+          "cost": 0.00157733
+        }
+      }
+    },
+    {
+      "id": "ERN-noisy",
+      "utterance": "meta earnins estimates and the beat miss history",
+      "expected": "ERN",
+      "actual": "ERN",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "ERN",
+          "security": {
+            "spoken_name": "meta",
+            "ticker": "META",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "ERN provides EPS estimates and historical beat/miss data, matching 'earnings estimates and beat miss history'."
+        },
+        "terminalCommand": "META US EQ ERN",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 3267,
+          "prompt_tokens": 4802,
+          "completion_tokens": 444,
+          "cost": 0.00098638
+        }
+      }
+    },
+    {
+      "id": "EM-phonetic",
+      "utterance": "open amazon earnins metrics sorry matrix",
+      "expected": "EM",
+      "actual": "EM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "EM",
+          "security": {
+            "spoken_name": "amazon",
+            "ticker": "AMZN",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Resolved 'earnings metrics matrix' to EM command for AMZN. EM provides quarterly/annual earnings matrix with estimates and valuation multiples per spec."
+        },
+        "terminalCommand": "AMZN US EQ EM",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 2275,
+          "prompt_tokens": 4801,
+          "completion_tokens": 463,
+          "cost": 0.00166546
+        }
+      }
+    },
+    {
+      "id": "SI-misspell",
+      "utterance": "tesla short intrest days to cover",
+      "expected": "SI",
+      "actual": "SI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "SI",
+          "security": {
+            "spoken_name": "tesla",
+            "ticker": "TSLA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Resolved 'tesla' to TSLA (US:EQ). SI command shows short interest and days to cover metrics for equities."
+        },
+        "terminalCommand": "TSLA US EQ SI",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1413,
+          "prompt_tokens": 4804,
+          "completion_tokens": 350,
+          "cost": 0.00159966
+        }
+      }
+    },
+    {
+      "id": "GR-noisy",
+      "utterance": "ratio chart spy verses q q q with rolling carrelation",
+      "expected": "GR",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for GR: SPY; unsupported argument for GR: QQQ; ticker requires venue",
+      "elapsed_ms": 2278
+    },
+    {
+      "id": "ANR-noisy",
+      "utterance": "microsoft analyst raitings upgrades and price targets",
+      "expected": "ANR",
+      "actual": "ANR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "ANR",
+          "security": {
+            "spoken_name": "microsoft",
+            "ticker": "MSFT",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Resolved security MSFT (Microsoft) with explicit request for analyst ratings/upgrades/price targets, which maps directly to ANR command per GODEL_SPEC."
+        },
+        "terminalCommand": "MSFT US EQ ANR",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1680,
+          "prompt_tokens": 4805,
+          "completion_tokens": 442,
+          "cost": 0.00098607
+        }
+      }
+    },
+    {
+      "id": "DVD-phonetic",
+      "utterance": "coke divident yeeld and payment history",
+      "expected": "DVD",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unknown UI feature for DVD: payment history",
+      "elapsed_ms": 1905
+    },
+    {
+      "id": "QM-noisy",
+      "utterance": "open my coat monitor uh quote monitor",
+      "expected": "QM",
+      "actual": "QM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "QM",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User said 'coat monitor' but intended 'quote monitor' (QM). Command QM exists for watchlist management."
+        },
+        "terminalCommand": "QM",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1326,
+          "prompt_tokens": 4780,
+          "completion_tokens": 262,
+          "cost": 0.00087262
+        }
+      }
+    },
+    {
+      "id": "FOCUS-noisy",
+      "utterance": "give me the little live price focus thing for oracle",
+      "expected": "FOCUS",
+      "actual": "FOCUS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.98,
+          "command": "FOCUS",
+          "security": {
+            "spoken_name": "oracle",
+            "ticker": "ORCL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested minimal live price view for Oracle, matching FOCUS command's distraction-free streaming price view"
+        },
+        "terminalCommand": "ORCL US EQ FOCUS",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1399,
+          "prompt_tokens": 4804,
+          "completion_tokens": 388,
+          "cost": 0.00095392
+        }
+      }
+    },
+    {
+      "id": "TAS-phonetic",
+      "utterance": "apple time and sells trade tape",
+      "expected": "TAS",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for TAS: AAPL; unsupported argument for TAS: US; unsupported argument for TAS: EQ",
+      "elapsed_ms": 1509
+    },
+    {
+      "id": "HCP-noisy",
+      "utterance": "historic change persent for reddit over three months",
+      "expected": "HCP",
+      "actual": "HCP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "HCP",
+          "security": {
+            "spoken_name": "reddit",
+            "ticker": "RDDT",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "period",
+              "operation": "select",
+              "value": "3M"
+            }
+          ],
+          "clarification": null,
+          "reason": "HCP provides historical change percent tables with period selection UI. Resolved security RDDT/EQ matches 'reddit'."
+        },
+        "terminalCommand": "RDDT US EQ HCP",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 2305,
+          "prompt_tokens": 4803,
+          "completion_tokens": 794,
+          "cost": 0.00119317
+        }
+      }
+    },
+    {
+      "id": "WEI-noisy",
+      "utterance": "show the world stock indexes screen",
+      "expected": "WEI",
+      "actual": "WEI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "WEI",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "WEI command matches 'world stock indexes screen' per GODEL_SPEC, monitoring major global equity indices with live prices and changes."
+        },
+        "terminalCommand": "WEI",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1595,
+          "prompt_tokens": 4779,
+          "completion_tokens": 465,
+          "cost": 0.0009921
+        }
+      }
+    },
+    {
+      "id": "WEIF-noisy",
+      "utterance": "world equity index fewchers by region",
+      "expected": "WEIF",
+      "actual": "WEIF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "WEIF",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Corrected 'fewchers' to 'futures' based on context. WEIF command matches 'world equity index futures by region' request."
+        },
+        "terminalCommand": "WEIF",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1347,
+          "prompt_tokens": 4780,
+          "completion_tokens": 397,
+          "cost": 0.00095227
+        }
+      }
+    },
+    {
+      "id": "IMAP-noisy",
+      "utterance": "which s and p sectors are driving todays move wheel map",
+      "expected": "IMAP",
+      "actual": "IMAP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "IMAP",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "index",
+              "operation": "select",
+              "value": "S&P 500"
+            },
+            {
+              "feature": "view",
+              "operation": "select",
+              "value": "map"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested S&P sector wheel map for today's moves. IMAP provides sector contributor/loser visualization with S&P 500 as default index."
+        },
+        "terminalCommand": "IMAP",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1639,
+          "prompt_tokens": 4785,
+          "completion_tokens": 507,
+          "cost": 0.00101862
+        }
+      }
+    },
+    {
+      "id": "HMAP-noisy",
+      "utterance": "heat map my biotech watch list then table view",
+      "expected": "HMAP",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for HMAP: universe=watchlist",
+      "elapsed_ms": 1929
+    },
+    {
+      "id": "GLCO-noisy",
+      "utterance": "global commodities fewchers energy metals agriculture",
+      "expected": "GLCO",
+      "actual": "GLCO",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "GLCO",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "commodity groups",
+              "operation": "select",
+              "value": "Energy"
+            },
+            {
+              "feature": "commodity groups",
+              "operation": "select",
+              "value": "Metals"
+            },
+            {
+              "feature": "commodity groups",
+              "operation": "select",
+              "value": "Agriculture"
+            }
+          ],
+          "clarification": null,
+          "reason": "Command GLCO monitors global commodity futures across specified categories. UI actions select Energy, Metals, and Agriculture groups as requested."
+        },
+        "terminalCommand": "GLCO",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1443,
+          "prompt_tokens": 4780,
+          "completion_tokens": 406,
+          "cost": 0.00095758
+        }
+      }
+    },
+    {
+      "id": "FX-noisy",
+      "utterance": "open the four x currency cross matrix",
+      "expected": "FX",
+      "actual": "FX",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "FX",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "VOICE_REQUEST explicitly mentions 'currency cross matrix' which maps to FX command's cross-rate matrix functionality"
+        },
+        "terminalCommand": "FX",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1466,
+          "prompt_tokens": 4780,
+          "completion_tokens": 377,
+          "cost": 0.00094047
+        }
+      }
+    },
+    {
+      "id": "MOST-noisy",
+      "utterance": "most active tech gainers over two billon market cap",
+      "expected": "MOST",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for MOST: ranking=gainers; unsupported argument for MOST: minimum_market_cap=2000000000; unsupported argument for MOST: sector=Technology",
+      "elapsed_ms": 3090
+    },
+    {
+      "id": "MOSO-noisy",
+      "utterance": "most active options contracts market wide",
+      "expected": "MOSO",
+      "actual": "MOSO",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "MOSO",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested market-wide active options contracts, which maps to MOSO command for live ranked options activity."
+        },
+        "terminalCommand": "MOSO",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1508,
+          "prompt_tokens": 4779,
+          "completion_tokens": 339,
+          "cost": 0.00091776
+        }
+      }
+    },
+    {
+      "id": "HDS-noisy",
+      "utterance": "who owns nvidia show instatutional holders",
+      "expected": "HDS",
+      "actual": "HDS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "HDS",
+          "security": {
+            "spoken_name": "nvidia",
+            "ticker": "NVDA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "HDS shows institutional owners of a security per 13F filings"
+        },
+        "terminalCommand": "NVDA US EQ HDS",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1763,
+          "prompt_tokens": 4805,
+          "completion_tokens": 443,
+          "cost": 0.00098666
+        }
+      }
+    },
+    {
+      "id": "HLDR-noisy",
+      "utterance": "what stocks does berkshire own latest holdins",
+      "expected": "HLDR",
+      "actual": "HLDR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "HLDR",
+          "security": {
+            "spoken_name": "berkshire",
+            "ticker": "BRK.B",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "HLDR shows latest holdings owned by a security; BRK.B's holdings are requested"
+        },
+        "terminalCommand": "BRK.B US EQ HLDR",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1873,
+          "prompt_tokens": 4806,
+          "completion_tokens": 454,
+          "cost": 0.00099344
+        }
+      }
+    },
+    {
+      "id": "N-noisy",
+      "utterance": "news for my farmer watch list exclude class actions",
+      "expected": "N",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for N: watchlist=farmer watch list",
+      "elapsed_ms": 1715
+    },
+    {
+      "id": "NI-noisy",
+      "utterance": "search the news for anti trust regulation",
+      "expected": "NI",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for NI: query=anti trust regulation",
+      "elapsed_ms": 1264
+    },
+    {
+      "id": "TOP-noisy",
+      "utterance": "read the top fifteen rooters stories",
+      "expected": "TOP",
+      "actual": "TOP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "TOP",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Resolved 'rooters' as Reuters Top 15 news command. Command TOP matches 'top fifteen' intent with no additional arguments needed."
+        },
+        "terminalCommand": "TOP",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1558,
+          "prompt_tokens": 4780,
+          "completion_tokens": 365,
+          "cost": 0.00093339
+        }
+      }
+    },
+    {
+      "id": "RES-noisy",
+      "utterance": "find sell side reserch reports on oracle",
+      "expected": "RES",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider returned no message content",
+      "elapsed_ms": 3333
+    },
+    {
+      "id": "TREND-noisy",
+      "utterance": "whats trendin most searched on godel",
+      "expected": "TREND",
+      "actual": "TREND",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "TREND",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "TREND ranks most-searched securities across Godel users per the spec"
+        },
+        "terminalCommand": "TREND",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1569,
+          "prompt_tokens": 4782,
+          "completion_tokens": 394,
+          "cost": 0.00095108
+        }
+      }
+    },
+    {
+      "id": "HALT-noisy",
+      "utterance": "show only the active market holts",
+      "expected": "HALT",
+      "actual": "HALT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "HALT",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "tab",
+              "operation": "select",
+              "value": "Active"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested active market halts. HALT command with Active tab selected."
+        },
+        "terminalCommand": "HALT",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1477,
+          "prompt_tokens": 4780,
+          "completion_tokens": 365,
+          "cost": 0.00093339
+        }
+      }
+    },
+    {
+      "id": "ALLQ-phonetic",
+      "utterance": "all coats and venues for apple",
+      "expected": "ALLQ",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for ALLQ: AAPL",
+      "elapsed_ms": 1557
+    },
+    {
+      "id": "SECF-noisy",
+      "utterance": "security finder search gold man corporate bonds on trace",
+      "expected": "SECF",
+      "actual": "SECF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.92,
+          "command": "SECF",
+          "security": {
+            "spoken_name": "Goldman corporate bonds on TRACE",
+            "ticker": null,
+            "venue": null,
+            "asset_class": null,
+            "needs_resolution": true
+          },
+          "query": "Goldman Sachs corporate bonds TRACE",
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "tab",
+              "operation": "select",
+              "value": "Corporate Bonds"
+            },
+            {
+              "feature": "venue",
+              "operation": "select",
+              "value": "TRACE"
+            }
+          ],
+          "clarification": null,
+          "reason": "SECF handles security searches with text filters. 'TRACE' maps to the bond transparency system as a venue filter."
+        },
+        "terminalCommand": "Goldman Sachs corporate bonds TRACE SECF",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1915,
+          "prompt_tokens": 4782,
+          "completion_tokens": 572,
+          "cost": 0.0010561
+        }
+      }
+    },
+    {
+      "id": "WJI-phonetic",
+      "utterance": "open the wojack sentiment index",
+      "expected": "WJI",
+      "actual": "WJI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "WJI",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User refers to Wojak sentiment index, mapped to WJI command for live sentiment gauge"
+        },
+        "terminalCommand": "WJI",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1100,
+          "prompt_tokens": 4780,
+          "completion_tokens": 287,
+          "cost": 0.00088737
+        }
+      }
+    },
+    {
+      "id": "EQS-noisy",
+      "utterance": "screen us tech stocks forward p e under ten",
+      "expected": "EQS",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unknown UI feature for EQS: forward P/E",
+      "elapsed_ms": 1978
+    },
+    {
+      "id": "OMON-noisy",
+      "utterance": "apple option chain calls only with gamma",
+      "expected": "OMON",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for OMON: mode=Calls",
+      "elapsed_ms": 3316
+    },
+    {
+      "id": "OVME-phonetic",
+      "utterance": "black shoals implied vol calculator",
+      "expected": "OVME",
+      "actual": "OVME",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.98,
+          "command": "OVME",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Black-Scholes implied volatility calculator maps to OVME (Options Volatility and Greeks Calculator) which handles implied-volatility calculations per the Godel spec."
+        },
+        "terminalCommand": "OVME",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1688,
+          "prompt_tokens": 4779,
+          "completion_tokens": 484,
+          "cost": 0.00100331
+        }
+      }
+    },
+    {
+      "id": "CALC-noisy",
+      "utterance": "open the finance calculater time value money",
+      "expected": "CALC",
+      "actual": "CALC",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "CALC",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested finance calculator for time value of money; CALC provides TVM functions like PV/RATE/PMT/FV/NPER"
+        },
+        "terminalCommand": "CALC",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1140,
+          "prompt_tokens": 4781,
+          "completion_tokens": 294,
+          "cost": 0.00089179
+        }
+      }
+    },
+    {
+      "id": "BROK-noisy",
+      "utterance": "open read only brockerage connections",
+      "expected": "BROK",
+      "actual": "BROK",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "BROK",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "BROK manages read-only brokerage connections via SnapTrade. The misspelled 'brockerage' resolves to BROK's documented purpose of connecting/disconnecting integrations."
+        },
+        "terminalCommand": "BROK",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1254,
+          "prompt_tokens": 4780,
+          "completion_tokens": 331,
+          "cost": 0.00091333
+        }
+      }
+    },
+    {
+      "id": "AUM-phonetic",
+      "utterance": "show my connected broker a u m",
+      "expected": "AUM",
+      "actual": "AUM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "AUM",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "tab",
+              "operation": "select",
+              "value": "Personal"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested their connected broker's AUM (Assets Under Management) via the AUM command which displays personal linked-account value."
+        },
+        "terminalCommand": "AUM",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1976,
+          "prompt_tokens": 4780,
+          "completion_tokens": 415,
+          "cost": 0.00096289
+        }
+      }
+    },
+    {
+      "id": "G-noisy",
+      "utterance": "chart apple in five minit candles",
+      "expected": "G",
+      "actual": "G",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "G",
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [
+            "5m"
+          ],
+          "post_open_actions": [
+            {
+              "feature": "style",
+              "operation": "select",
+              "value": "Candles"
+            }
+          ],
+          "clarification": null,
+          "reason": "Chart command G with 5m resolution and candle style for AAPL"
+        },
+        "terminalCommand": "AAPL US EQ G 5m",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 2358,
+          "prompt_tokens": 4801,
+          "completion_tokens": 550,
+          "cost": 0.00104863
+        }
+      }
+    },
+    {
+      "id": "HMS-noisy",
+      "utterance": "compare apple microsoft nvidia historical on one chart",
+      "expected": "HMS",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for HMS: AAPL; unsupported argument for HMS: MSFT; unsupported argument for HMS: NVDA",
+      "elapsed_ms": 2458
+    },
+    {
+      "id": "HP-noisy",
+      "utterance": "historical one minit o h l c v prices for bitcoin",
+      "expected": "HP",
+      "actual": "HP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "HP",
+          "security": {
+            "spoken_name": "bitcoin",
+            "ticker": "BTCUSD",
+            "venue": "GBL",
+            "asset_class": "CRYPTO",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "resolution",
+              "operation": "select",
+              "value": "1M"
+            }
+          ],
+          "clarification": null,
+          "reason": "HP command with 1M resolution for BTCUSD/GBL/CRYPTO"
+        },
+        "terminalCommand": "BTCUSD GBL CRYPTO HP",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1524,
+          "prompt_tokens": 4809,
+          "completion_tokens": 377,
+          "cost": 0.00094888
+        }
+      }
+    },
+    {
+      "id": "GF-noisy",
+      "utterance": "graph fundementals revenue and ebit da for microsoft",
+      "expected": "GF",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for GF: revenue; unsupported argument for GF: ebitda",
+      "elapsed_ms": 2342
+    },
+    {
+      "id": "CF-noisy",
+      "utterance": "apple sec fillings only eight kays",
+      "expected": "CF",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for CF: filing_type=8-K",
+      "elapsed_ms": 1758
+    },
+    {
+      "id": "IPO-noisy",
+      "utterance": "upcoming eye p o offerings and after market performance",
+      "expected": "IPO",
+      "actual": "IPO",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "IPO",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "IPO command matches 'upcoming IPO offerings and after market performance' per GODEL_SPEC: IPO|global|Upcoming and recent IPOs with pricing, exchange, offering details and aftermarket performance."
+        },
+        "terminalCommand": "IPO",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1680,
+          "prompt_tokens": 4783,
+          "completion_tokens": 432,
+          "cost": 0.00097379
+        }
+      }
+    },
+    {
+      "id": "TRAN-noisy",
+      "utterance": "latest apple earnins call trans cript",
+      "expected": "TRAN",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for TRAN: AAPL",
+      "elapsed_ms": 1737
+    },
+    {
+      "id": "PAT-noisy",
+      "utterance": "find similar historical price pattrens for tesla",
+      "expected": "PAT",
+      "actual": "error",
+      "pass": false,
+      "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"qwen/qwen3-32b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}",
+      "elapsed_ms": 273
+    },
+    {
+      "id": "PRT-noisy",
+      "utterance": "batch rank systematic pattrens and realised outcomes",
+      "expected": "PRT",
+      "actual": "PRT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "PRT",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Selected PRT (Batch and rank systematic patterns with realized outcomes) based on 'batch rank systematic patterns and realised outcomes' phrasing. Corrected 'pattrens' to 'patterns' and 'realised' to 'realized' as semantic noise."
+        },
+        "terminalCommand": "PRT",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1697,
+          "prompt_tokens": 4781,
+          "completion_tokens": 477,
+          "cost": 0.00099976
+        }
+      }
+    },
+    {
+      "id": "MAP-noisy",
+      "utterance": "world map which stock exchanges are open right now",
+      "expected": "MAP",
+      "actual": "MAP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.98,
+          "command": "MAP",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Command MAP shows world map of stock exchanges with open/closed status as requested."
+        },
+        "terminalCommand": "MAP",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1184,
+          "prompt_tokens": 4782,
+          "completion_tokens": 317,
+          "cost": 0.00090565
+        }
+      }
+    },
+    {
+      "id": "CITADEL-noisy",
+      "utterance": "open the sit a dell overview",
+      "expected": "CITADEL",
+      "actual": "CITADEL",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "CITADEL",
+          "security": {
+            "spoken_name": "Citadel",
+            "ticker": null,
+            "venue": null,
+            "asset_class": null,
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Phonetic match of 'sit a dell' to 'Citadel' and resolved to the CITADEL command which provides an overview of the firm."
+        },
+        "terminalCommand": "CITADEL",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 2231,
+          "prompt_tokens": 4779,
+          "completion_tokens": 654,
+          "cost": 0.00110361
+        }
+      }
+    },
+    {
+      "id": "KELLY-noisy",
+      "utterance": "kelly cry tear ion position sizing game",
+      "expected": "KELLY",
+      "actual": "KELLY",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "KELLY",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "VOICE_REQUEST refers to Kelly criterion position sizing game. KELLY command provides interactive biased-coin betting simulation for position sizing."
+        },
+        "terminalCommand": "KELLY",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1514,
+          "prompt_tokens": 4781,
+          "completion_tokens": 409,
+          "cost": 0.00095964
+        }
+      }
+    },
+    {
+      "id": "HELP-noisy",
+      "utterance": "help me with terminal comands and key strokes",
+      "expected": "HELP",
+      "actual": "HELP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.98,
+          "command": "HELP",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested terminal commands and keystroke help, which maps directly to HELP command's documented UI features"
+        },
+        "terminalCommand": "HELP",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 2631,
+          "prompt_tokens": 4782,
+          "completion_tokens": 320,
+          "cost": 0.00090742
+        }
+      }
+    },
+    {
+      "id": "CHAT-noisy",
+      "utterance": "open the godel chat rooms",
+      "expected": "CHAT",
+      "actual": "CHAT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "CHAT",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "CHAT is the canonical command for opening public rooms, ticker rooms, DMs, or group chats. No specific security or arguments required."
+        },
+        "terminalCommand": "CHAT",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1311,
+          "prompt_tokens": 4779,
+          "completion_tokens": 382,
+          "cost": 0.00094313
+        }
+      }
+    },
+    {
+      "id": "ACM-noisy",
+      "utterance": "open acount management billing and invoices",
+      "expected": "ACM",
+      "actual": "ACM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "ACM",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested account management for billing and invoices; ACM handles billing/invoice management per spec"
+        },
+        "terminalCommand": "ACM",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1434,
+          "prompt_tokens": 4780,
+          "completion_tokens": 324,
+          "cost": 0.0009092
+        }
+      }
+    },
+    {
+      "id": "PDF-noisy",
+      "utterance": "open terminal settings appearance and keybord prefs",
+      "expected": "PDF",
+      "actual": "PDF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "PDF",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "VOICE_REQUEST maps to PDF command for terminal appearance and keyboard preferences settings."
+        },
+        "terminalCommand": "PDF",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1535,
+          "prompt_tokens": 4782,
+          "completion_tokens": 425,
+          "cost": 0.00096937
+        }
+      }
+    },
+    {
+      "id": "AL-noisy",
+      "utterance": "open alerts for apple dont create one yet",
+      "expected": "AL",
+      "actual": "AL",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "AL",
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "AL opens alert management for AAPL without creating new alerts"
+        },
+        "terminalCommand": "AAPL US EQ AL",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1453,
+          "prompt_tokens": 4802,
+          "completion_tokens": 394,
+          "cost": 0.00095688
+        }
+      }
+    },
+    {
+      "id": "NOTE-noisy",
+      "utterance": "open my notes for apple",
+      "expected": "NOTE",
+      "actual": "error",
+      "pass": false,
+      "error": "Invalid model intent: unsupported argument for NOTE: AAPL",
+      "elapsed_ms": 1968
+    },
+    {
+      "id": "ENT-noisy",
+      "utterance": "show my exchange feed entitelements",
+      "expected": "ENT",
+      "actual": "ENT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "ENT",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Corrected 'entitelements' to 'entitlements' and mapped to ENT command for exchange feed entitlements"
+        },
+        "terminalCommand": "ENT",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1223,
+          "prompt_tokens": 4780,
+          "completion_tokens": 337,
+          "cost": 0.00091687
+        }
+      }
+    },
+    {
+      "id": "CHANGE-noisy",
+      "utterance": "whats new open the change log",
+      "expected": "CHANGE",
+      "actual": "CHANGE",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.98,
+          "command": "CHANGE",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Command CHANGE matches 'open the change log' for accessing Godel's versioned changelog."
+        },
+        "terminalCommand": "CHANGE",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1181,
+          "prompt_tokens": 4780,
+          "completion_tokens": 291,
+          "cost": 0.00088973
+        }
+      }
+    },
+    {
+      "id": "ERR-noisy",
+      "utterance": "open bug report support but dont send anythin",
+      "expected": "ERR",
+      "actual": "ERR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "ERR",
+          "security": null,
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "ERR opens bug report/support interface without submission"
+        },
+        "terminalCommand": "ERR",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1356,
+          "prompt_tokens": 4782,
+          "completion_tokens": 362,
+          "cost": 0.0009322
+        }
+      }
+    },
+    {
+      "id": "ambiguous-earnings",
+      "utterance": "uh show me amazon earnins",
+      "expected": "clarify",
+      "actual": "clarify",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "clarify",
+          "confidence": 0.65,
+          "command": null,
+          "security": {
+            "spoken_name": "amazon",
+            "ticker": "AMZN",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": "Did you want to see analyst estimates and beat/miss history (ERN), fundamental estimates matrix (EM), or earnings call transcripts (TRAN)?",
+          "reason": "Ambiguous 'earnings' request: ERN=consensus EPS/beat-miss history, EM=fundamentals matrix, TRAN=transcripts. Clarification required per rule 6."
+        },
+        "terminalCommand": null,
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1617,
+          "prompt_tokens": 4800,
+          "completion_tokens": 471,
+          "cost": 0.00100173
+        }
+      }
+    },
+    {
+      "id": "self-correct-news",
+      "utterance": "show top news no wait search news for anti trust",
+      "expected": "NI",
+      "actual": "NI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "NI",
+          "security": null,
+          "query": "anti trust",
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "NI is the canonical command for free-text news search. The query 'anti trust' is applied directly."
+        },
+        "terminalCommand": "anti trust NI",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1622,
+          "prompt_tokens": 4783,
+          "completion_tokens": 433,
+          "cost": 0.00097438
+        }
+      }
+    },
+    {
+      "id": "self-correct-chart",
+      "utterance": "compare apple to microsoft no sorry just chart apple five minutes",
+      "expected": "G",
+      "actual": "G",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "G",
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [
+            "5m"
+          ],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User corrected request to 'chart apple five minutes' after initial comparison mention. G command with 5m resolution matches the final intent."
+        },
+        "terminalCommand": "AAPL US EQ G 5m",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1349,
+          "prompt_tokens": 4805,
+          "completion_tokens": 364,
+          "cost": 0.00094005
+        }
+      }
+    },
+    {
+      "id": "filler-option-chain",
+      "utterance": "could you like pull up um the apple calls chain",
+      "expected": "OMON",
+      "actual": "OMON",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "OMON",
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "mode",
+              "operation": "select",
+              "value": "Calls"
+            }
+          ],
+          "clarification": null,
+          "reason": "Resolved 'apple' to AAPL and mapped 'calls chain' to OMON command with mode=Calls"
+        },
+        "terminalCommand": "AAPL US EQ OMON",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1171,
+          "prompt_tokens": 4804,
+          "completion_tokens": 335,
+          "cost": 0.00092265
+        }
+      }
+    },
+    {
+      "id": "confuse-holders",
+      "utterance": "berkshire holders i mean what does berkshire hold",
+      "expected": "HLDR",
+      "actual": "HLDR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.95,
+          "command": "HLDR",
+          "security": {
+            "spoken_name": "berkshire",
+            "ticker": "BRK.B",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "query": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked what Berkshire holds, which maps to HLDR command for security holdings"
+        },
+        "terminalCommand": "BRK.B US EQ HLDR",
+        "inference": {
+          "model": "qwen/qwen3-32b",
+          "provider": "Groq",
+          "latency_ms": 1043,
+          "prompt_tokens": 4808,
+          "completion_tokens": 279,
+          "cost": 0.00089077
+        }
+      }
+    }
+  ]
+}

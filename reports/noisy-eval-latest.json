@@ -1,0 +1,62 @@
+{
+  "generated_at": "2026-08-03T19:42:15.334Z",
+  "model": "openai/gpt-oss-120b",
+  "total": 1,
+  "passed": 1,
+  "failed": 0,
+  "accuracy": 1,
+  "providers": {
+    "Cerebras": 1
+  },
+  "latency_ms": {
+    "p50": 1617,
+    "p95": 1617
+  },
+  "results": [
+    {
+      "id": "HP-noisy",
+      "utterance": "historical one minit o h l c v prices for bitcoin",
+      "expected": "HP",
+      "actual": "HP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "HP",
+          "query": null,
+          "security": {
+            "spoken_name": "bitcoin",
+            "ticker": "BTCUSD",
+            "venue": "GBL",
+            "asset_class": "CRYPTO",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "resolution",
+              "operation": "select",
+              "value": "1M"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested minute OHLCV historical data; HP supports resolution UI with 1M option."
+        },
+        "terminalCommand": "BTCUSD GBL CRYPTO HP",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Cerebras",
+          "latency_ms": 1617,
+          "prompt_tokens": 4824,
+          "completion_tokens": 266,
+          "cost": 0.0018879
+        }
+      }
+    }
+  ]
+}
