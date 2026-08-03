@@ -100,6 +100,8 @@ Set the Godel Mode output to **Custom Command** and use:
 /Users/isaacentebi/Documents/Codex/2026-08-03/ok/outputs/godel-voice-spec/bin/voiceink-deliver
 ```
 
+Leave VoiceInk AI Enhancement off for this mode: the local command already sends the plain transcript to the configured Godel intent model. VoiceInk's stdout is not pasted into the active app when Custom Command output is selected.
+
 VoiceInk can send either its plain transcription or an enhancement model's final JSON through stdin. Plain speech is compiled through the configured OpenRouter model; precompiled JSON is only validated locally. The result becomes a `GV1:` plan and is queued through an authenticated server bound only to `127.0.0.1`. The server starts on demand.
 
 The visible Godel tab polls for a plan. Its Arc extension verifies the sender URL and uses Chromium's tab-addressed debugging API to deliver input to that tab alone. It does not use AppleScript, macOS Accessibility, global keystrokes, the clipboard, or Computer Use, so input cannot spill into another application.
