@@ -59,6 +59,24 @@ test("normalizes spoken equity asset class to Godel EQ", () => {
   assert.equal(renderTerminalCommand(intent), "AMZN US EQ EM");
 });
 
+test("resolves allowlisted common company names and nested company actions", () => {
+  const intent = {
+    kind: "execute", confidence: 0.97, command: "GF", query: null,
+    security: {spoken_name: "Amazon", ticker: "AMZN", venue: null, asset_class: null, needs_resolution: true},
+    arguments: [],
+    post_open_actions: [
+      {feature: "add company", operation: "add", value: "Meta"},
+      {feature: "add company", operation: "add", value: "Microsoft"}
+    ],
+    clarification: null, reason: "Fundamental comparison requested."
+  };
+  const checked = validateIntent(intent);
+  assert.equal(checked.ok, true);
+  assert.equal(renderTerminalCommand(checked.intent), "AMZN US EQ GF");
+  assert.equal(checked.intent.post_open_actions[0].value, "META");
+  assert.equal(checked.intent.post_open_actions[1].value, "MSFT");
+});
+
 test("canonicalizes aliases and rejects invented chart arguments", () => {
   const base = {
     kind: "execute", confidence: 0.99, command: "GIP", query: null,

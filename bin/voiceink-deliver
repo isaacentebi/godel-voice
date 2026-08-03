@@ -2,14 +2,36 @@
 set -euo pipefail
 
 project_dir="${0:A:h:h}"
-marker="$(/usr/bin/env node "$project_dir/src/consume-intent.mjs" --marker)"
-printf "%s" "$marker" | /usr/bin/pbcopy
-/usr/bin/osascript <<'APPLESCRIPT'
-tell application "System Events"
-  keystroke "`"
-  delay 0.1
-  keystroke "v" using command down
-  delay 0.2
-  key code 36
-end tell
-APPLESCRIPT
+secret_file="$project_dir/.godel-voice-secret"
+server_url="http://127.0.0.1:17841"
+voice_input="$(</dev/stdin)"
+
+if [[ ! -f "$secret_file" || ! -f "$project_dir/extension/config.local.js" ]]; then
+  "$project_dir/bin/setup-local"
+  print -u2 "Godel Voice was configured. Reload the unpacked Arc extension once, then repeat the voice command."
+  exit 2
+fi
+
+if marker="$(/usr/bin/printf '%s' "$voice_input" | /usr/bin/env node "$project_dir/src/consume-intent.mjs" --marker 2>/dev/null)"; then
+  :
+else
+  marker="$(/usr/bin/printf '%s' "$voice_input" | /usr/bin/env node --env-file-if-exists="$project_dir/.env" "$project_dir/src/compile-marker.mjs")"
+fi
+secret="$(<"$secret_file")"
+
+if ! /usr/bin/curl --silent --fail --max-time 0.3 "$server_url/health?token=$secret" >/dev/null 2>&1; then
+  /usr/bin/nohup /usr/bin/env node "$project_dir/src/handoff-server.mjs" \
+    >"/tmp/godel-voice-server-$UID.log" 2>&1 &
+  for _ in {1..30}; do
+    /usr/bin/curl --silent --fail --max-time 0.3 "$server_url/health?token=$secret" >/dev/null 2>&1 && break
+    sleep 0.1
+  done
+fi
+
+/usr/bin/curl --silent --show-error --fail \
+  -X POST "$server_url/plan" \
+  -H "Authorization: Bearer $secret" \
+  -H "Content-Type: text/plain" \
+  --data-binary "$marker" >/dev/null
+
+print "Godel voice plan queued for the visible Godel tab"

@@ -1,0 +1,22 @@
+#!/bin/zsh
+set -euo pipefail
+
+project_dir="${0:A:h:h}"
+secret_file="$project_dir/.godel-voice-secret"
+config_file="$project_dir/extension/config.local.js"
+
+if [[ -f "$secret_file" ]]; then
+  secret="$(<"$secret_file")"
+else
+  secret="$(/usr/bin/openssl rand -hex 24)"
+  /usr/bin/printf '%s\n' "$secret" > "$secret_file"
+  /bin/chmod 600 "$secret_file"
+fi
+
+/usr/bin/printf '%s\n' \
+  'globalThis.GodelVoiceConfig = {' \
+  '  handoffUrl: "http://127.0.0.1:17841",' \
+  "  secret: \"$secret\"" \
+  '};' > "$config_file"
+
+print "Local Godel Voice handoff configured"

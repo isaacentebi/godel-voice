@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { commandMaps, loadRegistry } from "./catalog.mjs";
 import { intentSchema, systemPrompt, userPrompt } from "./prompt.mjs";
+import { resolveCommonSecurities } from "./security-resolver.mjs";
 
 const registry = loadRegistry();
 const maps = commandMaps(registry);
@@ -23,6 +24,7 @@ function normalizeAssetClass(value) {
 }
 
 export function validateIntent(intent) {
+  resolveCommonSecurities(intent);
   const errors = [];
   if (!["execute", "clarify", "unsupported"].includes(intent?.kind)) errors.push("invalid kind");
   if (typeof intent?.confidence !== "number" || intent.confidence < 0 || intent.confidence > 1) errors.push("invalid confidence");

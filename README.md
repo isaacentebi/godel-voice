@@ -7,7 +7,7 @@ It separates four jobs that should not be conflated:
 1. VoiceInk (or another recorder) transcribes speech.
 2. An LLM selects a documented Godel intent using the compact catalogue.
 3. Local validation rejects invented commands, arguments and nested features.
-4. A scoped Arc extension types the terminal command and performs allowlisted post-open UI actions.
+4. A scoped Arc extension sends browser input directly to the addressed Godel tab and performs allowlisted post-open UI actions.
 
 ## Coverage
 
@@ -32,7 +32,8 @@ Run `npm run build` to regenerate the compact catalogue, source manifest and siz
 - `src/consume-intent.mjs`: validates JSON already produced by VoiceInk's enhancement model.
 - `src/automation-plan.mjs`: converts a validated intent into the `GV1:` browser handoff format.
 - `extension/`: unpacked Manifest V3 Arc extension; initially automates HMS, GR and GF.
-- `bin/voiceink-deliver`: VoiceInk Custom Command that validates, copies and pastes a browser plan.
+- `bin/voiceink-deliver`: VoiceInk Custom Command that validates and queues a plan on localhost without controlling the keyboard.
+- `src/handoff-server.mjs`: authenticated loopback-only handoff between VoiceInk and the Godel tab.
 - `src/prompt.mjs`: grounded command-compiler instructions.
 - `tests/registry.test.mjs`: coverage, compactness, alias and rendering tests.
 
@@ -75,9 +76,9 @@ Other base URLs:
 
 For OpenRouter, optional attribution headers can be set with `OPENROUTER_SITE_URL` and `OPENROUTER_APP_NAME`.
 
-### OpenRouter pinned to Cerebras
+### OpenRouter provider pinning
 
-Copy `.env.example` to `.env` and supply an OpenRouter API key. The checked-in example selects `openai/gpt-oss-120b`, allows only the `cerebras` provider, requires support for JSON output, and disables provider fallback. This guarantees that a successful completion was served by Cerebras rather than silently routed elsewhere. Cerebras uses JSON-object mode here because its strict-schema subset rejects some array constraints; the complete local validator still enforces the intent schema before any terminal command can be rendered.
+Copy `.env.example` to `.env` and supply an OpenRouter API key. The checked-in example selects `openai/gpt-oss-120b`, allows only the `groq` provider, requires support for JSON output, and disables provider fallback. This guarantees that a successful completion was served by Groq rather than silently routed elsewhere. JSON-object mode is used for provider compatibility; the complete local validator still enforces the intent schema before any terminal command can be rendered. Change `OPENROUTER_PROVIDER_ONLY` to `cerebras` to prefer its lower latency instead.
 
 The local `.env` file is intentionally ignored by Git. Never commit API keys.
 
@@ -99,9 +100,20 @@ Set the Godel Mode output to **Custom Command** and use:
 /Users/isaacentebi/Documents/Codex/2026-08-03/ok/outputs/godel-voice-spec/bin/voiceink-deliver
 ```
 
-VoiceInk sends the enhancement model's final JSON through stdin. The command validates it locally, converts it to a `GV1:` marker, and pastes that marker into the focused Godel command bar. The extension intercepts the trusted paste before Godel sees it, opens the terminal command, and performs allowlisted actions. There is no resident service and no second model call.
+VoiceInk can send either its plain transcription or an enhancement model's final JSON through stdin. Plain speech is compiled through the configured OpenRouter model; precompiled JSON is only validated locally. The result becomes a `GV1:` plan and is queued through an authenticated server bound only to `127.0.0.1`. The server starts on demand.
 
-Load `extension/` as an unpacked extension in Arc. Its only host permission is `https://app.godelterminal.com/*`.
+The visible Godel tab polls for a plan. Its Arc extension verifies the sender URL and uses Chromium's tab-addressed debugging API to deliver input to that tab alone. It does not use AppleScript, macOS Accessibility, global keystrokes, the clipboard, or Computer Use, so input cannot spill into another application.
+
+### One-time local setup
+
+```sh
+cd /Users/isaacentebi/Documents/Codex/2026-08-03/ok/outputs/godel-voice-spec
+npm run setup
+```
+
+Then open Arc's extensions page and reload **Godel Voice Executor** once. Version 0.2 requests the Chromium `debugger` permission because its `Input` domain provides tab-addressed key and mouse events. Arc may display a brief debugging notice while a plan is executing; the extension detaches after every input batch.
+
+Load `extension/` as an unpacked extension in Arc. Its host access is limited to Godel plus the loopback handoff at `127.0.0.1:17841`.
 
 Version 0.1 deliberately automates only:
 
@@ -132,5 +144,5 @@ No API key is required for building or testing the registry. A key is only neede
 1. Add a verified company/security resolver.
 2. Run the evaluation set against candidate models on Cerebras, Groq and OpenRouter.
 3. Measure exact-command accuracy, clarification quality and p50/p95 latency.
-4. Connect VoiceInk through a localhost service.
-5. Implement terminal typing first, then allowlisted post-open UI actions.
+4. Add panel adapters beyond the initial HMS, GR and GF allowlist.
+5. Expand regression fixtures as Godel changes individual widget controls.

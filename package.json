@@ -9,7 +9,8 @@
     "compile:plain": "node src/compiler.mjs",
     "eval:noisy": "node --env-file-if-exists=.env src/evaluate-noisy.mjs",
     "consume": "node src/consume-intent.mjs",
-    "marker": "node src/consume-intent.mjs --marker"
+    "marker": "node src/consume-intent.mjs --marker",
+    "setup": "bin/setup-local"
   },
   "engines": {"node": ">=22"}
 }

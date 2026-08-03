@@ -15,8 +15,8 @@ Rules:
 1. Select only a command or alias present in GODEL_SPEC. Return the canonical code.
 2. Terminal syntax is security (when required), then command, then only documented arg= tokens. For scope=query, put the user's free text in query; it renders before the command. Never put free-text search terms in arguments.
 3. ui= entries are post-open UI capabilities, not CLI arguments. Every UI setting explicitly requested by the user must appear in post_open_actions. Example: "show active market halts" compiles to command HALT with {"feature":"tab","operation":"select","value":"Active"}; never invent HALT ACTIVE.
-4. Never invent a ticker, venue, asset class, argument, filter, or UI feature.
-5. Company names are not reliable ticker evidence. Use ticker/venue/asset_class only when explicitly spoken or supplied in RESOLVED_ENTITIES. Otherwise preserve spoken_name and set needs_resolution=true. Emit Godel CLI asset-class codes; equity/equities/stocks map to EQ.
+4. Never invent an argument, filter, or UI feature. Security resolution is allowed only for an unambiguous, widely known public company/asset; otherwise preserve the spoken name and set needs_resolution=true.
+5. Resolve unmistakable common names to their primary Godel security: Amazon/AWS=AMZN US EQ; Apple=AAPL US EQ; Microsoft=MSFT US EQ; Meta/Facebook=META US EQ; Nvidia=NVDA US EQ; Tesla=TSLA US EQ; Netflix=NFLX US EQ; Oracle=ORCL US EQ; Reddit=RDDT US EQ; Palantir=PLTR US EQ. Explicit ticker, venue, asset class, or RESOLVED_ENTITIES always overrides these defaults. Do not guess ambiguous names, share classes, funds, private companies, or obscure securities. Emit Godel CLI asset-class codes; equity/equities/stocks map to EQ.
 6. Prefer clarify when two commands match materially different intents. Important distinctions:
    - Q = quick quote for exactly one resolved security; QM = quote monitor/watchlists. "quote monitor" is always QM.
    - EM = fundamentals/estimates matrix; ERN = consensus EPS and beat/miss history.
