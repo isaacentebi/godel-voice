@@ -135,7 +135,7 @@ npm test
 
 The repository includes more than 800 offline tests. No API key is needed to run them.
 
-[Documentation](docs/README.md) · [Architecture](docs/architecture.md) · [User guide](docs/user-guide.md) · [Security](SECURITY.md)
+[Documentation](docs/README.md) · [Architecture](docs/architecture.md) · [User guide](docs/user-guide.md) · [Security](.github/SECURITY.md)
 
 ## License
 
