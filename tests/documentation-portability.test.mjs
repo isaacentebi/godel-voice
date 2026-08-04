@@ -15,25 +15,32 @@ function enabledBlock(markdown) {
   return [...match[1].matchAll(/^\s*-\s+([A-Z0-9]+\.[a-z0-9_.]+)\s*$/gim)].map(item => item[1]);
 }
 
-test("README and user guide enabled-control blocks exactly match runtime contracts", () => {
-  for (const file of ["README.md", "docs/user-guide.md"]) {
-    assert.deepEqual(enabledBlock(read(file)), expectedEnabled, `${file} enabled controls drifted`);
-  }
+test("detailed user guide enabled-control block exactly matches runtime contracts", () => {
+  assert.deepEqual(enabledBlock(read("docs/user-guide.md")), expectedEnabled, "user guide enabled controls drifted");
 });
 
-test("handoff docs state exhaustive architecture without confusing it with execution", () => {
+test("detailed guide states exhaustive architecture without confusing it with execution", () => {
   assert.equal(audit.commands.length, 59);
   assert.deepEqual(audit.generic_catalog_only, []);
-  for (const file of ["README.md", "docs/user-guide.md"]) {
-    const text = read(file);
-    assert.match(text, /59/);
-    assert.match(text, /424/);
-    assert.match(text, /zero generic-(?:catalog-)?only gaps/i);
-    assert.match(text, /strict-unbound/i);
-    assert.match(text, /safety-gated/i);
-    assert.doesNotMatch(text, /initial(?:ly)? (?:automates? )?(?:only )?HMS[\s/,]+GR[\s/,]+(?:and )?GF/i);
-    assert.doesNotMatch(text, /^## Next Phase\s*$/im);
-  }
+  const text = read("docs/user-guide.md");
+  assert.match(text, /59/);
+  assert.match(text, /424/);
+  assert.match(text, /zero generic-(?:catalog-)?only gaps/i);
+  assert.match(text, /strict-unbound/i);
+  assert.match(text, /safety-gated/i);
+  assert.doesNotMatch(text, /initial(?:ly)? (?:automates? )?(?:only )?HMS[\s/,]+GR[\s/,]+(?:and )?GF/i);
+  assert.doesNotMatch(text, /^## Next Phase\s*$/im);
+});
+
+test("README stays product-focused and sends exhaustive detail to the user guide", () => {
+  const text = read("README.md");
+  assert.match(text, /Jarvis for/i);
+  assert.match(text, /OpenAI Realtime/i);
+  assert.match(text, /VoiceInk/i);
+  assert.match(text, /ElevenLabs/i);
+  assert.match(text, /full user guide.*docs\/user-guide\.md/i);
+  assert.doesNotMatch(text, /<!-- enabled-controls:start -->/);
+  assert.ok(text.split("\n").length < 200, "README should stay concise");
 });
 
 test("portable docs contain no committed provider secret", () => {
