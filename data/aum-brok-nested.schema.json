@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://godel.voice/schemas/aum-brok-nested.schema.json",
+  "title": "Privacy-strict AUM and BROK actions",
+  "oneOf": [
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["feature", "operation", "value", "scope"],
+      "properties": {
+        "feature": { "const": "tab" }, "operation": { "const": "select" },
+        "value": { "enum": ["Global", "Personal"] }, "scope": { "const": "panel" }
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["feature", "operation", "value", "scope"],
+      "properties": {
+        "feature": { "const": "refresh" }, "operation": { "const": "refresh" },
+        "value": { "type": "null" }, "scope": { "const": "panel" }
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["feature", "operation", "value", "scope"],
+      "properties": {
+        "feature": { "const": "manager" }, "operation": { "const": "open" },
+        "value": { "const": "read-only" }, "scope": { "const": "panel" }
+      }
+    }
+  ],
+  "$defs": {
+    "groundedAumTotal": {
+      "type": "object", "additionalProperties": false,
+      "required": ["tab", "total", "currency", "as_of", "source"],
+      "properties": {
+        "tab": { "enum": ["Global", "Personal"] },
+        "total": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "as_of": { "type": "string", "minLength": 1 },
+        "source": { "const": "Godel AUM panel" }
+      }
+    },
+    "groundedConnection": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "brokerage", "account_label", "connected", "status"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "brokerage": { "type": "string", "minLength": 1 },
+        "account_label": { "type": ["string", "null"] },
+        "connected": { "type": "boolean" },
+        "status": { "type": "string", "minLength": 1, "maxLength": 80 }
+      }
+    }
+  },
+  "x-runtime-enabled": false,
+  "x-privacy": {
+    "aum-amounts": "speak only after an explicit amount request from authenticated current-panel facts",
+    "credentials": "never accept, persist, log, or repeat",
+    "broker-mutations": "confirmation-gated and unsupported unattended",
+    "orders-and-money-movement": "unsupported"
+  }
+}

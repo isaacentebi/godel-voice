@@ -1,0 +1,138 @@
+#!/bin/zsh
+set -u
+
+project_dir="${0:A:h:h}"
+failures=0
+warnings=0
+lsof_bin="$(command -v lsof || true)"
+
+pass() { print "OK   $1"; }
+fail() { print "FAIL $1"; failures=$((failures + 1)); }
+warn() { print "WARN $1"; warnings=$((warnings + 1)); }
+
+if command -v node >/dev/null 2>&1; then
+  node_major="$(node -p 'process.versions.node.split(".")[0]')"
+  if (( node_major >= 22 )); then pass "Node.js $(node --version)"; else fail "Node.js 22+ is required"; fi
+else
+  fail "Node.js is not installed"
+fi
+
+[[ -f "$project_dir/.godel-voice-secret" ]] && pass "local handoff secret exists" || fail "run: npm run setup"
+[[ -f "$project_dir/extension/config.local.js" ]] && pass "extension local configuration exists" || fail "run: npm run setup"
+[[ -f "$project_dir/extension/manifest.json" ]] && pass "Arc extension is present" || fail "extension files are incomplete"
+
+private_mode() {
+  local file="$1"
+  if [[ "$(uname -s)" == "Darwin" ]]; then /usr/bin/stat -f '%Lp' "$file"
+  else /usr/bin/stat -c '%a' "$file"; fi
+}
+
+if [[ -f "$project_dir/extension/config.local.js" ]]; then
+  [[ "$(private_mode "$project_dir/extension/config.local.js")" == "600" ]] \
+    && pass "extension local configuration permissions are private" \
+    || fail "extension local configuration must have mode 600; run: npm run setup"
+fi
+
+if [[ -f "$project_dir/.godel-voice-secret" ]]; then
+  secret="$(<"$project_dir/.godel-voice-secret")"
+  if [[ "$(uname -s)" == "Darwin" ]]; then secret_mode="$(/usr/bin/stat -f '%Lp' "$project_dir/.godel-voice-secret")"
+  else secret_mode="$(/usr/bin/stat -c '%a' "$project_dir/.godel-voice-secret")"; fi
+  [[ "$secret_mode" == "600" ]] && pass "local secret permissions are private" || fail "local secret must have mode 600"
+  if [[ -f "$project_dir/extension/config.local.js" ]] && /usr/bin/grep -Fq "secret: \"$secret\"" "$project_dir/extension/config.local.js"; then
+    pass "extension and handoff secrets match"
+  else
+    fail "extension secret is stale; run: npm run setup"
+  fi
+fi
+
+if [[ -f "$project_dir/.env" ]]; then
+  [[ "$(private_mode "$project_dir/.env")" == "600" ]] && pass ".env permissions are private" \
+    || fail ".env must have mode 600; run: npm run setup"
+  if /usr/bin/grep -Eq '^VOICE_LLM_API_KEY=(replace-|[[:space:]]*$)' "$project_dir/.env"; then
+    fail ".env still contains the placeholder model key"
+  else
+    pass "model provider configuration exists"
+  fi
+  tts_provider="$(/usr/bin/sed -n 's/^GODEL_VOICE_TTS_PROVIDER=//p' "$project_dir/.env" | /usr/bin/tail -1)"
+  if [[ "$tts_provider" == "elevenlabs" ]]; then
+    /usr/bin/grep -Eq '^ELEVENLABS_API_KEY=.+$' "$project_dir/.env" && /usr/bin/grep -Eq '^ELEVENLABS_VOICE_ID=.+$' "$project_dir/.env" \
+      && pass "ElevenLabs completion voice is configured" || fail "ElevenLabs requires both API key and voice ID"
+  fi
+  realtime_enabled="$(/usr/bin/sed -n 's/^GODEL_VOICE_REALTIME_ENABLED=//p' "$project_dir/.env" | /usr/bin/tail -1)"
+  if [[ "$realtime_enabled" == "true" ]]; then
+    if /usr/bin/grep -Eq '^OPENAI_API_KEY=.+$' "$project_dir/.env"; then
+      pass "OpenAI Realtime key is configured server-side"
+    else
+      fail "Realtime mode requires OPENAI_API_KEY in the private .env file"
+    fi
+    realtime_model="$(/usr/bin/sed -n 's/^GODEL_VOICE_REALTIME_MODEL=//p' "$project_dir/.env" | /usr/bin/tail -1)"
+    case "$realtime_model" in
+      gpt-realtime-2.1|gpt-realtime-2.1-mini) pass "Realtime model is supported: $realtime_model" ;;
+      *) fail "Realtime model must be gpt-realtime-2.1 or gpt-realtime-2.1-mini" ;;
+    esac
+    realtime_reasoning="$(/usr/bin/sed -n 's/^GODEL_VOICE_REALTIME_REASONING_EFFORT=//p' "$project_dir/.env" | /usr/bin/tail -1)"
+    case "${realtime_reasoning:-low}" in
+      minimal|low|medium|high|xhigh) pass "Realtime reasoning effort is supported: ${realtime_reasoning:-low}" ;;
+      *) fail "Realtime reasoning effort must be minimal, low, medium, high, or xhigh" ;;
+    esac
+  fi
+else
+  warn "copy .env.example to .env and add a model API key"
+fi
+
+if [[ -d "$project_dir/logs" ]]; then
+  for log_file in "$project_dir"/logs/*; do
+    [[ -f "$log_file" ]] || continue
+    [[ "$(private_mode "$log_file")" == "600" ]] || fail "runtime log permissions must be mode 600"
+  done
+fi
+
+if [[ -f "$project_dir/.godel-voice-secret" ]]; then
+  expected_instance="$(/usr/bin/printf '%s' "$project_dir" | /usr/bin/openssl dgst -sha256 -r | /usr/bin/cut -c1-16)"
+  expected_build="$(/usr/bin/env node "$project_dir/src/runtime-build-id.mjs")"
+  auth_config="$(/usr/bin/mktemp "${TMPDIR:-/tmp}/godel-voice-doctor.XXXXXX")"
+  /bin/chmod 600 "$auth_config"
+  /usr/bin/printf 'header = "Authorization: Bearer %s"\n' "$secret" > "$auth_config"
+  health="$(/usr/bin/curl --config "$auth_config" --silent --max-time 0.3 "http://127.0.0.1:17841/health" 2>/dev/null || true)"
+  /bin/rm -f "$auth_config"
+  health_result="$(/usr/bin/printf '%s' "$health" | /usr/bin/env node -e '
+let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{const v=JSON.parse(s);process.stdout.write(v.protocol_version===4&&v.instance_id===process.argv[1]&&v.build_id===process.argv[2]?"ok":"wrong")}catch{process.stdout.write("down")}})' "$expected_instance" "$expected_build" 2>/dev/null || print down)"
+  if [[ "$health_result" == "ok" ]]; then
+    pass "handoff service protocol v4 is running from this checkout"
+  elif [[ "$health_result" == "wrong" ]]; then
+    fail "port 17841 is serving an obsolete or different Godel Voice instance"
+  else
+    listener="$(${lsof_bin:-/usr/bin/false} -nP -tiTCP:17841 -sTCP:LISTEN 2>/dev/null | /usr/bin/head -1)"
+    [[ -z "$listener" ]] && warn "handoff service is stopped; run: npm run service:start" \
+      || fail "port 17841 is occupied by a process that did not authenticate as this handoff"
+  fi
+fi
+
+if "$project_dir/bin/godel-voice-service" status >/dev/null 2>&1; then
+  pass "automatic handoff service is registered and running"
+else
+  warn "automatic handoff service is not running; run: bin/godel-voice-service install"
+fi
+
+if [[ -f "$HOME/Library/LaunchAgents/com.godelvoice.handoff.plist" ]]; then
+  runtime_secret="$HOME/Library/Application Support/GodelVoice/.godel-voice-secret"
+  if [[ -f "$runtime_secret" ]] && [[ "$(<"$runtime_secret")" == "$secret" ]]; then
+    runtime_mode="$(/usr/bin/stat -f '%Lp' "$runtime_secret")"
+    [[ "$runtime_mode" == "600" ]] && pass "installed service secret is current and private" || fail "installed service secret must have mode 600"
+  else
+    fail "installed service secret is stale; run: npm run service:restart"
+  fi
+fi
+
+queue_path="$project_dir/.godel-voice-queue.json"
+[[ ! -f "$HOME/Library/LaunchAgents/com.godelvoice.handoff.plist" ]] || queue_path="$HOME/Library/Application Support/GodelVoice/.godel-voice-queue.json"
+if [[ -f "$queue_path" ]]; then
+  /usr/bin/env node -e 'const fs=require("fs");const v=JSON.parse(fs.readFileSync(process.argv[1]));if(!Array.isArray(v.entries))process.exit(1)' \
+    "$queue_path" 2>/dev/null && pass "persistent workflow queue is readable" || fail "persistent workflow queue is corrupt"
+fi
+
+if (( failures > 0 )); then
+  print "\n$failures blocking issue(s), $warnings warning(s)."
+  exit 1
+fi
+print "\nReady: $warnings non-blocking warning(s)."

@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "track": "options-news-filings",
+  "priority": {
+    "selected": "OMON strike depth",
+    "reason": "The authenticated panel exposes one native slider with numeric state, an independent N Strikes label, and a visibly rerendered option table. It is read-only and requires no dynamic text guessing.",
+    "voice": ["show fifteen strikes in this option chain", "make the Meta option chain fifteen strikes deep"]
+  },
+  "live_observation": {
+    "date": "2026-08-03",
+    "app": "Godel Terminal in Arc",
+    "panel": "OPTION CHAIN / OMON",
+    "security_displayed": "META US",
+    "before": { "slider_value": 10, "label": "10 Strikes" },
+    "action": "native accessibility Increment",
+    "after": { "slider_value": 15, "label": "15 Strikes" },
+    "table": "option rows rerendered with a wider strike range",
+    "control_identity": "the only slider inside the exact OMON panel"
+  },
+  "binding_contract": {
+    "feature": "strike depth",
+    "operation": "set",
+    "value": "an exact live slider value",
+    "dynamic_bounds": "read minimum, maximum, and step from the live native control",
+    "postconditions": [
+      "slider numeric value equals requested value",
+      "independent rendered label equals N Strikes",
+      "rendered strike-row count is between 2N and 2N+1",
+      "when N changed, the option row count also changes"
+    ],
+    "activation": "candidate only; standalone adapter is not loaded by the extension manifest until the page-world callback is captured"
+  },
+  "deferred": [
+    { "capability": "OMON expiry", "reason": "Live dates and arrow controls are visible, but no unique native callback or selected-expiry postcondition has been captured." },
+    { "capability": "OMON Calls/Puts/Both", "reason": "The live panel shows Calls and Puts table regions but no unique mode control in the current build." },
+    { "capability": "OMON Greeks/columns", "reason": "No exact configuration control is exposed in the current rendered surface." },
+    { "capability": "News date/watchlist/pause", "reason": "Exact-query search is now production-bound; these remaining per-window controls still need separate callback and rendered-state proof." },
+    { "capability": "CF filing types", "reason": "The dynamic menu, Apply transaction, and changed result identity must be captured together; the global render preference stays blocked." }
+  ]
+}

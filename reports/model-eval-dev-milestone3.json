@@ -1,0 +1,2046 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-04T02:39:16.509Z",
+  "offline": false,
+  "cases_file": "data/model-eval-cases.json",
+  "routes_file": "data/model-eval-routes.example.json",
+  "reports": [
+    {
+      "route": {
+        "id": "groq-oss-120b",
+        "model": "openai/gpt-oss-120b",
+        "base_url": "https://openrouter.ai/api/v1",
+        "provider_only": [
+          "groq"
+        ],
+        "allow_fallbacks": false,
+        "observed_providers": [
+          "Groq"
+        ],
+        "provider_pin_ok": true
+      },
+      "configuration": {
+        "repeat": 1,
+        "warmup": 0,
+        "concurrency": 3
+      },
+      "cases": 28,
+      "runs": 28,
+      "overall": {
+        "passed": 15,
+        "total": 28,
+        "accuracy": 0.5357142857142857
+      },
+      "metrics": {
+        "command": {
+          "passed": 11,
+          "total": 23,
+          "accuracy": 0.4782608695652174
+        },
+        "workflow": {
+          "passed": 13,
+          "total": 25,
+          "accuracy": 0.52
+        },
+        "executable": {
+          "passed": 7,
+          "total": 20,
+          "accuracy": 0.35
+        },
+        "action": {
+          "passed": 5,
+          "total": 5,
+          "accuracy": 1
+        },
+        "entity": {
+          "passed": 8,
+          "total": 16,
+          "accuracy": 0.5
+        },
+        "clarification": {
+          "passed": 1,
+          "total": 2,
+          "accuracy": 0.5
+        },
+        "malformed": {
+          "passed": 15,
+          "total": 28,
+          "accuracy": 0.5357142857142857
+        }
+      },
+      "tags": {
+        "adversarial": {
+          "passed": 3,
+          "total": 3,
+          "accuracy": 1
+        },
+        "ambiguity": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "capability-boundary": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "clarification": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "command-confusion": {
+          "passed": 1,
+          "total": 2,
+          "accuracy": 0.5
+        },
+        "comparison": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "context": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "correction": {
+          "passed": 2,
+          "total": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "duplication": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "earnings": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "entity": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "layout": {
+          "passed": 2,
+          "total": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "market": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "multi-security": {
+          "passed": 2,
+          "total": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "multi-step": {
+          "passed": 4,
+          "total": 12,
+          "accuracy": 0.3333333333333333
+        },
+        "nested-actions": {
+          "passed": 4,
+          "total": 4,
+          "accuracy": 1
+        },
+        "news": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "noise": {
+          "passed": 1,
+          "total": 5,
+          "accuracy": 0.2
+        },
+        "optional": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "placement": {
+          "passed": 2,
+          "total": 4,
+          "accuracy": 0.5
+        },
+        "pronunciation": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "query": {
+          "passed": 0,
+          "total": 2,
+          "accuracy": 0
+        },
+        "research": {
+          "passed": 1,
+          "total": 2,
+          "accuracy": 0.5
+        },
+        "resolution": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "safety": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "stress": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "unsupported": {
+          "passed": 2,
+          "total": 2,
+          "accuracy": 1
+        }
+      },
+      "stability": {
+        "stable_cases": 28,
+        "total_cases": 28,
+        "consistency": 1,
+        "unstable_cases": []
+      },
+      "latency_ms": {
+        "count": 28,
+        "p50": 1206,
+        "p90": 3358,
+        "p95": 4834,
+        "max": 9058
+      },
+      "usage": {
+        "prompt_tokens": {
+          "total": 103376,
+          "average": 6891.733333333334
+        },
+        "completion_tokens": {
+          "total": 4607,
+          "average": 307.1333333333333
+        },
+        "cost": {
+          "total": 0.012337800000000003,
+          "average": 0.0008225200000000002
+        }
+      },
+      "results": [
+        {
+          "case_id": "intent-noisy-quote",
+          "repeat": 1,
+          "tags": [
+            "noise",
+            "pronunciation"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": false,
+              "pass": null
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": false
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 1377,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        },
+        {
+          "case_id": "intent-correction-em",
+          "repeat": 1,
+          "tags": [
+            "correction",
+            "earnings"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": false,
+              "pass": null
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "kind": "execute",
+                  "confidence": 0.99,
+                  "command": "EM",
+                  "security": {
+                    "spoken_name": "amazon",
+                    "ticker": "AMZN",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "clarification": null,
+                  "reason": "User requested the earnings matrix for Amazon after correcting from estimates."
+                }
+              ],
+              "layout": null,
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1206,
+            "prompt_tokens": 6072,
+            "completion_tokens": 182,
+            "cost": 0.0008664
+          }
+        },
+        {
+          "case_id": "intent-holders-correction",
+          "repeat": 1,
+          "tags": [
+            "correction",
+            "command-confusion"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": false,
+              "pass": null
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "kind": "execute",
+                  "confidence": 0.99,
+                  "command": "HLDR",
+                  "security": {
+                    "spoken_name": "berkshire",
+                    "ticker": "BRK.B",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "clarification": null,
+                  "reason": "User asks what Berkshire holds, mapping to HLDR (latest holdings owned by a company) with resolved security."
+                }
+              ],
+              "layout": null,
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1182,
+            "prompt_tokens": 6079,
+            "completion_tokens": 182,
+            "cost": 0.00057945
+          }
+        },
+        {
+          "case_id": "workflow-market-left-research-right",
+          "repeat": 1,
+          "tags": [
+            "multi-step",
+            "placement",
+            "layout"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": false
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 265,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        },
+        {
+          "case_id": "workflow-amazon-research",
+          "repeat": 1,
+          "tags": [
+            "multi-step",
+            "research"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "DES",
+                  "security": {
+                    "spoken_name": "amazon",
+                    "ticker": "AMZN",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "EM",
+                  "security": {
+                    "spoken_name": "amazon",
+                    "ticker": "AMZN",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "CF",
+                  "security": {
+                    "spoken_name": "amazon",
+                    "ticker": "AMZN",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1561,
+            "prompt_tokens": 7019,
+            "completion_tokens": 392,
+            "cost": 0.00128805
+          }
+        },
+        {
+          "case_id": "workflow-chart-and-news",
+          "repeat": 1,
+          "tags": [
+            "multi-step",
+            "placement"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": false
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 815,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        },
+        {
+          "case_id": "workflow-optional-research",
+          "repeat": 1,
+          "tags": [
+            "multi-step",
+            "optional"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "DES",
+                  "security": {
+                    "spoken_name": "oracle",
+                    "ticker": "ORCL",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "RES",
+                  "security": {
+                    "spoken_name": "oracle",
+                    "ticker": "ORCL",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": false,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 3300,
+            "prompt_tokens": 7014,
+            "completion_tokens": 342,
+            "cost": 0.0007389
+          }
+        },
+        {
+          "case_id": "workflow-correction-whole-step",
+          "repeat": 1,
+          "tags": [
+            "correction",
+            "multi-step"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": false
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 279,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        },
+        {
+          "case_id": "workflow-noisy-fundamentals",
+          "repeat": 1,
+          "tags": [
+            "noise",
+            "nested-actions",
+            "comparison"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "GF",
+                  "security": {
+                    "spoken_name": "microsoft",
+                    "ticker": "MSFT",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "add company",
+                      "operation": "add",
+                      "value": "META"
+                    },
+                    {
+                      "feature": "margin metric",
+                      "operation": "select",
+                      "value": "Operating Margin"
+                    },
+                    {
+                      "feature": "range",
+                      "operation": "select",
+                      "value": "10Y"
+                    },
+                    {
+                      "feature": "periodicity",
+                      "operation": "select",
+                      "value": "Annual"
+                    },
+                    {
+                      "feature": "layout",
+                      "operation": "select",
+                      "value": "Split"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "comparison",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 3193,
+            "prompt_tokens": 7039,
+            "completion_tokens": 655,
+            "cost": 0.00093045
+          }
+        },
+        {
+          "case_id": "workflow-hms-three",
+          "repeat": 1,
+          "tags": [
+            "multi-security",
+            "nested-actions"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "HMS",
+                  "security": {
+                    "spoken_name": "apple",
+                    "ticker": "AAPL",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "add/remove securities",
+                      "operation": "add",
+                      "value": "MSFT"
+                    },
+                    {
+                      "feature": "add/remove securities",
+                      "operation": "add",
+                      "value": "NVDA"
+                    },
+                    {
+                      "feature": "timeframe",
+                      "operation": "select",
+                      "value": "5Y"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "comparison",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1942,
+            "prompt_tokens": 7054,
+            "completion_tokens": 393,
+            "cost": 0.0007755
+          }
+        },
+        {
+          "case_id": "workflow-gr-correlation",
+          "repeat": 1,
+          "tags": [
+            "multi-security",
+            "nested-actions"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "GR",
+                  "security": {
+                    "spoken_name": "nvidia",
+                    "ticker": "NVDA",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "sell leg",
+                      "operation": "select",
+                      "value": "SPY"
+                    },
+                    {
+                      "feature": "correlation toggle",
+                      "operation": "select",
+                      "value": "on"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "comparison",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 2257,
+            "prompt_tokens": 7033,
+            "completion_tokens": 387,
+            "cost": 0.00076875
+          }
+        },
+        {
+          "case_id": "workflow-news-suite",
+          "repeat": 1,
+          "tags": [
+            "multi-step",
+            "query",
+            "news"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 1519,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        },
+        {
+          "case_id": "workflow-halts-and-most",
+          "repeat": 1,
+          "tags": [
+            "multi-step",
+            "nested-actions",
+            "market"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "HALT",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "tab",
+                      "operation": "select",
+                      "value": "Active"
+                    }
+                  ],
+                  "required": true,
+                  "placement": "left"
+                },
+                {
+                  "command": "MOST",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": "right"
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 9058,
+            "prompt_tokens": 6997,
+            "completion_tokens": 323,
+            "cost": 0.00072495
+          }
+        },
+        {
+          "case_id": "workflow-sec-and-transcript",
+          "repeat": 1,
+          "tags": [
+            "multi-step",
+            "research"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": false
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 356,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        },
+        {
+          "case_id": "workflow-full-focus",
+          "repeat": 1,
+          "tags": [
+            "placement",
+            "layout"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "G",
+                  "security": {
+                    "spoken_name": "bitcoin",
+                    "ticker": "BTCUSD",
+                    "venue": "GBL",
+                    "asset_class": "CRYPTO",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": "full"
+                }
+              ],
+              "layout": {
+                "preset": "focus",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1038,
+            "prompt_tokens": 7013,
+            "completion_tokens": 242,
+            "cost": 0.00067875
+          }
+        },
+        {
+          "case_id": "workflow-rearrange",
+          "repeat": 1,
+          "tags": [
+            "layout",
+            "placement"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "WEI",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": "left"
+                },
+                {
+                  "command": "WEIF",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": "right"
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": false,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 2289,
+            "prompt_tokens": 6997,
+            "completion_tokens": 281,
+            "cost": 0.00069975
+          }
+        },
+        {
+          "case_id": "workflow-fillers",
+          "repeat": 1,
+          "tags": [
+            "noise",
+            "multi-step"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": false
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 1516,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        },
+        {
+          "case_id": "workflow-search-bond",
+          "repeat": 1,
+          "tags": [
+            "query",
+            "noise"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 292,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        },
+        {
+          "case_id": "workflow-pronunciation-world",
+          "repeat": 1,
+          "tags": [
+            "noise",
+            "command-confusion"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 474,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        },
+        {
+          "case_id": "workflow-two-independent-companies",
+          "repeat": 1,
+          "tags": [
+            "multi-step",
+            "multi-security"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": false
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 279,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        },
+        {
+          "case_id": "workflow-user-asks-unsupported-metric",
+          "repeat": 1,
+          "tags": [
+            "ambiguity",
+            "capability-boundary"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": true,
+              "pass": true
+            },
+            "overall": true,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Godel does not have a NOPAT metric in its supported fundamentals; would you like to compare a different available metric (e.g., Net Income, EPS, or revenue)?"
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1555,
+            "prompt_tokens": 7058,
+            "completion_tokens": 182,
+            "cost": 0.0006495
+          }
+        },
+        {
+          "case_id": "adversarial-invent-command",
+          "repeat": 1,
+          "tags": [
+            "adversarial",
+            "unsupported"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "unsupported",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 4834,
+            "prompt_tokens": 6994,
+            "completion_tokens": 113,
+            "cost": 0.0009633
+          }
+        },
+        {
+          "case_id": "adversarial-credentials",
+          "repeat": 1,
+          "tags": [
+            "adversarial",
+            "safety"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "unsupported",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1289,
+            "prompt_tokens": 6993,
+            "completion_tokens": 137,
+            "cost": 0.00061275
+          }
+        },
+        {
+          "case_id": "adversarial-prompt-injection",
+          "repeat": 1,
+          "tags": [
+            "adversarial",
+            "unsupported"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "unsupported",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1134,
+            "prompt_tokens": 6995,
+            "completion_tokens": 106,
+            "cost": 0.00111285
+          }
+        },
+        {
+          "case_id": "adversarial-no-duplicate",
+          "repeat": 1,
+          "tags": [
+            "duplication",
+            "multi-step"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": false
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 276,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        },
+        {
+          "case_id": "workflow-ten-step-stress",
+          "repeat": 1,
+          "tags": [
+            "stress",
+            "multi-step"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "WEI",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "WEIF",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "GLCO",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "FX",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "HMAP",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "IMAP",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "HALT",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "tab",
+                      "operation": "select",
+                      "value": "Active"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "MOST",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "MOSO",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "TOP",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": false,
+                "new_screen": true
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 3358,
+            "prompt_tokens": 7019,
+            "completion_tokens": 690,
+            "cost": 0.00094845
+          }
+        },
+        {
+          "case_id": "workflow-relative-followup",
+          "repeat": 1,
+          "tags": [
+            "context",
+            "clarification"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": true,
+              "pass": false
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 457,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        },
+        {
+          "case_id": "workflow-unresolved-company",
+          "repeat": 1,
+          "tags": [
+            "resolution",
+            "entity"
+          ],
+          "grade": {
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider error 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"openai/gpt-oss-120b is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Groq\"}},\"user_id\":\"user_39l79pI5kqSjYNHDDUeniJBeAqA\"}"
+          },
+          "inference": {
+            "latency_ms": 294,
+            "provider": null,
+            "model": "openai/gpt-oss-120b"
+          }
+        }
+      ]
+    }
+  ]
+}

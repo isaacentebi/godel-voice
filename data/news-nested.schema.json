@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godel News candidate action",
+  "description": "Strict planning schema. Query is the only live action; all dynamic/article controls are unbound and account-global mutations require confirmation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["feature", "operation", "value", "scope"],
+  "oneOf": [
+    {"properties":{"feature":{"const":"query"},"operation":{"const":"set"},"value":{"type":"string","minLength":1,"maxLength":200},"scope":{"const":"window"}}},
+    {"properties":{"feature":{"const":"scope"},"operation":{"const":"select"},"value":{"type":"string","pattern":"^(Global|Security:[A-Z][A-Z0-9.-]{0,9})$"},"scope":{"const":"window"}}},
+    {"properties":{"feature":{"const":"watchlist"},"operation":{"const":"select"},"value":{"type":"string","minLength":1,"maxLength":64},"scope":{"const":"window"}}},
+    {"properties":{"feature":{"const":"date range"},"operation":{"const":"select"},"value":{"const":"All"},"scope":{"const":"window"}}},
+    {"properties":{"feature":{"const":"before date"},"operation":{"const":"set"},"value":{"type":"string","format":"date"},"scope":{"const":"window"}}},
+    {"properties":{"feature":{"const":"pause"},"operation":{"const":"select"},"value":{"enum":["Paused","Live"]},"scope":{"const":"window"}}},
+    {"properties":{"feature":{"const":"clear"},"operation":{"const":"clear"},"value":{"type":"null"},"scope":{"const":"window"}}},
+    {"properties":{"feature":{"enum":["sources","categories"]},"operation":{"enum":["include","exclude"]},"value":{"$ref":"#/$defs/stringList"},"scope":{"const":"account-draft"}}},
+    {"properties":{"feature":{"const":"languages"},"operation":{"const":"select"},"value":{"$ref":"#/$defs/stringList"},"scope":{"const":"account-draft"}}},
+    {"properties":{"feature":{"enum":["include keywords","exclude keywords"]},"operation":{"const":"set"},"value":{"type":"array","minItems":1,"maxItems":20,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":80}},"scope":{"const":"account-draft"}}},
+    {"properties":{"feature":{"const":"class action"},"operation":{"const":"select"},"value":{"enum":["Show","Hide","Only"]},"scope":{"const":"account-draft"}}},
+    {"properties":{"feature":{"const":"article select"},"operation":{"const":"select"},"value":{"$ref":"#/$defs/article"},"scope":{"const":"window"}}},
+    {"properties":{"feature":{"const":"article reader"},"operation":{"const":"open"},"value":{"$ref":"#/$defs/article"},"scope":{"const":"window"}}},
+    {"properties":{"feature":{"const":"reader back"},"operation":{"const":"back"},"value":{"type":"null"},"scope":{"const":"window"}}},
+    {"properties":{"feature":{"const":"inline context"},"operation":{"const":"select"},"value":{"enum":["Show","Hide"]},"scope":{"const":"window"}}},
+    {"properties":{"feature":{"const":"tts"},"operation":{"const":"select"},"value":{"enum":["On","Off"]},"scope":{"const":"window"}}},
+    {"properties":{"feature":{"const":"article pdf"},"operation":{"const":"download"},"value":{"type":"object","additionalProperties":false,"required":["article_id","format"],"properties":{"article_id":{"type":"string","minLength":1,"maxLength":128},"format":{"const":"PDF"}}},"scope":{"const":"artifact"}}},
+    {"properties":{"feature":{"const":"global filters"},"operation":{"enum":["save","reset","clear","cancel"]},"value":{},"scope":{"const":"account"}}}
+  ],
+  "$defs": {
+    "stringList":{"type":"array","minItems":1,"maxItems":20,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":80}},
+    "article":{"type":"object","additionalProperties":false,"required":["id","title"],"properties":{"id":{"type":"string","minLength":1,"maxLength":128},"title":{"type":"string","minLength":1,"maxLength":300}}}
+  }
+}

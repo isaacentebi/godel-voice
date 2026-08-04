@@ -1,0 +1,3582 @@
+{
+  "schema_version": 2,
+  "case_schema_versions": [
+    2
+  ],
+  "generated_at": "2026-08-04T05:49:01.135Z",
+  "offline": false,
+  "cases_file": "data/jarvis-hds-eqs-current-eval-v1.json",
+  "routes_file": "data/model-eval-routes-comparison.json",
+  "reports": [
+    {
+      "route": {
+        "id": "cerebras-glm-4.7-json",
+        "model": "z-ai/glm-4.7",
+        "base_url": "https://openrouter.ai/api/v1",
+        "provider_only": [
+          "cerebras"
+        ],
+        "allow_fallbacks": false,
+        "observed_providers": [
+          "Cerebras"
+        ],
+        "provider_pin_ok": true
+      },
+      "configuration": {
+        "repeat": 1,
+        "warmup": 0,
+        "concurrency": 1,
+        "retries": 2,
+        "retry_base_ms": 1200
+      },
+      "cases": 30,
+      "runs": 30,
+      "overall": {
+        "passed": 21,
+        "total": 30,
+        "accuracy": 0.7
+      },
+      "metrics": {
+        "availability": {
+          "passed": 30,
+          "total": 30,
+          "accuracy": 1
+        },
+        "command": {
+          "passed": 4,
+          "total": 5,
+          "accuracy": 0.8
+        },
+        "workflow": {
+          "passed": 25,
+          "total": 30,
+          "accuracy": 0.8333333333333334
+        },
+        "executable": {
+          "passed": 20,
+          "total": 28,
+          "accuracy": 0.7142857142857143
+        },
+        "action": {
+          "passed": 19,
+          "total": 27,
+          "accuracy": 0.7037037037037037
+        },
+        "entity": {
+          "passed": 3,
+          "total": 4,
+          "accuracy": 0.75
+        },
+        "clarification": {
+          "passed": 2,
+          "total": 2,
+          "accuracy": 1
+        },
+        "malformed": {
+          "passed": 25,
+          "total": 30,
+          "accuracy": 0.8333333333333334
+        },
+        "step": {
+          "passed": 19,
+          "total": 28,
+          "accuracy": 0.6785714285714286
+        },
+        "control": {
+          "passed": 0,
+          "total": 0,
+          "accuracy": null
+        },
+        "configure": {
+          "passed": 15,
+          "total": 23,
+          "accuracy": 0.6521739130434783
+        },
+        "query": {
+          "passed": 0,
+          "total": 0,
+          "accuracy": null
+        },
+        "argument": {
+          "passed": 0,
+          "total": 0,
+          "accuracy": null
+        }
+      },
+      "tags": {
+        "aspirational": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "clarification": {
+          "passed": 2,
+          "total": 2,
+          "accuracy": 1
+        },
+        "compound": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "context": {
+          "passed": 4,
+          "total": 7,
+          "accuracy": 0.5714285714285714
+        },
+        "disambiguation": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "entity": {
+          "passed": 1,
+          "total": 2,
+          "accuracy": 0.5
+        },
+        "eqs": {
+          "passed": 15,
+          "total": 21,
+          "accuracy": 0.7142857142857143
+        },
+        "executable": {
+          "passed": 18,
+          "total": 26,
+          "accuracy": 0.6923076923076923
+        },
+        "follow-up": {
+          "passed": 3,
+          "total": 10,
+          "accuracy": 0.3
+        },
+        "hds": {
+          "passed": 6,
+          "total": 9,
+          "accuracy": 0.6666666666666666
+        },
+        "natural": {
+          "passed": 10,
+          "total": 14,
+          "accuracy": 0.7142857142857143
+        },
+        "noise": {
+          "passed": 7,
+          "total": 7,
+          "accuracy": 1
+        },
+        "range-filter": {
+          "passed": 13,
+          "total": 14,
+          "accuracy": 0.9285714285714286
+        },
+        "readiness-gap": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "run-clear": {
+          "passed": 2,
+          "total": 7,
+          "accuracy": 0.2857142857142857
+        },
+        "view": {
+          "passed": 5,
+          "total": 8,
+          "accuracy": 0.625
+        }
+      },
+      "stability": {
+        "stable_cases": 30,
+        "total_cases": 30,
+        "consistency": 1,
+        "unstable_cases": []
+      },
+      "runtime": {
+        "expected": 0,
+        "observed": 0,
+        "coverage": null,
+        "passed": 0,
+        "accuracy": null
+      },
+      "latency_ms": {
+        "count": 30,
+        "p50": 2099,
+        "p90": 6309,
+        "p95": 7130,
+        "max": 7478
+      },
+      "provider_latency_ms": {
+        "count": 30,
+        "p50": 2099,
+        "p90": 6309,
+        "p95": 7130,
+        "max": 7478
+      },
+      "usage": {
+        "prompt_tokens": {
+          "total": 183330,
+          "average": 7333.2
+        },
+        "completion_tokens": {
+          "total": 27961,
+          "average": 1118.44
+        },
+        "cost": {
+          "total": 0.4893852500000001,
+          "average": 0.019575410000000005
+        }
+      },
+      "results": [
+        {
+          "case_id": "he-hds-open-table",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "HDS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "security": {
+                    "spoken_name": "meta",
+                    "ticker": "META",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "view",
+                      "operation": "select",
+                      "value": "Table"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 3538,
+            "prompt_tokens": 7336,
+            "completion_tokens": 1211,
+            "cost": 0.01983625,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 3544
+          }
+        },
+        {
+          "case_id": "he-hds-open-treemap",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": true,
+              "pass": false
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider returned no message content"
+          },
+          "inference": {
+            "latency_ms": 7130,
+            "end_to_end_latency_ms": 7130,
+            "retry_count": 2,
+            "provider": null,
+            "model": "z-ai/glm-4.7"
+          }
+        },
+        {
+          "case_id": "he-hds-open-bubble-noisy",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "executable",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "HDS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "security": {
+                    "spoken_name": "microsoft",
+                    "ticker": "MSFT",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "view",
+                      "operation": "select",
+                      "value": "bubble"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 2386,
+            "prompt_tokens": 7345,
+            "completion_tokens": 1164,
+            "cost": 0.01972725,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 2390
+          }
+        },
+        {
+          "case_id": "he-hds-followup-table",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "readiness-gap",
+            "follow-up",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "HDS",
+                    "security": "META"
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "view",
+                      "operation": "select",
+                      "value": "table"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 1221,
+            "prompt_tokens": 7333,
+            "completion_tokens": 704,
+            "cost": 0.01843525,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1223
+          }
+        },
+        {
+          "case_id": "he-hds-followup-treemap",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "executable",
+            "follow-up",
+            "context",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "HDS",
+                    "security": "META"
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "view",
+                      "operation": "select",
+                      "value": "treemap"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 2067,
+            "prompt_tokens": 7335,
+            "completion_tokens": 1171,
+            "cost": 0.019724,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 2067
+          }
+        },
+        {
+          "case_id": "he-hds-followup-bubble",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "executable",
+            "follow-up",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Unterminated string in JSON at position 110 (line 1 column 111)"
+          },
+          "inference": {
+            "latency_ms": 3625,
+            "end_to_end_latency_ms": 3625,
+            "retry_count": 2,
+            "provider": null,
+            "model": "z-ai/glm-4.7"
+          }
+        },
+        {
+          "case_id": "he-hds-followup-explicit-company",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "executable",
+            "follow-up",
+            "entity"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "HDS",
+                    "security": "META"
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "view",
+                      "operation": "select",
+                      "value": "bubble"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 2196,
+            "prompt_tokens": 7353,
+            "completion_tokens": 1156,
+            "cost": 0.01972325,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 2197
+          }
+        },
+        {
+          "case_id": "he-hds-versus-hldr-who-owns",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "disambiguation",
+            "executable",
+            "entity"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "HDS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "security": {
+                    "spoken_name": "berkshire",
+                    "ticker": "BRK.B",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 1905,
+            "prompt_tokens": 7347,
+            "completion_tokens": 788,
+            "cost": 0.01869775,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1908
+          }
+        },
+        {
+          "case_id": "he-hds-no-context-view",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "clarification",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": true,
+              "pass": true
+            },
+            "step": {
+              "applicable": false,
+              "pass": null
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "I don't see an active window to modify. Please specify which data or security you want to view as a bubble.",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 1748,
+            "prompt_tokens": 7314,
+            "completion_tokens": 886,
+            "cost": 0.018893,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1748
+          }
+        },
+        {
+          "case_id": "he-eqs-run-followup",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "executable",
+            "follow-up",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "run/clear",
+                      "operation": "select",
+                      "value": "run"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": "Unsupported EQS feature: run/clear"
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 6591,
+            "prompt_tokens": 7331,
+            "completion_tokens": 1270,
+            "cost": 0.01998725,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 6591
+          }
+        },
+        {
+          "case_id": "he-eqs-run-immediate",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "executable",
+            "follow-up",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "run",
+                      "operation": "select",
+                      "value": null
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": "Unsupported EQS feature: run"
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 5471,
+            "prompt_tokens": 7346,
+            "completion_tokens": 995,
+            "cost": 0.01926475,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 5471
+          }
+        },
+        {
+          "case_id": "he-eqs-run-noisy",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "executable",
+            "follow-up",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "screen",
+                      "operation": "run",
+                      "value": null
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 4881,
+            "prompt_tokens": 7333,
+            "completion_tokens": 1156,
+            "cost": 0.01967825,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 4882
+          }
+        },
+        {
+          "case_id": "he-eqs-clear-followup",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "executable",
+            "follow-up",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "filters",
+                      "operation": "clear",
+                      "value": null
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": "Unsupported EQS feature: filters"
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 5838,
+            "prompt_tokens": 7331,
+            "completion_tokens": 1527,
+            "cost": 0.020694,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 5839
+          }
+        },
+        {
+          "case_id": "he-eqs-clear-natural",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "executable",
+            "follow-up",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider returned no message content"
+          },
+          "inference": {
+            "latency_ms": 6309,
+            "end_to_end_latency_ms": 6309,
+            "retry_count": 2,
+            "provider": null,
+            "model": "z-ai/glm-4.7"
+          }
+        },
+        {
+          "case_id": "he-eqs-clear-no-context",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "clarification",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": true,
+              "pass": true
+            },
+            "step": {
+              "applicable": false,
+              "pass": null
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Which window or panel would you like to clear filters on?",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 1479,
+            "prompt_tokens": 7312,
+            "completion_tokens": 705,
+            "cost": 0.01839075,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1479
+          }
+        },
+        {
+          "case_id": "he-eqs-run-clear-sequence",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "aspirational",
+            "compound",
+            "follow-up"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider returned no message content"
+          },
+          "inference": {
+            "latency_ms": 7478,
+            "end_to_end_latency_ms": 7478,
+            "retry_count": 2,
+            "provider": null,
+            "model": "z-ai/glm-4.7"
+          }
+        },
+        {
+          "case_id": "he-range-market-cap",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "Market Cap (USD)",
+                        "minimum": 2000000000,
+                        "maximum": null
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 1830,
+            "prompt_tokens": 7316,
+            "completion_tokens": 1165,
+            "cost": 0.01966475,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1832
+          }
+        },
+        {
+          "case_id": "he-range-pe-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/E (Fwd)",
+                        "minimum": null,
+                        "maximum": 25
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 1487,
+            "prompt_tokens": 7331,
+            "completion_tokens": 764,
+            "cost": 0.01859575,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1488
+          }
+        },
+        {
+          "case_id": "he-range-pe-ttm",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/E (TTM)",
+                        "minimum": 5,
+                        "maximum": 30
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 1541,
+            "prompt_tokens": 7334,
+            "completion_tokens": 768,
+            "cost": 0.0186135,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1541
+          }
+        },
+        {
+          "case_id": "he-range-ps-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/S (Fwd)",
+                        "minimum": null,
+                        "maximum": 8
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 2938,
+            "prompt_tokens": 7332,
+            "completion_tokens": 1733,
+            "cost": 0.02126275,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 2939
+          }
+        },
+        {
+          "case_id": "he-range-ps-ttm",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/S (TTM)",
+                        "minimum": null,
+                        "maximum": 4
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 1799,
+            "prompt_tokens": 7333,
+            "completion_tokens": 1003,
+            "cost": 0.0192575,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1800
+          }
+        },
+        {
+          "case_id": "he-range-pb-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/B (Fwd)",
+                        "minimum": null,
+                        "maximum": 3
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 2195,
+            "prompt_tokens": 7334,
+            "completion_tokens": 1355,
+            "cost": 0.02022775,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 2196
+          }
+        },
+        {
+          "case_id": "he-range-pb-ttm",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/B (TTM)",
+                        "minimum": null,
+                        "maximum": 2
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 1695,
+            "prompt_tokens": 7332,
+            "completion_tokens": 932,
+            "cost": 0.01906,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1695
+          }
+        },
+        {
+          "case_id": "he-range-pcf-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/CF (Fwd)",
+                        "minimum": null,
+                        "maximum": 20
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 2099,
+            "prompt_tokens": 7333,
+            "completion_tokens": 1139,
+            "cost": 0.0196315,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 2099
+          }
+        },
+        {
+          "case_id": "he-range-pcf-ttm",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/CF (TTM)",
+                        "minimum": 5,
+                        "maximum": 15
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 2096,
+            "prompt_tokens": 7335,
+            "completion_tokens": 1177,
+            "cost": 0.0197405,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 2097
+          }
+        },
+        {
+          "case_id": "he-range-eps-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "EPS (Fwd 12mo)",
+                        "minimum": 5,
+                        "maximum": null
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 1583,
+            "prompt_tokens": 7333,
+            "completion_tokens": 1001,
+            "cost": 0.019252,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1584
+          }
+        },
+        {
+          "case_id": "he-range-revenue-ttm",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "Rev. (TTM, USD)",
+                        "minimum": 1000000000,
+                        "maximum": null
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 1649,
+            "prompt_tokens": 7333,
+            "completion_tokens": 1153,
+            "cost": 0.01967,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1650
+          }
+        },
+        {
+          "case_id": "he-range-revenue-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "Rev. (Fwd 12mo, USD)",
+                        "minimum": 2500000000,
+                        "maximum": null
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 2072,
+            "prompt_tokens": 7335,
+            "completion_tokens": 1317,
+            "cost": 0.0201255,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 2073
+          }
+        },
+        {
+          "case_id": "he-range-net-income-ttm",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": false
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "error": "Provider returned no message content"
+          },
+          "inference": {
+            "latency_ms": 5795,
+            "end_to_end_latency_ms": 5795,
+            "retry_count": 2,
+            "provider": null,
+            "model": "z-ai/glm-4.7"
+          }
+        },
+        {
+          "case_id": "he-range-net-income-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "EQS",
+                    "security": null
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "Net Inc. (Fwd 12mo, USD)",
+                        "minimum": 500000000,
+                        "maximum": null
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "z-ai/glm-4.7",
+            "provider": "Cerebras",
+            "latency_ms": 2526,
+            "prompt_tokens": 7333,
+            "completion_tokens": 1721,
+            "cost": 0.021232,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 2527
+          }
+        }
+      ]
+    }
+  ]
+}

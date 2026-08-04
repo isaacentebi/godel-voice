@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "scope": "Godel native window and workspace controls used by Jarvis voice workflows",
+  "evidence_policy": {
+    "live-verified": "Observed against authenticated Godel and asserted from resulting state.",
+    "source-verified": "Bound to a Godel-owned callback or state manager with a completion assertion, but not every phrase/target combination has a live observation.",
+    "partial": "A verified primitive exists but target resolution or runtime state can still make it fail closed.",
+    "unsupported": "No exact native operation and completion assertion are available."
+  },
+  "controls": [
+    {
+      "id": "window.move",
+      "status": "live-verified",
+      "voice_examples": ["put the market heatmap on the left", "move the Meta earnings matrix to the top right"],
+      "targets": ["last", "focused", "command", "command plus security"],
+      "values": ["full", "left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right"],
+      "native_binding": "positionManager.updateWindowPosition(windowId, rect)",
+      "completion": "The exact native panel's rendered width and height are within four pixels of the planned rectangle.",
+      "limits": ["Movement is within the active Godel screen only.", "Moving an existing native window to another Godel screen is unsupported."],
+      "evidence": ["extension/main-world.js:632", "extension/content.js:863", "reports/live-verification-2026-08-03.md"]
+    },
+    {
+      "id": "window.resize",
+      "status": "source-verified",
+      "voice_examples": ["make that panel bigger", "shrink the focused chart"],
+      "values": ["larger", "smaller"],
+      "native_binding": "positionManager.updateWindowPosition(windowId, rect)",
+      "completion": "The exact panel is scaled by 1.2 or 0.8, clamped to the workspace and minimum 280 by 190 pixels, then rendered geometry is verified.",
+      "limits": ["Bigger and smaller are proportional, not absolute pixel dimensions.", "Repeated requests become no-ops at workspace or minimum bounds."],
+      "evidence": ["extension/content.js:872", "extension/main-world.js:632"]
+    },
+    {
+      "id": "window.maximize",
+      "status": "source-verified",
+      "voice_examples": ["maximize the Nvidia option chain", "make the active window full screen"],
+      "native_binding": "positionManager.fullScreen(windowId, commandType)",
+      "completion": "The native position record gains a previous-geometry value.",
+      "limits": ["This maximizes a Godel panel inside the terminal, not the Arc browser window."],
+      "evidence": ["extension/main-world.js:613"]
+    },
+    {
+      "id": "window.restore",
+      "status": "source-verified",
+      "voice_examples": ["restore it", "unmaximize the earnings matrix"],
+      "native_binding": "positionManager.fullScreen(windowId, commandType)",
+      "completion": "The native previous-geometry marker clears after Godel restores the panel.",
+      "limits": ["If the panel is not maximized, restore is an idempotent no-op."],
+      "evidence": ["extension/main-world.js:613"]
+    },
+    {
+      "id": "window.focus",
+      "status": "partial",
+      "voice_examples": ["focus the Meta earnings matrix", "bring the active chart to the front"],
+      "native_binding": "workspaceProvider.setActiveWindowId(windowId)",
+      "completion": "The active-screen activeWindowId equals the exact target or the panel exposes Godel's active-window flag.",
+      "limits": ["Live focus passed for Earnings Matrix.", "A later Index Map attempt failed closed because Godel's native active window identity was unavailable for that mounted panel.", "Covered panels from inactive screens are excluded before resolution."],
+      "evidence": ["extension/main-world.js:601", "extension/content.js:807", "reports/live-verification-2026-08-03.md", "live-ui:2026-08-03-index-map-active-id-unavailable"]
+    },
+    {
+      "id": "window.close",
+      "status": "source-verified",
+      "voice_examples": ["close the Meta earnings matrix", "dismiss this heatmap"],
+      "native_binding": "the unique data-cy-close-window React onClick callback",
+      "completion": "The exact native window root disconnects from the document.",
+      "safety": ["Requires explicit close, dismiss, or remove language.", "Bulk requests such as close all windows are rejected by the deterministic parser.", "CHAT, NOTE, ACCOUNT, BROK, ORDER, TRADE, MESSAGE, and ALERT command families are rejected.", "This action never closes an Arc tab or browser window."],
+      "limits": ["When several same-command panels exist, a named security is the safest target; otherwise Jarvis uses the remembered or active instance."],
+      "evidence": ["src/control-followup.mjs", "extension/main-world.js:575", "extension/content.js:857"]
+    },
+    {
+      "id": "workflow.layout",
+      "status": "live-verified",
+      "voice_examples": ["on a fresh screen put the heatmap left and active halts right", "open a research workspace for Meta"],
+      "values": ["research", "market", "comparison", "options", "grid", "focus"],
+      "native_binding": "pure layout planner followed by exact native setGeometry actions",
+      "completion": "Every new panel receives an in-bounds rectangle; insufficient space returns explicit overflow.",
+      "limits": ["The current executor preserves existing panels.", "Overflow recommends a new screen but does not silently rearrange unrelated panels."],
+      "evidence": ["src/layout-engine.mjs", "extension/layout.js", "extension/content.js:785", "reports/live-verification-2026-08-03.md"]
+    },
+    {
+      "id": "screen.create_or_reuse",
+      "status": "live-verified",
+      "voice_examples": ["do this on a fresh screen", "create a screen called Morning Markets"],
+      "native_binding": "workspace provider layout state plus screen-tab onSelect and onEdit callbacks",
+      "completion": "The requested exact screen title exists and its screen id is active.",
+      "limits": ["Godel allows at most eight screens.", "An empty Voice or Blank screen is reused before creating another."],
+      "evidence": ["extension/main-world.js:650", "reports/live-verification-2026-08-03.md"]
+    },
+    {
+      "id": "window.move_between_screens",
+      "status": "unsupported",
+      "voice_examples": ["move this chart to the Macro screen"],
+      "limits": ["No exact native transfer callback and completion assertion have been verified.", "Safe fallback: focus or create the destination screen and recreate the requested panel there."],
+      "evidence": ["docs/panel-adapters.md"]
+    },
+    {
+      "id": "screen.close",
+      "status": "unsupported",
+      "voice_examples": ["close the Morning Markets screen"],
+      "limits": ["No exact native screen-close adapter is verified.", "Panel close must never be misinterpreted as screen or browser close."],
+      "evidence": ["docs/panel-adapters.md"]
+    }
+  ]
+}

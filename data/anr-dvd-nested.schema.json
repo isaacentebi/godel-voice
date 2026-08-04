@@ -1,0 +1,15 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Godel ANR and DVD grounded voice architecture",
+  "oneOf":[
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"display"},"operation":{"const":"select"},"value":{"type":"array","minItems":1,"maxItems":8,"uniqueItems":true,"items":{"enum":["Consensus Rating","Consensus Price Target","Firm","Analyst","Rating","Price Target","Date","Upgrade / Downgrade"]}}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"date_range"},"operation":{"const":"set"},"value":{"$ref":"#/$defs/dateRange"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"export"},"operation":{"const":"download"},"value":{"type":"null"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"display"},"operation":{"const":"select"},"value":{"type":"array","minItems":1,"maxItems":12,"uniqueItems":true,"items":{"enum":["12-Month Yield","Indicated Yield","1-Year Growth","3-Year Growth","Payment Frequency","Yield History","Declaration Date","Ex-Date","Record Date","Payable Date","Amount","Dividend Type"]}}}}
+  ],
+  "$defs":{"dateRange":{"type":"object","additionalProperties":false,"required":["from","to"],"properties":{"from":{"type":"string","format":"date"},"to":{"type":"string","format":"date"}}}},
+  "x-runtime-enabled":false,
+  "x-anr-export-format":"unresolved",
+  "x-grounded-only":"Analyst ratings, targets, dividend dates, amounts, yields and growth require exact current Godel panel facts",
+  "x-no-inference":"No investment recommendation, target extrapolation, dividend forecast, or undeclared payment prediction"
+}

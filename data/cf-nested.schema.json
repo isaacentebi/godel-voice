@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godel CF documented-unbound actions",
+  "oneOf": [
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["feature", "operation", "value"],
+      "properties": {
+        "feature": {"const": "feed"}, "operation": {"const": "configure"},
+        "value": {
+          "type": "object", "additionalProperties": false,
+          "required": ["scope", "security", "watchlist", "filing_types", "render", "explicit_external"],
+          "properties": {
+            "scope": {"enum": ["Global", "Security", "Watchlist"]},
+            "security": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/security"}]},
+            "watchlist": {"type": ["string", "null"], "maxLength": 64},
+            "filing_types": {"type": "array", "minItems": 1, "maxItems": 6, "uniqueItems": true, "items": {"enum": ["10-K", "10-Q", "8-K", "Proxy", "13F", "S-1"]}},
+            "render": {"enum": ["Godel", "EDGAR"]}, "explicit_external": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["feature", "operation", "value"],
+      "properties": {
+        "feature": {"const": "filing"}, "operation": {"const": "open"},
+        "value": {
+          "type": "object", "additionalProperties": false,
+          "required": ["identity", "destination", "explicit_external"],
+          "properties": {
+            "identity": {"$ref": "#/$defs/filing"}, "destination": {"enum": ["Godel", "EDGAR"]}, "explicit_external": {"type": "boolean"}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "security": {"type": "object", "additionalProperties": false, "required": ["spoken_name", "ticker", "venue", "asset_class", "needs_resolution"], "properties": {"spoken_name": {"type": ["string", "null"]}, "ticker": {"type": ["string", "null"]}, "venue": {"type": ["string", "null"]}, "asset_class": {"type": ["string", "null"]}, "needs_resolution": {"type": "boolean"}}},
+    "filing": {"type": "object", "additionalProperties": false, "required": ["row_id", "accession_number", "ticker", "form", "filed_date", "company"], "properties": {"row_id": {"type": ["string", "null"]}, "accession_number": {"type": ["string", "null"]}, "ticker": {"type": "string"}, "form": {"enum": ["10-K", "10-Q", "8-K", "Proxy", "13F", "S-1"]}, "filed_date": {"type": "string"}, "company": {"type": "string"}}, "anyOf": [{"required": ["row_id"], "properties": {"row_id": {"type": "string", "minLength": 1}}}, {"required": ["accession_number"], "properties": {"accession_number": {"type": "string", "minLength": 1}}}]}
+  },
+  "x-capability-state": "documented-unbound",
+  "x-runtime-enabled": false,
+  "x-unsupported": ["paging", "date filtering", "search", "download", "export"],
+  "x-safety": "EDGAR requires explicit external-navigation intent and exact filing identity"
+}

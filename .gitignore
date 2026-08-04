@@ -4,5 +4,13 @@
 node_modules/
 .DS_Store
 coverage/
+dist/
+*.log
+*.tgz
 .godel-voice-secret
+.godel-voice-queue.json
+.godel-voice-failures.jsonl
+.godel-voice-*.jsonl
+.godel-voice-server.pid
+logs/
 extension/config.local.js

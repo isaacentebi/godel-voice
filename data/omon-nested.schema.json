@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godel OMON candidate action",
+  "description": "Strict read-only option-chain planning schema. Only native total strike depth is live-enabled. Expirations and columns require exact live identities; contract handoff requires one exact selected row. No order action exists.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["feature", "operation", "value", "scope"],
+  "oneOf": [
+    {"properties":{"feature":{"const":"mode"},"operation":{"const":"select"},"value":{"enum":["Both","Calls","Puts"]},"scope":{"const":"panel"}}},
+    {"properties":{"feature":{"const":"expiration"},"operation":{"const":"select"},"value":{"$ref":"#/$defs/expiry"},"scope":{"const":"mode"}}},
+    {"properties":{"feature":{"const":"months out"},"operation":{"const":"set"},"value":{"type":"integer","minimum":0,"maximum":120},"scope":{"const":"mode"}}},
+    {"properties":{"feature":{"const":"strike depth"},"operation":{"const":"set"},"value":{"type":"integer","minimum":1,"maximum":100},"scope":{"const":"panel"}}},
+    {"properties":{"feature":{"enum":["strikes above","strikes below"]},"operation":{"const":"set"},"value":{"type":"integer","minimum":0,"maximum":100},"scope":{"const":"mode"}}},
+    {"properties":{"feature":{"const":"Greek visibility"},"operation":{"enum":["show","hide"]},"value":{"enum":["Delta","Gamma","Vega","Theta","Rho","Lambda","Epsilon"]},"scope":{"const":"mode"}}},
+    {"properties":{"feature":{"const":"columns"},"operation":{"const":"configure"},"value":{"type":"array","minItems":1,"maxItems":30,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":80}},"scope":{"const":"mode"}}},
+    {"properties":{"feature":{"const":"contract"},"operation":{"const":"open"},"value":{"type":"object","additionalProperties":false,"required":["destination","contract"],"properties":{"destination":{"enum":["FOCUS","G","OVME"]},"contract":{"$ref":"#/$defs/contract"}}},"scope":{"const":"selected-row"}}}
+  ],
+  "$defs": {
+    "expiry":{"type":"object","additionalProperties":false,"required":["id","label"],"properties":{"id":{"type":"string","minLength":1,"maxLength":128},"label":{"type":"string","minLength":1,"maxLength":100}}},
+    "contract":{"type":"object","additionalProperties":false,"required":["id","expiration","strike","option_type"],"properties":{"id":{"type":"string","minLength":1,"maxLength":256},"expiration":{"type":"string","minLength":1,"maxLength":100},"strike":{"type":"number","exclusiveMinimum":0},"option_type":{"enum":["Call","Put"]}}}
+  },
+  "x-capability-state": {"strike depth":"live-verified","all other actions":"documented-unbound"},
+  "x-safety": "read-only; never infer a contract and never create, submit, cancel, or exercise an order"
+}

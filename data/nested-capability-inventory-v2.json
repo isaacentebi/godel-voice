@@ -1,0 +1,233 @@
+{
+  "schema_version": 2,
+  "captured_at": "2026-08-03",
+  "purpose": "Grounded inventory for map, screener, holdings, export and workspace-layout voice actions. This file is descriptive and does not register adapters.",
+  "states": {
+    "source-verified": "Implemented in the current repository with an explicit state assertion; still requires normal runtime verification after deployment.",
+    "candidate-disabled": "A fail-closed adapter exists but is intentionally not registered pending live binding verification.",
+    "documented-unbound": "Official Godel documentation describes the capability, but no exact callback or unique DOM binding is enabled.",
+    "live-observed-unbound": "Seen in the authenticated terminal, but output semantics or binding remain unverified.",
+    "open-only": "The CLI command may open the panel; no nested action is enabled.",
+    "unsupported": "Insufficient evidence to execute safely."
+  },
+  "families": [
+    {
+      "id": "maps_heatmaps",
+      "commands": [
+        {
+          "command": "IMAP",
+          "identity": "INTRADAY MARKET MAP / IMAP",
+          "actions": [
+            {"id":"index.select","operation":"select","value":{"type":"enum","allowed":["S&P 500","DJIA"]},"state":"source-verified","completion":"exact semantic index selection plus changed rendered members","evidence":["https://godelterminal.com/docs/commands/imap","extension/adapters/imap.js","reports/live-verification-2026-08-03.md"]},
+            {"id":"view.select","operation":"select","value":{"type":"enum","allowed":["Map","Table"]},"state":"source-verified","completion":"large map visualization or member table with identity/change columns renders","evidence":["https://godelterminal.com/docs/commands/imap","extension/adapters/imap.js","reports/live-verification-2026-08-03.md"]},
+            {"id":"movers.select","operation":"select","value":{"type":"enum","allowed":["Gainers","Losers"]},"state":"unsupported","completion":"blocked: official docs show simultaneous Top Gainers and Top Losers result panels, not a selectable movers mode","evidence":["https://godelterminal.com/docs/commands/imap","extension/adapters/imap.js"]},
+            {"id":"sector.drilldown","operation":"select","value":{"type":"exact-live-text"},"state":"live-observed-unbound","completion":"exact sector breadcrumb/heading and changed member content render","prerequisites":["sector text must be read exactly from the live panel; model guesses forbidden","authenticated UI currently exposes unlabeled graphics and one combined sector-summary text node; exact hit target or native callback is required"],"evidence":["https://godelterminal.com/docs/commands/imap","live-ui:2026-08-03:IMAP-sector-graphics"]},
+            {"id":"subindustry.drilldown","operation":"select","value":{"type":"exact-live-text"},"state":"unsupported","completion":"blocked: docs say sector drilldown renders sub-industries but do not establish sub-industry click-through","evidence":["https://godelterminal.com/docs/commands/imap"]},
+            {"id":"members.sort","operation":"select","value":{"type":"exact-live-column-and-direction","columns":["Ticker","Name","Last","Change","Chg %","Volume"],"directions":["Ascending","Descending"]},"state":"candidate-disabled","completion":"one exact table/header exposes requested aria-sort or arrow direction and every parseable rendered row is monotonic","prerequisites":["Table view rendered","at least two parseable rows","voice workflow remains unallowlisted pending one completed live sort"],"evidence":["https://godelterminal.com/docs/commands/imap","extension/adapters/imap.js","live-ui:2026-08-03:IMAP-Ticker-up-arrow"]}
+          ],
+          "voice": [
+            "Show the Dow intraday map as a table.",
+            "Show the S and P five hundred sector wheel, then drill into the exact Information Technology sector.",
+            "Sort the Dow member table by percent change descending."
+          ]
+        },
+        {
+          "command": "HMAP",
+          "identity": "MARKET HEATMAP / HMAP",
+          "actions": [
+            {"id":"universe.select","operation":"select","value":{"type":"enum","allowed":["S&P 500","DJIA"]},"state":"source-verified","completion":"exact selected label, authoritative 500–505/30 member count, and changed tile/table signature","evidence":["https://godelterminal.com/docs/commands/hmap","extension/content.js#executeHMAP","reports/live-verification-2026-08-03.md"]},
+            {"id":"watchlist.select","operation":"select","value":{"type":"dynamic-enum","source":"exact existing watchlist name"},"state":"documented-unbound","completion":"watchlist label and member count update","evidence":["https://godelterminal.com/docs/commands/hmap"]},
+            {"id":"size_by.select","operation":"select","value":{"type":"dynamic-live-enum"},"state":"documented-unbound","completion":"Size By label and tile geometry update","evidence":["https://godelterminal.com/docs/commands/hmap"]},
+            {"id":"label.select","operation":"select","value":{"type":"dynamic-live-enum"},"state":"documented-unbound","completion":"Label control and rendered tile labels update","evidence":["https://godelterminal.com/docs/commands/hmap"]},
+            {"id":"sectors.toggle","operation":"select","value":{"type":"enum","allowed":["show","hide"]},"state":"documented-unbound","completion":"sector headers/groups appear or disappear","evidence":["https://godelterminal.com/docs/commands/hmap"]},
+            {"id":"animate.toggle","operation":"select","value":{"type":"enum","allowed":["on","off"]},"state":"documented-unbound","completion":"semantic animation control state matches","evidence":["https://godelterminal.com/docs/commands/hmap"]},
+            {"id":"update_interval.set","operation":"set","value":{"type":"integer-milliseconds","bounds":"must be read from live slider"},"state":"documented-unbound","completion":"slider and displayed milliseconds agree","evidence":["https://godelterminal.com/docs/commands/hmap"]},
+            {"id":"color_mode.select","operation":"select","value":{"type":"enum","allowed":["Auto","Manual"]},"state":"documented-unbound","completion":"semantic color-mode control matches; manual parameters remain unsupported","evidence":["https://godelterminal.com/docs/commands/hmap"]},
+            {"id":"view.select","operation":"select","value":{"type":"enum","allowed":["Map","Table"]},"state":"source-verified","completion":"table exposes Ticker/Last-or-Price/Change/Volume headers, or a large map visual renders without the member table","evidence":["https://godelterminal.com/docs/commands/hmap","extension/content.js","reports/live-verification-2026-08-03.md"]},
+            {"id":"movers.toggle","operation":"select","value":{"type":"enum","allowed":["Open","Closed"]},"state":"documented-unbound","completion":"Movers disclosure state and panel visibility match","evidence":["https://godelterminal.com/docs/commands/hmap"]},
+            {"id":"tile.quick_action","operation":"handoff","value":{"type":"dynamic-live-action","ticker":"exact live tile ticker","action":"exact live quick action"},"state":"documented-unbound","completion":"exact selected ticker and destination panel identity match","evidence":["https://godelterminal.com/docs/commands/hmap"]}
+          ],
+          "voice": [
+            "Map my semiconductors watchlist, size by absolute move and label by percent change.",
+            "Hide the sector borders, stop the animation and switch this heatmap to table view.",
+            "Open the movers drawer on this heatmap."
+          ]
+        },
+        {
+          "command": "MAP",
+          "identity": "WORLD VENUE MAP / MAP",
+          "actions": [
+            {"id":"panel.open","operation":"open","value":{"type":"none"},"state":"open-only","completion":"exact MAP panel is present","evidence":["data/commands.json#MAP"]},
+            {"id":"venue.drilldown","operation":"select","value":{"type":"exact-live-venue"},"state":"unsupported","completion":"blocked until a unique venue control and venue-hours state are verified","evidence":["data/commands.json#MAP"]}
+          ],
+          "voice": ["Show which world exchanges are open right now."]
+        }
+      ]
+    },
+    {
+      "id": "screeners_and_discovery",
+      "commands": [
+        {
+          "command": "EQS",
+          "identity": "EQUITY SCREENER / EQS",
+          "actions": [
+            {"id":"range_filter.add","operation":"add","value":{"type":"range-filter","fields":["Market Cap (USD)","P/E (Fwd)","P/E (TTM)","P/S (Fwd)","P/S (TTM)","P/B (Fwd)","P/B (TTM)","P/CF (Fwd)","P/CF (TTM)","EPS (Fwd 12mo)","Rev. (TTM, USD)","Rev. (Fwd 12mo, USD)","Net Inc. (TTM, USD)","Net Inc. (Fwd 12mo, USD)"],"minimum":"optional number","maximum":"optional number"},"state":"source-verified","completion":"the unique native Add-filter menu yields the exact range editor and its displayed minimum/maximum match; optional Run separately proves current results","evidence":["extension/content.js#executeEQSRangeFilter","reports/live-verification-2026-08-03.md"]},
+            {"id":"list_filter.add","operation":"add","value":{"type":"strict-live-list-filter","allowed":{"Currency":["USD"],"Sector":["Technology"]}},"state":"source-verified","completion":"the full native option menu is proven, the exact selected chip renders, and optional Run produces the matching result column/rows","evidence":["extension/content.js#executeEQSListFilter","reports/live-verification-2026-08-03.md"]},
+            {"id":"list_filter.other","operation":"add","value":{"type":"dynamic-live-list","fields":["Currency","Venue","HQ Country","Sector","Sub-Sector"]},"state":"documented-unbound","completion":"one filter chip displays every exact selected item","evidence":["https://godelterminal.com/docs/commands/eqs"]},
+            {"id":"primary_listings.toggle","operation":"select","value":{"type":"enum","allowed":["on","off"]},"state":"documented-unbound","completion":"semantic toggle state matches","evidence":["https://godelterminal.com/docs/commands/eqs"]},
+            {"id":"hide_no_trades.toggle","operation":"select","value":{"type":"enum","allowed":["on","off"]},"state":"documented-unbound","completion":"semantic toggle state matches","evidence":["https://godelterminal.com/docs/commands/eqs"]},
+            {"id":"screen.run","operation":"run","value":{"type":"none"},"state":"source-verified","completion":"the exact Run control produces a panel-scoped mutation and a non-empty Ticker/Name/Last results table renders","evidence":["extension/content.js#executeEQS","reports/live-verification-2026-08-03.md"]},
+            {"id":"screen.clear","operation":"clear","value":{"type":"none"},"state":"source-verified","completion":"all exact Remove-filter controls disappear after Clear","evidence":["extension/content.js#executeEQS","reports/live-verification-2026-08-03.md"]}
+          ],
+          "voice": [
+            "Find US technology companies above ten billion dollars with forward P E below twenty-five and forward revenue above five billion.",
+            "Screen Japanese primary listings below one and a half times trailing book and hide names with no trades.",
+            "Clear this screen and find European healthcare companies with forward price to sales between two and eight."
+          ]
+        },
+        {
+          "command": "SECF",
+          "identity": "SECURITIES FINDER / SECF",
+          "actions": [
+            {"id":"people_search.configure","operation":"configure","value":{"type":"object","query":"0-200 character string","tab":"People","max":{"allowed":[50,100,250,500]},"venues":[],"countries":[],"hide_no_trade":false},"state":"source-verified","completion":"exact query and native max match; People-specific Name/Company/Position/Email/Phone schema renders; changed row count is bounded","evidence":["extension/content.js#executeSECF","reports/live-verification-2026-08-03.md"]},
+            {"id":"query.set","operation":"set","value":{"type":"non-empty-string"},"state":"documented-unbound","completion":"query input matches and bounded results finish loading","evidence":["https://godelterminal.com/docs/commands/secf"]},
+            {"id":"asset_class.select","operation":"select","value":{"type":"enum","allowed":["All","Equities","Corporate Bonds","Options","Sovereign Bonds","Crypto","Index","Futures","Forex","People"]},"state":"documented-unbound","completion":"semantic tab state and result class match","evidence":["https://godelterminal.com/docs/commands/secf"]},
+            {"id":"max_results.select","operation":"select","value":{"type":"enum","allowed":[50,100,250,500]},"state":"documented-unbound","completion":"result limit control matches and rendered rows do not exceed it","evidence":["https://godelterminal.com/docs/commands/secf"]},
+            {"id":"venues.select","operation":"select","value":{"type":"set-of-exact-live-values"},"state":"documented-unbound","completion":"venue filter shows every requested live value","evidence":["https://godelterminal.com/docs/commands/secf"]},
+            {"id":"countries.select","operation":"select","value":{"type":"set-of-exact-live-values"},"state":"documented-unbound","completion":"country filter shows every requested live value","evidence":["https://godelterminal.com/docs/commands/secf"]},
+            {"id":"hide_no_trade.toggle","operation":"select","value":{"type":"enum","allowed":["on","off"]},"state":"documented-unbound","completion":"semantic toggle state matches and results reload","evidence":["https://godelterminal.com/docs/commands/secf"]},
+            {"id":"result.quick_action","operation":"open","value":{"type":"exact-live-row-and-command"},"state":"documented-unbound","completion":"destination command panel resolves to the selected result identity","evidence":["https://godelterminal.com/docs/commands/secf"]}
+          ],
+          "voice": [
+            "Find up to one hundred Canadian equities that traded recently.",
+            "Search corporate bonds for Goldman Sachs on TRACE and hide instruments with no trades.",
+            "Search Godel's people directory for analysts named Ben Reitzes."
+          ]
+        },
+        {
+          "command": "MOST",
+          "identity": "MOST ACTIVE / MOST",
+          "actions": [
+            {"id":"ranking.select","operation":"select","value":{"type":"enum","allowed":["Active","Gainers","Losers","Value"]},"state":"documented-unbound","completion":"ranking control and table order criterion match","evidence":["https://godelterminal.com/docs/commands/most"]},
+            {"id":"results.select","operation":"select","value":{"type":"enum","allowed":[10,25,50,100]},"state":"documented-unbound","completion":"result limit and maximum rendered rows agree","evidence":["https://godelterminal.com/docs/commands/most"]},
+            {"id":"market_cap.set","operation":"set","value":{"type":"range","units":["raw","K","M","B","T"]},"state":"documented-unbound","completion":"canonical bounds display and minimum does not exceed maximum","evidence":["https://godelterminal.com/docs/commands/most"]},
+            {"id":"sector.select","operation":"select","value":{"type":"documented-sector-enum"},"state":"documented-unbound","completion":"sector control and returned rows match","evidence":["https://godelterminal.com/docs/commands/most"]}
+          ],
+          "voice": ["Show the top fifty technology gainers above ten billion dollars market cap."]
+        }
+      ]
+    },
+    {
+      "id": "holdings_and_filings",
+      "commands": [
+        {
+          "command": "HDS",
+          "identity": "HOLDERS / HDS",
+          "actions": [
+            {"id":"view.select","operation":"select","value":{"type":"enum","allowed":["Table","Treemap","Bubble"]},"state":"source-verified","completion":"exactly one Holder table, holder treemap, or holder/value bubble visualization is rendered","evidence":["https://godelterminal.com/docs/commands/hds","extension/main-world.js#runHDS","reports/live-verification-2026-08-03.md"]},
+            {"id":"holder.select","operation":"select","value":{"type":"exact-live-row"},"state":"documented-unbound","completion":"exact holder row is selected once","evidence":["https://godelterminal.com/docs/commands/hds"]},
+            {"id":"filing.open","operation":"open","value":{"type":"selected-holder"},"state":"documented-unbound","completion":"selected holder's original 13F destination identity is verified","safety":"explicit external-navigation intent","evidence":["https://godelterminal.com/docs/commands/hds"]}
+          ],
+          "voice": [
+            "Show Nvidia institutional holders as a treemap.",
+            "Select Appaloosa and open the original thirteen-F filing."
+          ]
+        },
+        {
+          "command": "HLDR",
+          "identity": "LATEST HOLDINGS / HLDR",
+          "actions": [
+            {"id":"panel.open","operation":"open","value":{"type":"security"},"state":"open-only","completion":"exact HLDR panel and requested security identity are present","evidence":["data/commands.json#HLDR"]}
+          ],
+          "limitations":["Live-only command; no stable nested filters, sort, paging or export semantics are documented."],
+          "voice": ["Show Berkshire Hathaway's latest holdings."]
+        },
+        {
+          "command": "CF",
+          "identity": "FILINGS / CF",
+          "actions": [
+            {"id":"feed.configure","operation":"configure","value":{"type":"object","scope":["global","security","watchlist"],"types":["10-K","10-Q","8-K","proxy","13F","S-1"],"render":["Godel","EDGAR"]},"state":"documented-unbound","completion":"scope/type controls match and filing rows reload","evidence":["https://godelterminal.com/docs/commands/cf"]},
+            {"id":"filing.open","operation":"open","value":{"type":"exact-live-filing"},"state":"documented-unbound","completion":"requested filing identity opens in selected reader","safety":"EDGAR requires explicit external-navigation intent","evidence":["https://godelterminal.com/docs/commands/cf"]}
+          ],
+          "voice": ["Show Nvidia ten-K and ten-Q filings inside Godel."]
+        }
+      ]
+    },
+    {
+      "id": "exports_and_downloads",
+      "download_gate": "Register the browser download before activation, require a non-empty artifact, validate extension/MIME and never silently overwrite.",
+      "commands": [
+        {"command":"FA","action":"export.download","formats":["xlsx","json"],"state":"documented-unbound","voice":"Export this annual cash-flow statement to Excel.","evidence":["https://godelterminal.com/docs/commands/fa"]},
+        {"command":"HP","action":"export.download","formats":["xlsx","json"],"state":"documented-unbound","voice":"Export every loaded one-minute Bitcoin row to Excel.","evidence":["https://godelterminal.com/docs/commands/hp"]},
+        {"command":"EQS","action":"export.download","formats":["csv","json"],"state":"documented-unbound","voice":"Run this equity screen and export the completed results to CSV.","evidence":["https://godelterminal.com/docs/commands/eqs"]},
+        {"command":"IPO","action":"export.download","formats":["xlsx"],"state":"documented-unbound","voice":"Export the full IPO list to Excel.","evidence":["https://godelterminal.com/docs/commands/ipo"]},
+        {"command":"N","action":"article.export_pdf","formats":["pdf"],"state":"documented-unbound","voice":"Save this open news article as a PDF.","evidence":["https://godelterminal.com/docs/commands/n"]},
+        {"command":"G","action":"snapshot.download","formats":["png-or-provider-url"],"state":"documented-unbound","voice":"Save a snapshot of this chart.","evidence":["https://godelterminal.com/docs/commands/g"]},
+        {"command":"ANR","action":"export.download","formats":[],"state":"documented-unbound","voice":"Export this analyst ratings table.","limitations":["Format unresolved; activation blocked."],"evidence":["https://godelterminal.com/docs/commands/anr"]},
+        {"command":"HDS","action":"export.download","formats":[],"state":"documented-unbound","voice":"Export this institutional holders table.","limitations":["Format unresolved; activation blocked."],"evidence":["https://godelterminal.com/docs/commands/hds"]},
+        {"command":"GF","action":"export.open_chooser","formats":[],"state":"live-observed-unbound","voice":"Open export options for this fundamentals graph.","limitations":["Chooser callback is observed; actual artifact type and download are not verified."],"evidence":["extension/main-world.js","docs/panel-adapters.md"]},
+        {"command":"HMAP","action":"export.download","formats":[],"state":"unsupported","limitations":["Header icon semantics are unverified."],"evidence":["live-ui:2026-08-03"]},
+        {"command":"HALT","action":"export.download","formats":[],"state":"unsupported","limitations":["Header icon semantics are unverified."],"evidence":["live-ui:2026-08-03"]},
+        {"command":"WJI","action":"export.download","formats":[],"state":"unsupported","limitations":["Header icon semantics are unverified."],"evidence":["live-ui:2026-08-03"]},
+        {"command":"CHAT","action":"export.download","formats":[],"state":"unsupported","limitations":["Neither content scope nor artifact semantics are verified."],"evidence":["live-ui:2026-08-03"]}
+      ]
+    },
+    {
+      "id": "workspace_and_layout",
+      "actions": [
+        {"id":"workflow.layout","operation":"configure","value":{"preset":["research","market","comparison","options","grid","focus"],"preserve_existing":"boolean","new_screen":"boolean","gap_px":"non-negative integer"},"state":"source-verified","completion":"every opened panel receives valid in-bounds geometry or reports overflow","evidence":["src/layout-engine.mjs","extension/layout.js","extension/content.js"]},
+        {"id":"window.move","operation":"move","value":{"type":"enum","allowed":["full","left","right","top","bottom","top-left","top-right","bottom-left","bottom-right"]},"state":"source-verified","completion":"native geometry matches the planned rectangle","evidence":["extension/main-world.js","extension/content.js"]},
+        {"id":"window.resize","operation":"resize","value":{"type":"enum","allowed":["larger","smaller"]},"state":"source-verified","completion":"native geometry changes in requested direction and remains in bounds","evidence":["extension/main-world.js","extension/content.js"]},
+        {"id":"window.maximize","operation":"maximize","value":{"type":"none"},"state":"source-verified","completion":"native position manager records previous geometry","evidence":["extension/main-world.js","docs/panel-adapters.md"]},
+        {"id":"window.restore","operation":"restore","value":{"type":"none"},"state":"source-verified","completion":"previous geometry is restored and native previous marker clears","evidence":["extension/main-world.js","docs/panel-adapters.md"]},
+        {"id":"window.focus","operation":"focus","value":{"type":"target","modes":["last","focused","command plus optional security"]},"state":"source-verified","completion":"workspace active window id equals exact target id","evidence":["extension/main-world.js","extension/content.js"]},
+        {"id":"window.close","operation":"close","value":{"type":"target","modes":["last","focused","command plus optional security"]},"state":"source-verified","completion":"exact Godel window disappears; unsafe command families are rejected","safety":"requires explicit spoken intent; never closes an Arc tab","evidence":["extension/main-world.js","extension/content.js"]},
+        {"id":"screen.create_or_reuse","operation":"create","value":{"name":"validated screen name"},"state":"source-verified","completion":"new/reused screen is active and exact title matches","prerequisites":["maximum eight screens; reuse empty Voice or Blank when possible"],"evidence":["extension/main-world.js","extension/content.js","reports/live-verification-2026-08-03.md"]},
+        {"id":"screen.focus","operation":"focus","value":{"type":"exact-live-screen-name"},"state":"source-verified","completion":"active screen id matches selected screen","evidence":["extension/main-world.js"]},
+        {"id":"screen.rename","operation":"rename","value":{"type":"validated-screen-name"},"state":"source-verified","completion":"screen tab title matches exactly","evidence":["extension/main-world.js"]},
+        {"id":"screen.export","operation":"export","value":{"type":"current-screen-json"},"state":"source-verified","completion":"native exportScreen callback resolves","evidence":["extension/main-world.js"]},
+        {"id":"layout.export","operation":"export","value":{"type":"full-layout-json"},"state":"source-verified","completion":"native exportLayout callback resolves","evidence":["extension/main-world.js"]},
+        {"id":"screen.close","operation":"close","value":{"type":"exact-live-screen"},"state":"unsupported","completion":"blocked: no verified native screen-close adapter","evidence":["docs/panel-adapters.md"]},
+        {"id":"window.move_between_screens","operation":"move","value":{"type":"target-screen"},"state":"unsupported","completion":"blocked: recreation on a target screen is the current safe fallback","evidence":["docs/panel-adapters.md"]}
+      ],
+      "voice": [
+        "On a fresh screen, put the market heatmap on the left and active halts on the right.",
+        "Make the Meta earnings matrix bigger, move it to the top right and focus it.",
+        "Close the Meta earnings matrix and open Meta's option chain.",
+        "Rename this screen Morning Markets and export the full layout."
+      ]
+    }
+  ],
+  "live_runtime_cross_reference": {
+    "source": "data/live-runtime-truth-v1.json",
+    "current_contract_controls": [
+      "EQS.range_filter.add",
+      "EQS.list_filter.usd_technology",
+      "EQS.screen.run",
+      "EQS.screen.clear",
+      "HDS.view.select",
+      "MOST.results.select",
+      "HMAP.universe.select",
+      "HMAP.view.select",
+      "EM.metric.select",
+      "EM.valuation.read",
+      "IMAP.map.configure",
+      "N.query.set",
+      "SECF.people_search.configure",
+      "OMON.strike_depth.set",
+      "G.chart.resolution.1h",
+      "HMS.comparison.configure"
+    ],
+    "legacy_runtime_adapters": ["GF.legacy.configure", "HALT.legacy.tab.select", "GR.legacy.partial"],
+    "note": "This cross-reference reconciles current runtime truth without expanding the inventory's five requested descriptive families. Only adapter-contract bindings marked enabled are current contract controls."
+  },
+  "missing_or_blocked_families": [
+    {"family":"generic_table_sort_filter","reason":"Column names, sort semantics and filtered-row completion differ by command; no safe universal adapter."},
+    {"family":"dynamic_popover_discovery","reason":"HMAP metrics, watchlists, EQS list values and SECF venues/countries must be read from the live control before use."},
+    {"family":"verified_download_runtime","reason":"Documented formats exist, but browser download event, artifact validation and overwrite policy are not yet wired command-by-command."},
+    {"family":"holdings_portfolio_analysis","reason":"HLDR is live-only and has no grounded nested sort, date, portfolio-weight or transaction-date controls."},
+    {"family":"cross_screen_window_transfer","reason":"Native move-between-screen and screen-close actions are not verified."},
+    {"family":"manual_heatmap_color_scale","reason":"Manual color parameters and bounds are not captured."},
+    {"family":"map_venue_drilldown","reason":"MAP is live-only and exact venue interaction semantics are unknown."}
+  ]
+}

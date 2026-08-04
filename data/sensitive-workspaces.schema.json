@@ -1,0 +1,16 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","title":"Godel NOTE ENT ACM CHAT safety architecture",
+  "oneOf":[
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"note"},"operation":{"const":"open"},"value":{"$ref":"#/$defs/scopedIdentity"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"entitlement"},"operation":{"const":"select"},"value":{"$ref":"#/$defs/identity"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"manager"},"operation":{"const":"open"},"value":{"const":"read-only"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"channel"},"operation":{"const":"open"},"value":{"$ref":"#/$defs/channel"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"search"},"operation":{"const":"set"},"value":{"type":"object","additionalProperties":false,"required":["query","channel_id"],"properties":{"query":{"type":"string","minLength":1,"maxLength":200},"channel_id":{"type":"string","minLength":1}}}}}
+  ],
+  "$defs":{"identity":{"type":"object","additionalProperties":false,"required":["id","label"],"properties":{"id":{"type":"string","minLength":1},"label":{"type":"string","minLength":1}}},"scopedIdentity":{"type":"object","additionalProperties":false,"required":["id","label","security"],"properties":{"id":{"type":"string","minLength":1},"label":{"type":"string","minLength":1},"security":{"type":["string","null"]}}},"channel":{"type":"object","additionalProperties":false,"required":["id","label","type","security"],"properties":{"id":{"type":"string","minLength":1},"label":{"type":"string","minLength":1},"type":{"type":"string","minLength":1},"security":{"type":["string","null"]}}}},
+  "x-runtime-enabled":false,
+  "x-confirmation-gated":{"NOTE":["create","edit","rename","save","delete"],"ENT":["subscribe","unsubscribe","accept_terms"],"ACM":["edit_profile","change_privacy","change_billing","change_payment","cancel_subscription","upgrade"],"CHAT":["send","reply","edit","delete","react","create_dm","create_group","rename_group","leave_group","hide_channel","hide_user"]},
+  "x-chat-export":"format and scope unresolved; disabled",
+  "x-no-secret-logging":true,
+  "x-no-message-send":"CHAT mutation proposals never retain, fabricate, or send message text unattended"
+}

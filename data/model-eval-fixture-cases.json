@@ -1,0 +1,10 @@
+[
+  {"id":"fixture-intent-quote","mode":"intent","tags":["noise"],"utterance":"quick coat amazon","expected":{"kind":"execute","steps":[{"command":"Q","ticker":"AMZN"}]}},
+  {"id":"fixture-intent-clarify","mode":"intent","tags":["clarification"],"utterance":"amazon earnings","expected":{"kind":"clarify","clarification_contains":["matrix","estimates"]}},
+  {"id":"fixture-workflow-layout","mode":"workflow","tags":["multi-step","placement"],"utterance":"heatmap left and amazon matrix right","expected":{"kind":"execute","steps":[{"command":"HMAP","placement":"left","required":true},{"command":"EM","ticker":"AMZN","placement":"right","required":true}],"layout":{"preset":"market","preserve_existing":true,"new_screen":false}}},
+  {"id":"fixture-workflow-action","mode":"workflow","tags":["nested-actions"],"utterance":"apple and microsoft revenue five years","expected":{"kind":"execute","steps":[{"command":"GF","ticker":"AAPL","actions":[{"feature":"add company","operation":"add","value":"MSFT"},{"feature":"range","operation":"select","value":"5Y"}]}],"layout":{"preset":"comparison"}}},
+  {"id":"fixture-workflow-optional","mode":"workflow","tags":["optional"],"utterance":"oracle description and optionally research","expected":{"kind":"execute","steps":[{"command":"DES","ticker":"ORCL","required":true},{"command":"RES","ticker":"ORCL","required":false}]}},
+  {"id":"fixture-workflow-new-screen","mode":"workflow","tags":["screen"],"utterance":"new screen with world indices and commodities","expected":{"kind":"execute","steps":[{"command":"WEI"},{"command":"GLCO"}],"layout":{"new_screen":true}}},
+  {"id":"fixture-workflow-unsupported","mode":"workflow","tags":["adversarial"],"utterance":"run secret command","expected":{"kind":"unsupported"}},
+  {"id":"fixture-workflow-correction","mode":"workflow","tags":["correction"],"utterance":"tesla no sorry nvidia chart","expected":{"kind":"execute","steps":[{"command":"G","ticker":"NVDA"}]}}
+]

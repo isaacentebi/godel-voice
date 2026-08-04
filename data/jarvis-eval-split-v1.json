@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-08-03",
+  "frozen": false,
+  "policy": "Expandable Jarvis stress suite. This file is intentionally separate from model-eval-split.json and must never be merged into, used to revise, or cited as the frozen dev/holdout benchmark.",
+  "pinned_live": [
+    "jv-noise-options-close-replace",
+    "jv-context-gf-add-and-range",
+    "jv-context-ambiguous-panel",
+    "jv-data-pe-unavailable",
+    "jv-long-market-research-control"
+  ]
+}

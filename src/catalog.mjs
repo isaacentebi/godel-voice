@@ -20,14 +20,15 @@ export function compactCommand(command) {
   const features = command.features?.length ? `;ui=${compactList(command.features)}` : "";
   const constraints = command.constraints?.length ? `;limit=${compactList(command.constraints)}` : "";
   const source = command.status === "live-undocumented" ? ";src=live" : "";
-  return `${command.code}|${command.scope}|${command.intent}${aliases}${args}${features}${constraints}${source}`;
+  const queryPosition = command.query_position === "after" ? ";query=after-command" : "";
+  return `${command.code}|${command.scope}|${command.intent}${aliases}${args}${features}${constraints}${queryPosition}${source}`;
 }
 
 export function buildCompactCatalog(registry = loadRegistry()) {
   const header = [
     `GODEL_SPEC ${registry.version}`,
     `SYNTAX ${registry.syntax}`,
-    "SCOPE global=no security; security=security required; both=optional; query=free-text query before command.",
+    "SCOPE global=no security; security=security required; both=optional; query=free-text query before command unless query=after-command.",
     "ui=features available after the command opens; they are not terminal arguments unless listed under arg=.",
     "alias=accepted spoken/input aliases; always output only the canonical code at the start of the row.",
     "src=live means exposed by the live terminal but without a published detail page: do not invent arguments."

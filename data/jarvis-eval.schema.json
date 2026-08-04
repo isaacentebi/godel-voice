@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godel Voice Jarvis Evaluation Corpus v1",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["schema_version", "id", "mode", "tags", "utterance", "expected"],
+    "properties": {
+      "schema_version": {"const": 2},
+      "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,79}$"},
+      "mode": {"enum": ["intent", "workflow"]},
+      "tags": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+      "utterance": {"type": "string", "minLength": 1},
+      "resolved_entities": {"type": "array", "items": {"type": "object"}},
+      "context": {"type": ["object", "null"]},
+      "scoring": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {"strict_steps": {"type": "boolean"}, "actions": {"enum": ["subset", "exact"]}}
+      },
+      "expected": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind"],
+        "properties": {
+          "kind": {"enum": ["execute", "clarify", "unsupported"]},
+          "steps": {"type": "array", "items": {"$ref": "#/$defs/step"}},
+          "layout": {"type": "object"},
+          "clarification_contains": {"type": "array", "items": {"type": "string"}},
+          "runtime": {"$ref": "#/$defs/runtime"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "target": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "command", "security"],
+      "properties": {
+        "mode": {"enum": ["last", "focused", "command"]},
+        "command": {"type": ["string", "null"]},
+        "security": {"type": ["string", "null"]}
+      }
+    },
+    "action": {
+      "type": "object", "additionalProperties": false,
+      "required": ["feature", "operation", "value"],
+      "properties": {"feature": {"type": "string"}, "operation": {"type": "string"}, "value": {"type": ["string", "number", "boolean", "null"]}}
+    },
+    "step": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "step_kind": {"enum": ["command", "control", "configure"]},
+        "command": {"type": ["string", "null"]}, "ticker": {"type": "string"}, "query": {"type": ["string", "null"]},
+        "arguments": {"type": "array", "items": {"type": "string"}}, "actions": {"type": "array", "items": {"$ref": "#/$defs/action"}},
+        "required": {"type": "boolean"}, "placement": {"type": ["string", "null"]},
+        "control_operation": {"type": "string"}, "control_target": {"$ref": "#/$defs/target"}, "control_value": {"type": ["string", "number", "boolean", "null"]},
+        "configure_target": {"$ref": "#/$defs/target"}
+      }
+    },
+    "runtime": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "outcome": {"enum": ["completed", "partial", "clarified", "unsupported", "failed_closed"]},
+        "screen_action": {"enum": ["same_screen", "reuse_blank", "create_screen", "clarify_limit"]},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "must_not_substitute": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

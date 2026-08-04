@@ -1,16 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Godel Voice Executor",
-  "version": "0.3.0",
+  "version": "0.11.0",
   "description": "Executes validated voice plans only inside the addressed Godel Terminal tab.",
-  "permissions": ["debugger"],
+  "permissions": ["debugger", "scripting", "downloads", "storage"],
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
       "matches": ["https://app.godelterminal.com/*"],
-      "js": ["core.js", "config.local.js", "content.js"],
+      "js": ["core.js", "layout.js", "panel-insights.js", "config.local.js", "content.js", "realtime.js"],
       "run_at": "document_start"
     }
   ],

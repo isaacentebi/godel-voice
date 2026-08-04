@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "purpose": "Natural voice examples for market maps, news, halts and filings. Adapter actions remain disabled until their live Godel callback and completion state are verified.",
+  "blocked_coverage": {
+    "IMAP": ["movers","subindustry","export","member open","hover"],
+    "HMAP": ["export","manual color parameters","tile quick action","hover"],
+    "N": ["advanced filters","sources","categories","languages","include text","exclude text","class action","tts","info panel","inline context","article open","reader back","set to recommended","clear global filters","save global filters","breaking alert","feed export"],
+    "HALT": ["export","row open","reason tooltip"],
+    "CF": ["render filings in Godel","download","export","filter search","filing open","edgar navigation","company scope","global scope"]
+  },
+  "cases": [
+    {"voice":"Show the Dow intraday map as a table","command":"IMAP","status":"candidate-disabled","action":{"feature":"index","operation":"select","value":"DJIA"}},
+    {"voice":"Switch this index map to table view","command":"IMAP","status":"candidate-disabled","action":{"feature":"view","operation":"select","value":"Table"}},
+    {"voice":"Switch this index map to table view and sort by the biggest percentage move","command":"IMAP","status":"candidate-disabled","action":{"feature":"sort","operation":"select","value":{"column":"Chg %","direction":"Descending"}}},
+    {"voice":"Drill into Information Technology on this index map","command":"IMAP","status":"candidate-disabled","live_options":{"sectors":["Information Technology","Energy"]},"action":{"feature":"sector","operation":"drill","value":"Information Technology"}},
+    {"voice":"Go back to the full S and P map","command":"IMAP","status":"candidate-disabled","action":{"feature":"back","operation":"select","value":"Back"}},
+    {"voice":"Show only the index-map losers","command":"IMAP","status":"blocked","action":{"feature":"movers","operation":"select","value":"Losers"}},
+    {"voice":"Export this index map","command":"IMAP","status":"blocked","action":{"feature":"export","operation":"download","value":null}},
+
+    {"voice":"Map my Semis watchlist","command":"HMAP","status":"candidate-disabled","live_options":{"watchlists":["Semis","Core"]},"action":{"feature":"watchlist","operation":"select","value":"Semis"}},
+    {"voice":"Switch the heatmap universe to the Dow","command":"HMAP","status":"candidate-disabled","live_options":{"universes":["S&P 500","DJIA"]},"action":{"feature":"universe","operation":"select","value":"DJIA"}},
+    {"voice":"Size the heatmap by absolute percent change","command":"HMAP","status":"candidate-disabled","live_options":{"size_metrics":["Chg % abs","Market Cap"]},"action":{"feature":"size by","operation":"select","value":"Chg % abs"}},
+    {"voice":"Label every tile with percent change","command":"HMAP","status":"candidate-disabled","live_options":{"label_metrics":["Chg %","Last"]},"action":{"feature":"label","operation":"select","value":"Chg %"}},
+    {"voice":"Hide sectors and stop the animation","command":"HMAP","status":"candidate-disabled","action":{"feature":"sectors","operation":"select","value":"Hide"}},
+    {"voice":"Stop animating the heatmap","command":"HMAP","status":"candidate-disabled","action":{"feature":"animate","operation":"select","value":"Off"}},
+    {"voice":"Refresh the heatmap every seven hundred fifty milliseconds","command":"HMAP","status":"candidate-disabled","live_bounds":{"update interval":{"minimum":250,"maximum":5000}},"action":{"feature":"update interval","operation":"set","value":750}},
+    {"voice":"Use a manual color scale","command":"HMAP","status":"candidate-disabled","action":{"feature":"color","operation":"select","value":"Manual"}},
+    {"voice":"Open the movers drawer on this heatmap","command":"HMAP","status":"candidate-disabled","action":{"feature":"movers","operation":"select","value":"Open"}},
+    {"voice":"Switch this heatmap to its sortable table","command":"HMAP","status":"candidate-disabled","action":{"feature":"view","operation":"select","value":"Table"}},
+    {"voice":"Sort the heatmap table by percentage change descending","command":"HMAP","status":"candidate-disabled","action":{"feature":"sort","operation":"select","value":{"column":"Chg %","direction":"Descending"}}},
+    {"voice":"Set the manual heatmap colors from minus five to plus five","command":"HMAP","status":"blocked","action":{"feature":"manual color parameters","operation":"set","value":{"minimum":-5,"maximum":5}}},
+    {"voice":"Export the heatmap","command":"HMAP","status":"blocked","action":{"feature":"export","operation":"download","value":null}},
+
+    {"voice":"Search this news window for rate cuts","command":"N","status":"candidate-disabled","action":{"feature":"query","operation":"set","value":"rate cuts"}},
+    {"voice":"Show the Core watchlist news","command":"N","status":"candidate-disabled","live_options":{"watchlists":["Core","No Watchlist"]},"action":{"feature":"watchlist","operation":"select","value":"Core"}},
+    {"voice":"Show news from before August first twenty twenty-six","command":"N","status":"candidate-disabled","action":{"feature":"before date","operation":"set","value":"2026-08-01"}},
+    {"voice":"Set this news window date range to Before","command":"N","status":"candidate-disabled","action":{"feature":"date range","operation":"select","value":"Before"}},
+    {"voice":"Pause this news feed","command":"N","status":"candidate-disabled","action":{"feature":"pause","operation":"select","value":"Paused"}},
+    {"voice":"Clear this news window but keep my global filters","command":"N","status":"candidate-disabled","action":{"feature":"clear","operation":"select","value":"Clear"}},
+    {"voice":"Sort this news feed by source ascending","command":"N","status":"candidate-disabled","action":{"feature":"sort","operation":"select","value":{"column":"Source","direction":"Ascending"}}},
+    {"voice":"Save this open article as a PDF without overwriting anything","command":"N","status":"candidate-disabled","action":{"feature":"article pdf","operation":"download","value":"PDF"}},
+    {"voice":"Exclude Zacks from every news window","command":"N","status":"blocked","action":{"feature":"sources","operation":"select","value":"Zacks"}},
+    {"voice":"Reset every news filter to recommended","command":"N","status":"blocked","action":{"feature":"set to recommended","operation":"select","value":null}},
+    {"voice":"Turn on text to speech in this news window","command":"N","status":"blocked","action":{"feature":"tts","operation":"select","value":"On"}},
+
+    {"voice":"Show only active market halts","command":"HALT","status":"live-separate-adapter","action":{"feature":"tab","operation":"select","value":"Active"}},
+    {"voice":"Show resumed halts","command":"HALT","status":"live-separate-adapter","action":{"feature":"tab","operation":"select","value":"Resumed"}},
+    {"voice":"Refresh the halt feed","command":"HALT","status":"candidate-disabled","action":{"feature":"refresh","operation":"refresh","value":null}},
+    {"voice":"Open the security from this halt row","command":"HALT","status":"blocked","action":{"feature":"row open","operation":"open","value":null}},
+
+    {"voice":"Show filings for my Core watchlist","command":"CF","status":"candidate-disabled","live_options":{"watchlists":["Core","No Watchlist"]},"action":{"feature":"watchlist","operation":"select","value":"Core"}},
+    {"voice":"Filter filings to ten K, ten Q and eight K","command":"CF","status":"candidate-disabled","live_options":{"filing_types":["10-K","10-Q","8-K","13F","NT 10-Q"]},"action":{"feature":"filing types","operation":"select","value":["10-K","10-Q","8-K"]}},
+    {"voice":"Select every live filing type","command":"CF","status":"candidate-disabled","action":{"feature":"select all filing types","operation":"select","value":"Select All"}},
+    {"voice":"Apply these filing filters","command":"CF","status":"candidate-disabled","action":{"feature":"apply","operation":"select","value":"Apply"}},
+    {"voice":"Open filings on EDGAR instead of Godel","command":"CF","status":"blocked","action":{"feature":"render filings in Godel","operation":"select","value":"Off"}},
+    {"voice":"Download these filing results","command":"CF","status":"blocked","action":{"feature":"download","operation":"download","value":null}}
+  ]
+}

@@ -1,6 +1,6 @@
 GODEL_SPEC 2026-08-03
 SYNTAX [security identifier] [venue/country] [asset class] [command] [arguments]
-SCOPE global=no security; security=security required; both=optional; query=free-text query before command.
+SCOPE global=no security; security=security required; both=optional; query=free-text query before command unless query=after-command.
 ui=features available after the command opens; they are not terminal arguments unless listed under arg=.
 alias=accepted spoken/input aliases; always output only the canonical code at the start of the row.
 src=live means exposed by the live terminal but without a published detail page: do not invent arguments.
@@ -25,18 +25,18 @@ GLCO|global|Monitor and compare global commodity futures across energy, metals a
 FX|global|Cross-currency matrix and amount converter for major global currencies.;ui=invert pair,from currency,to currency,amount,converted result,cross-rate matrix,direct/inverse/USD-cross resolution
 MOST|global|Rank session securities by activity, gainers, losers or dollar value.;ui=ranking:active|gainers|losers|value,results:10|25|50|100,minimum market cap,maximum market cap,sector filter,volume,dollar volume,market cap,ticker click behavior
 MOSO|global|Find and rank the most actively traded option contracts.;ui=active option contracts,ranked options activity;src=live
-HDS|security|Institutional owners of a company with value, shares and position change from filings.;ui=owner,market value,shares,change,change percent,open 13F,treemap,export;limit=equity-focused
+HDS|security|Institutional owners of a company with value, shares and position change from filings.;ui=owner,market value,shares,change,change percent,open 13F,view,table,treemap,bubble,export;limit=equity-focused
 HLDR|security|Latest holdings owned by a company, fund or instrument.;ui=latest portfolio holdings;src=live
 N|both|Real-time or historical news filtered by security, watchlist, text, source, language, category or date.;alias=CN|NH;ui=exact search,security scope,watchlist scope,date:all|before date,clear,pause/resume,source include/exclude,category include/exclude,language filters,include keywords:up to 20,exclude keywords:up to 20,class action:show|hide|only,article reader,PDF export,inline match context,TTS,info/audit filters,multiple windows
-NI|query|Open News with a free-text search term already applied.;ui=free-text query;src=live
+NI|query|Open News with a free-text search term already applied.;ui=free-text query;query=after-command;src=live
 TOP|global|Reuters-ranked live Top 15 news headlines.;ui=ranked headlines,open article,keyboard navigation,TTS
 RES|both|Find and read research reports.;ui=research reports;src=live
 TREND|global|Rank the most-searched securities across Godel users.;ui=timeframe:1H|24H|WEEK|MONTH,refresh,30-second auto-refresh,search count,sparkline,quote,delisted indicator,ticker click behavior;limit=paid subscription
 HALT|global|Today's U.S. trading halts with reason, halt/quote/resumption times and status.;ui=tab:All|Active|Resumed,refresh,updated time,total and active counts,reason codes,row status colors,ticker click behavior;limit=US markets only,single instance,beta
 ALLQ|security|Every related listing and venue quote for a security with bid, ask, last and volume.;ui=share-class/composite/venue tree,active quotes only toggle,delay status,bid/ask sizes,context actions:Q|G|DES|FOCUS|OMON;limit=beta,bid/ask requires account
-SECF|query|Search every Godel instrument and person by free text, class, venue or country.;alias=SEARCH|TK;ui=query,tab:All|Equities|Corporate Bonds|Options|Sovereign Bonds|Crypto|Index|Futures|Forex|People,max:50|100|250|500,venue multi-select,country multi-select,hide no-trade results,people contact fields,live quotes,row context actions;limit=paid subscribers,beta
+SECF|query|Search every Godel instrument and person by free text, class, venue or country.;alias=SEARCH|TK;ui=query,tab:All|Equities|Corporate Bonds|Options|Sovereign Bonds|Crypto|Index|Futures|Forex|People,max:50|100|250|500,venue multi-select,country multi-select,hide no-trade results,people contact fields,live quotes,row context actions;limit=paid subscribers,beta,also supports bare SECF followed by in-panel search
 WJI|global|Live #general-chat sentiment gauge from bullish/bearish and green/pink Wojak usage.;ui=gauge,bull/bear ratio,raw emote counts,sentiment state
-EQS|global|Screen global equities by valuation, fundamentals, market cap, venue, country, sector or subsector.;ui=range filters:market cap|forward/trailing P/E|P/S|P/B|P/CF|forward EPS|forward revenue,list filters:venue|HQ country|sector|subsector,currency,primary listings only,hide no-trade results,run/clear,export CSV/JSON;limit=equities,beta
+EQS|global|Screen global equities by valuation, fundamentals, market cap, venue, country, sector or subsector.;ui=screen,range filters:market cap|forward/trailing P/E|P/S|P/B|P/CF|forward EPS|forward revenue,list filters:venue|HQ country|sector|subsector,currency,primary listings only,hide no-trade results,run/clear,export CSV/JSON;limit=equities,beta
 OMON|security|Live option chain with expirations, strikes, prices, volume, IV and Greeks.;alias=OPT|CALL|PUT;ui=mode:Both|Calls|Puts,expiration,months out,strikes above/below spot,columns:Last|Bid|Ask|Volume|IV|Delta|Gamma|Vega|Theta|Rho|Lambda|Epsilon,Greek visibility,column reorder/resize,live spot row,open contract in FOCUS|G|OVME
 OVME|both|Black-Scholes option pricing, Greeks and implied-volatility calculator.;ui=call/put,spot,strike,time to expiry,risk-free rate,dividend yield,volatility,option price,implied volatility,Greeks
 CALC|global|Standard scientific arithmetic or time-value-of-money finance calculator.;ui=standard arithmetic,scientific functions,memory,PV,RATE,PMT,FV,NPER,APR/EAR,payments per year,payment timing begin/end

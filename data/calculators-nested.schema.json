@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godel OVME and CALC candidate actions",
+  "description": "Strict calculation-only schemas. Both surfaces are runtime-disabled pending exact live-control proof; outputs must be finite and no trading operation is modeled.",
+  "$defs": {
+    "percent":{"type":"object","additionalProperties":false,"required":["decimal","display_percent"],"properties":{"decimal":{"type":"number"},"display_percent":{"type":"number"}}},
+    "time":{"type":"object","additionalProperties":false,"required":["value","unit"],"properties":{"value":{"type":"number","exclusiveMinimum":0},"unit":{"enum":["days","months","years"]}}},
+    "ovmeModel":{"type":"object","additionalProperties":false,"required":["option_type","spot","strike","time_to_expiry","risk_free_rate","dividend_yield","solve"],"properties":{"option_type":{"enum":["Call","Put"]},"spot":{"type":"number","exclusiveMinimum":0},"strike":{"type":"number","exclusiveMinimum":0},"time_to_expiry":{"$ref":"#/$defs/time"},"risk_free_rate":{"$ref":"#/$defs/percent"},"dividend_yield":{"$ref":"#/$defs/percent"},"volatility":{"$ref":"#/$defs/percent"},"option_price":{"type":"number","exclusiveMinimum":0},"solve":{"enum":["Option Price","Implied Volatility"]}}},
+    "calcValue":{"type":"object","additionalProperties":false,"required":["expression","result"],"properties":{"expression":{"type":"string","minLength":1,"maxLength":500,"pattern":"^[A-Za-z0-9+*/%^()., \\-]+$"},"result":{"type":"number"}}}
+  },
+  "oneOf": [
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"model"},"operation":{"const":"configure"},"value":{"$ref":"#/$defs/ovmeModel"},"scope":{"const":"calculator"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"expression"},"operation":{"const":"evaluate"},"value":{"$ref":"#/$defs/calcValue"},"scope":{"const":"calculator"}}}
+  ],
+  "x-runtime-enabled": false,
+  "x-safety": "calculation only; allowlisted grammar, no eval/code, finite output, no order action"
+}

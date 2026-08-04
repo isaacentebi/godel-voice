@@ -1,0 +1,3520 @@
+{
+  "schema_version": 2,
+  "case_schema_versions": [
+    2
+  ],
+  "generated_at": "2026-08-04T05:46:50.793Z",
+  "offline": false,
+  "cases_file": "data/jarvis-hds-eqs-current-eval-v1.json",
+  "routes_file": "data/model-eval-routes-comparison.json",
+  "reports": [
+    {
+      "route": {
+        "id": "groq-oss-120b-json",
+        "model": "openai/gpt-oss-120b",
+        "base_url": "https://openrouter.ai/api/v1",
+        "provider_only": [
+          "groq"
+        ],
+        "allow_fallbacks": false,
+        "observed_providers": [
+          "Groq"
+        ],
+        "provider_pin_ok": true
+      },
+      "configuration": {
+        "repeat": 1,
+        "warmup": 0,
+        "concurrency": 1,
+        "retries": 2,
+        "retry_base_ms": 1200
+      },
+      "cases": 30,
+      "runs": 30,
+      "overall": {
+        "passed": 7,
+        "total": 30,
+        "accuracy": 0.23333333333333334
+      },
+      "metrics": {
+        "availability": {
+          "passed": 30,
+          "total": 30,
+          "accuracy": 1
+        },
+        "command": {
+          "passed": 5,
+          "total": 5,
+          "accuracy": 1
+        },
+        "workflow": {
+          "passed": 10,
+          "total": 30,
+          "accuracy": 0.3333333333333333
+        },
+        "executable": {
+          "passed": 18,
+          "total": 28,
+          "accuracy": 0.6428571428571429
+        },
+        "action": {
+          "passed": 15,
+          "total": 27,
+          "accuracy": 0.5555555555555556
+        },
+        "entity": {
+          "passed": 4,
+          "total": 4,
+          "accuracy": 1
+        },
+        "clarification": {
+          "passed": 2,
+          "total": 2,
+          "accuracy": 1
+        },
+        "malformed": {
+          "passed": 30,
+          "total": 30,
+          "accuracy": 1
+        },
+        "step": {
+          "passed": 5,
+          "total": 28,
+          "accuracy": 0.17857142857142858
+        },
+        "control": {
+          "passed": 0,
+          "total": 0,
+          "accuracy": null
+        },
+        "configure": {
+          "passed": 1,
+          "total": 23,
+          "accuracy": 0.043478260869565216
+        },
+        "query": {
+          "passed": 0,
+          "total": 0,
+          "accuracy": null
+        },
+        "argument": {
+          "passed": 0,
+          "total": 0,
+          "accuracy": null
+        }
+      },
+      "tags": {
+        "aspirational": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "clarification": {
+          "passed": 2,
+          "total": 2,
+          "accuracy": 1
+        },
+        "compound": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "context": {
+          "passed": 3,
+          "total": 7,
+          "accuracy": 0.42857142857142855
+        },
+        "disambiguation": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "entity": {
+          "passed": 1,
+          "total": 2,
+          "accuracy": 0.5
+        },
+        "eqs": {
+          "passed": 2,
+          "total": 21,
+          "accuracy": 0.09523809523809523
+        },
+        "executable": {
+          "passed": 5,
+          "total": 26,
+          "accuracy": 0.19230769230769232
+        },
+        "follow-up": {
+          "passed": 1,
+          "total": 10,
+          "accuracy": 0.1
+        },
+        "hds": {
+          "passed": 5,
+          "total": 9,
+          "accuracy": 0.5555555555555556
+        },
+        "natural": {
+          "passed": 3,
+          "total": 14,
+          "accuracy": 0.21428571428571427
+        },
+        "noise": {
+          "passed": 1,
+          "total": 7,
+          "accuracy": 0.14285714285714285
+        },
+        "range-filter": {
+          "passed": 1,
+          "total": 14,
+          "accuracy": 0.07142857142857142
+        },
+        "readiness-gap": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "run-clear": {
+          "passed": 1,
+          "total": 7,
+          "accuracy": 0.14285714285714285
+        },
+        "view": {
+          "passed": 4,
+          "total": 8,
+          "accuracy": 0.5
+        }
+      },
+      "stability": {
+        "stable_cases": 30,
+        "total_cases": 30,
+        "consistency": 1,
+        "unstable_cases": []
+      },
+      "runtime": {
+        "expected": 0,
+        "observed": 0,
+        "coverage": null,
+        "passed": 0,
+        "accuracy": null
+      },
+      "latency_ms": {
+        "count": 30,
+        "p50": 913,
+        "p90": 1259,
+        "p95": 1315,
+        "max": 1564
+      },
+      "provider_latency_ms": {
+        "count": 30,
+        "p50": 912,
+        "p90": 1258,
+        "p95": 1314,
+        "max": 1563
+      },
+      "usage": {
+        "prompt_tokens": {
+          "total": 221507,
+          "average": 7383.566666666667
+        },
+        "completion_tokens": {
+          "total": 6919,
+          "average": 230.63333333333333
+        },
+        "cost": {
+          "total": 0.02762385,
+          "average": 0.000920795
+        }
+      },
+      "results": [
+        {
+          "case_id": "he-hds-open-table",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "HDS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "meta",
+                    "ticker": "META",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "view",
+                      "operation": "select",
+                      "value": "Table"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1207,
+            "prompt_tokens": 7386,
+            "completion_tokens": 182,
+            "cost": 0.0012171,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1209
+          }
+        },
+        {
+          "case_id": "he-hds-open-treemap",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "HDS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "nvidia",
+                    "ticker": "NVDA",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "view",
+                      "operation": "select",
+                      "value": "Treemap"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1066,
+            "prompt_tokens": 7389,
+            "completion_tokens": 273,
+            "cost": 0.00111855,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1067
+          }
+        },
+        {
+          "case_id": "he-hds-open-bubble-noisy",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "executable",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "HDS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "microsoft",
+                    "ticker": "MSFT",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1065,
+            "prompt_tokens": 7395,
+            "completion_tokens": 255,
+            "cost": 0.00110865,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1065
+          }
+        },
+        {
+          "case_id": "he-hds-followup-table",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "readiness-gap",
+            "follow-up",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "What would you like to put back in the table? Please specify the command or data you want to restore.",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 483,
+            "prompt_tokens": 7384,
+            "completion_tokens": 97,
+            "cost": 0.0006282,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 484
+          }
+        },
+        {
+          "case_id": "he-hds-followup-treemap",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "executable",
+            "follow-up",
+            "context",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": true
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "HDS",
+                    "security": "META"
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "view",
+                      "operation": "select",
+                      "value": "treemap"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1121,
+            "prompt_tokens": 7386,
+            "completion_tokens": 287,
+            "cost": 0.0011265,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1121
+          }
+        },
+        {
+          "case_id": "he-hds-followup-bubble",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "executable",
+            "follow-up",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "HDS",
+                    "security": "META"
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "bubble",
+                      "operation": "select",
+                      "value": "on"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": "Unsupported HDS feature: bubble"
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1056,
+            "prompt_tokens": 7383,
+            "completion_tokens": 272,
+            "cost": 0.00111705,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1056
+          }
+        },
+        {
+          "case_id": "he-hds-followup-explicit-company",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "executable",
+            "follow-up",
+            "entity"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "configure",
+                  "command": null,
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": {
+                    "mode": "focused",
+                    "command": "HDS",
+                    "security": "META"
+                  },
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "bubble",
+                      "operation": "select",
+                      "value": "bubble"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": "Unsupported HDS feature: bubble"
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1314,
+            "prompt_tokens": 7404,
+            "completion_tokens": 284,
+            "cost": 0.0011274,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1315
+          }
+        },
+        {
+          "case_id": "he-hds-versus-hldr-who-owns",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "disambiguation",
+            "executable",
+            "entity"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "HDS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "berkshire",
+                    "ticker": "BRK.B",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 862,
+            "prompt_tokens": 7397,
+            "completion_tokens": 179,
+            "cost": 0.00106335,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 863
+          }
+        },
+        {
+          "case_id": "he-hds-no-context-view",
+          "repeat": 1,
+          "tags": [
+            "hds",
+            "view",
+            "clarification",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": true,
+              "pass": true
+            },
+            "step": {
+              "applicable": false,
+              "pass": null
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Which existing panel should be changed to bubble view?",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 764,
+            "prompt_tokens": 7364,
+            "completion_tokens": 122,
+            "cost": 0.0010242,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 765
+          }
+        },
+        {
+          "case_id": "he-eqs-run-followup",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "executable",
+            "follow-up",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 646,
+            "prompt_tokens": 7381,
+            "completion_tokens": 172,
+            "cost": 0.00067275,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 647
+          }
+        },
+        {
+          "case_id": "he-eqs-run-immediate",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "executable",
+            "follow-up",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Please specify which Godel command or action you would like to run.",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1049,
+            "prompt_tokens": 7396,
+            "completion_tokens": 89,
+            "cost": 0.0010092,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1049
+          }
+        },
+        {
+          "case_id": "he-eqs-run-noisy",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "executable",
+            "follow-up",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Do you want to run the equity screener (EQS) with the current filter settings?",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 543,
+            "prompt_tokens": 7383,
+            "completion_tokens": 162,
+            "cost": 0.00066705,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 543
+          }
+        },
+        {
+          "case_id": "he-eqs-clear-followup",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "executable",
+            "follow-up",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Do you want to clear the filters on the currently focused EQS screener?",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 798,
+            "prompt_tokens": 7381,
+            "completion_tokens": 266,
+            "cost": 0.00072915,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 799
+          }
+        },
+        {
+          "case_id": "he-eqs-clear-natural",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "executable",
+            "follow-up",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "unsupported",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 382,
+            "prompt_tokens": 7380,
+            "completion_tokens": 89,
+            "cost": 0.0006228,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 382
+          }
+        },
+        {
+          "case_id": "he-eqs-clear-no-context",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "clarification",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": true,
+              "pass": true
+            },
+            "step": {
+              "applicable": false,
+              "pass": null
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Which filters would you like to clear?",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 465,
+            "prompt_tokens": 7362,
+            "completion_tokens": 92,
+            "cost": 0.0006219,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 465
+          }
+        },
+        {
+          "case_id": "he-eqs-run-clear-sequence",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "run-clear",
+            "aspirational",
+            "compound",
+            "follow-up"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Do you want to run the EQS screener now and then clear the results later? Please confirm the sequence.",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 970,
+            "prompt_tokens": 7388,
+            "completion_tokens": 359,
+            "cost": 0.000786,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 970
+          }
+        },
+        {
+          "case_id": "he-range-market-cap",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "Market Cap (USD)",
+                        "minimum": 2000000000,
+                        "maximum": null
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1148,
+            "prompt_tokens": 7366,
+            "completion_tokens": 259,
+            "cost": 0.0007227,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1149
+          }
+        },
+        {
+          "case_id": "he-range-pe-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/E (Fwd)",
+                        "minimum": null,
+                        "maximum": 25
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1054,
+            "prompt_tokens": 7381,
+            "completion_tokens": 275,
+            "cost": 0.00073455,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1055
+          }
+        },
+        {
+          "case_id": "he-range-pe-ttm",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/E (TTM)",
+                        "minimum": 5,
+                        "maximum": 30
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 814,
+            "prompt_tokens": 7384,
+            "completion_tokens": 273,
+            "cost": 0.0007338,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 815
+          }
+        },
+        {
+          "case_id": "he-range-ps-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "unsupported",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Could not determine a valid command from the request.",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 726,
+            "prompt_tokens": 7382,
+            "completion_tokens": 82,
+            "cost": 0.0011565,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 727
+          }
+        },
+        {
+          "case_id": "he-range-ps-ttm",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/S (TTM)",
+                        "minimum": null,
+                        "maximum": 4
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 760,
+            "prompt_tokens": 7383,
+            "completion_tokens": 263,
+            "cost": 0.00072765,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 761
+          }
+        },
+        {
+          "case_id": "he-range-pb-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/B (TTM)",
+                        "minimum": null,
+                        "maximum": 3
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1279,
+            "prompt_tokens": 7384,
+            "completion_tokens": 323,
+            "cost": 0.0011478,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1279
+          }
+        },
+        {
+          "case_id": "he-range-pb-ttm",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/E (TTM)",
+                        "minimum": null,
+                        "maximum": 2
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1084,
+            "prompt_tokens": 7382,
+            "completion_tokens": 288,
+            "cost": 0.0012801,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1084
+          }
+        },
+        {
+          "case_id": "he-range-pcf-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "P/CF (Fwd)",
+                        "minimum": null,
+                        "maximum": 20
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 980,
+            "prompt_tokens": 7383,
+            "completion_tokens": 302,
+            "cost": 0.00075105,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 981
+          }
+        },
+        {
+          "case_id": "he-range-pcf-ttm",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Do you want to screen equities for a trailing cash‑flow multiple between 5 and 15 using the EQS command?",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 795,
+            "prompt_tokens": 7385,
+            "completion_tokens": 180,
+            "cost": 0.00106215,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 795
+          }
+        },
+        {
+          "case_id": "he-range-eps-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "EPS (Fwd 12mo)",
+                        "minimum": 5,
+                        "maximum": null
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 786,
+            "prompt_tokens": 7383,
+            "completion_tokens": 277,
+            "cost": 0.00073605,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 786
+          }
+        },
+        {
+          "case_id": "he-range-revenue-ttm",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "Rev. (TTM, USD)",
+                        "minimum": 1000000000,
+                        "maximum": null
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1563,
+            "prompt_tokens": 7383,
+            "completion_tokens": 370,
+            "cost": 0.00117585,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1564
+          }
+        },
+        {
+          "case_id": "he-range-revenue-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "noise"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "Rev. (Fwd 12mo, USD)",
+                        "minimum": 2500000000,
+                        "maximum": null
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1258,
+            "prompt_tokens": 7385,
+            "completion_tokens": 350,
+            "cost": 0.00131775,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1259
+          }
+        },
+        {
+          "case_id": "he-range-net-income-ttm",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "Net Inc. (TTM, USD)",
+                        "minimum": 100000000,
+                        "maximum": null
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 912,
+            "prompt_tokens": 7384,
+            "completion_tokens": 282,
+            "cost": 0.0007392,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 913
+          }
+        },
+        {
+          "case_id": "he-range-net-income-fwd",
+          "repeat": 1,
+          "tags": [
+            "eqs",
+            "range-filter",
+            "executable",
+            "natural"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": true,
+              "pass": false
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "range_filter",
+                      "operation": "add",
+                      "value": {
+                        "field": "Net Inc. (TTM, USD)",
+                        "minimum": 500000000,
+                        "maximum": null
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 658,
+            "prompt_tokens": 7383,
+            "completion_tokens": 215,
+            "cost": 0.00069885,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 658
+          }
+        }
+      ]
+    }
+  ]
+}

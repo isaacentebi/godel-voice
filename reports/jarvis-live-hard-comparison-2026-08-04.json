@@ -1,0 +1,23 @@
+{
+  "schema_version":1,
+  "benchmark":"Jarvis hard LLM-required planning subset",
+  "cases_file":"data/jarvis-eval-expansion-v2.json",
+  "split_file":"data/jarvis-live-hard-split-v1.json",
+  "partition":"hard_live",
+  "case_count":26,
+  "repeat":1,
+  "concurrency":1,
+  "runtime_accuracy":null,
+  "runtime_accuracy_reason":"No Arc or Godel runtime execution was used.",
+  "selection":{"execute":20,"clarify":3,"unsupported":3,"compound":4,"entity":11,"disambiguation":7,"safety":4,"noise":3,"correction":3},
+  "routes":[
+    {"id":"cerebras-oss-120b-json","provider":"Cerebras","model":"openai/gpt-oss-120b","strict_passed":15,"total":26,"strict_accuracy":0.5769230769230769,"command_accuracy":0.9,"workflow_accuracy":0.8076923076923077,"action_accuracy":0.5714285714285714,"entity_accuracy":0.75,"clarification_accuracy":0.6666666666666666,"well_formed_accuracy":1,"p50_ms":518,"p95_ms":787,"prompt_tokens":208456,"completion_tokens":10555,"measured_cost_usd":0.08087585},
+    {"id":"cerebras-glm-4.7-json","provider":"Cerebras","model":"z-ai/glm-4.7","strict_passed":11,"total":26,"strict_accuracy":0.4230769230769231,"command_accuracy":0.7,"workflow_accuracy":0.6153846153846154,"action_accuracy":0.5714285714285714,"entity_accuracy":0.5833333333333334,"clarification_accuracy":0.3333333333333333,"well_formed_accuracy":0.7692307692307693,"p50_ms":2094,"p95_ms":7338,"prompt_tokens":159148,"completion_tokens":21101,"measured_cost_usd":0.41611075},
+    {"id":"groq-oss-120b-json","provider":"Groq","model":"openai/gpt-oss-120b","strict_passed":16,"total":26,"strict_accuracy":0.6153846153846154,"command_accuracy":0.8,"workflow_accuracy":0.7692307692307693,"action_accuracy":0.7142857142857143,"entity_accuracy":0.75,"clarification_accuracy":0.6666666666666666,"well_formed_accuracy":0.9615384615384616,"p50_ms":1356,"p95_ms":2309,"prompt_tokens":200682,"completion_tokens":7007,"measured_cost_usd":0.0289497}
+  ],
+  "measured_total_cost_usd":0.5259363,
+  "cost_note":"Measured total covers the three completed raw reports. One earlier GLM orchestration attempt produced no report, so any provider charge from that aborted attempt is unknown and excluded.",
+  "validation_gated_fallback":{"candidate":"cerebras-glm-4.7-json","observed_result":"not recommended","reason":"GLM did not recover any of the three Cerebras OSS cases rejected by local plan validation; it was slower, costlier, less accurate, and malformed on six cases."},
+  "recommendation":{"hot_path":"cerebras-oss-120b-json","fallback":"groq-oss-120b-json only after transport, empty-content, or local schema/plan rejection; do not invoke for a valid plan","do_not_use_as_default_fallback":"cerebras-glm-4.7-json","caveat":"One repeat estimates direction, not statistical stability. Keep deterministic fast paths ahead of every model route."},
+  "raw_reports":["reports/jarvis-live-hard-cerebras-oss-2026-08-04.json","reports/jarvis-live-hard-cerebras-glm-2026-08-04.json","reports/jarvis-live-hard-groq-oss-2026-08-04.json"]
+}

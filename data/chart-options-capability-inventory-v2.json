@@ -1,0 +1,88 @@
+{
+  "schema_version": 2,
+  "captured_at": "2026-08-03",
+  "purpose": "Chart, fundamentals graph, historical price, financial statement and option-chain nested capability audit. Descriptive only; documented-unbound actions are not executable.",
+  "commands": [
+    {
+      "command": "G",
+      "aliases": ["GIP", "GP"],
+      "actions": [
+        {"feature":"resolution","operation":"select","values":["1m","5m","15m","30m","1h","1d"],"state":"documented-unbound","completion":"TradingView interval label matches"},
+        {"feature":"range","operation":"select","values":["5y","1y","6m","3m","1m","5d","1d","custom"],"state":"documented-unbound","completion":"range control and visible time axis agree"},
+        {"feature":"style","operation":"select","values":["Candles","Bars","Line","Area","Baseline","Heikin Ashi","Hollow Candles","Renko","Kagi","Point & Figure","Line Break"],"state":"documented-unbound","completion":"chart style control and renderer type agree"},
+        {"feature":"scale","operation":"select","values":["linear","percent","indexed","log"],"state":"documented-unbound","completion":"scale label and price-axis behavior agree"},
+        {"feature":"compare","operation":"add","values":"one pre-resolved security identity","state":"documented-unbound","completion":"exact requested security appears once in the comparison legend"},
+        {"feature":"indicator","operation":"add","values":"dynamic TradingView list","state":"blocked-live-vocabulary","completion":"exact live indicator identity appears once"},
+        {"feature":"drawings toolbar","operation":"select","values":["Show","Hide"],"state":"documented-unbound","completion":"drawings toolbar visibility matches"},
+        {"feature":"layout","operation":"select","values":"dynamic exact live layout name","state":"blocked-live-vocabulary","completion":"active layout name matches exactly"},
+        {"feature":"layout save","operation":"save","values":["Current"],"state":"documented-unbound-confirmation-gated","completion":"explicit confirmation followed by native saved-layout acknowledgement"},
+        {"feature":"alert","operation":"create","values":"verbatim alert request","state":"documented-unbound-confirmation-gated","completion":"explicit confirmation followed by one matching alert in the native alert list"},
+        {"feature":"snapshot","operation":"download","values":["PNG or verified provider URL"],"state":"documented-unbound","completion":"non-empty artifact or verified snapshot URL"}
+      ],
+      "voice":["Make this a one-hour candle chart for six months on log scale.","Save a snapshot of this chart."],
+      "evidence":["https://godelterminal.com/docs/commands/g","data/commands.json#G"]
+    },
+    {
+      "command": "GF",
+      "actions": [
+        {"feature":"add company","operation":"add","values":"verified US symbol","state":"source-verified-data-dependent","completion":"company series exists exactly once"},
+        {"feature":"range","operation":"select","values":["1Y","3Y","5Y","10Y","Max"],"state":"source-verified","completion":"native Range value matches"},
+        {"feature":"include consensus estimates","operation":"select","values":["on","off"],"state":"source-verified","completion":"native estimate boolean matches"},
+        {"feature":"periodicity","operation":"select","values":["Quarterly","Annual"],"state":"source-verified","completion":"exact Quarterly/Annual selector has the unique rendered selected state"},
+        {"feature":"layout","operation":"select","values":["Overlay","Split"],"state":"source-verified","completion":"exact Overlay/Split selector has the unique rendered selected state"},
+        {"feature":"display currency","operation":"select","values":"exact live three-letter currency option","state":"source-verified","completion":"native selector and rendered chart unit both match"},
+        {"feature":"metric","operation":"add","values":["Revenue","Gross Margin","Operating Margin","Net Margin","R&D as % of Revenue","SG&A as % of Revenue","Return on Equity","P/E","P/S","P/B","P/CF"],"state":"source-verified-data-dependent","completion":"metric series exists for every requested company and no unavailable-data banner appears"},
+        {"feature":"style","operation":"select","values":["Line","Bar","Area"],"state":"live-observed-unbound","completion":"per-series style control and renderer agree"},
+        {"feature":"axis","operation":"select","values":["Left","Right"],"state":"live-observed-unbound","completion":"series axis control and displayed axis agree"},
+        {"feature":"scale","operation":"select","values":["Lin","Log","Sym"],"state":"live-observed-unbound","completion":"series scale control matches"},
+        {"feature":"transform","operation":"select","values":["Raw","Growth","MA","Z","Index"],"state":"live-observed-unbound","completion":"transform control and plotted series agree"},
+        {"feature":"export","operation":"open","values":"native chooser","state":"live-observed-artifact-unverified","completion":"chooser opens; no download success claimed"}
+      ],
+      "blockers":["Metric availability varies by company.","GF P/E is not separately verified as forward or trailing; forward P/E requests should use EM or ERN.","Export artifact types are not verified."],
+      "voice":["Add Microsoft and Meta, show five years of operating margin with estimates.","Split this graph and switch it to annual data."],
+      "evidence":["extension/main-world.js#runGF","extension/content.js#executeGF","data/commands.json#GF","reports/live-verification-2026-08-03.md"]
+    },
+    {
+      "command": "HP",
+      "actions": [
+        {"feature":"date range","operation":"set","values":"ISO start/end","state":"documented-unbound","completion":"inputs plus first/last loaded rows match"},
+        {"feature":"resolution","operation":"select","values":["1D","1H","1M"],"state":"documented-unbound","completion":"control and row timestamp granularity match"},
+        {"feature":"page","operation":"select","values":["Previous","Next"],"state":"documented-unbound","completion":"page indicator changes once"},
+        {"feature":"export","operation":"download","values":["Excel","JSON"],"state":"documented-unbound","completion":"all loaded rows exist in a non-empty expected-format artifact"}
+      ],
+      "blockers":["1H and 1M require an intraday entitlement.","Browser download gate is not wired."],
+      "voice":["Switch these historical prices to one-minute rows.","Export every loaded row to Excel."],
+      "evidence":["https://godelterminal.com/docs/commands/hp","data/commands.json#HP"]
+    },
+    {
+      "command": "FA",
+      "actions": [
+        {"feature":"statement","operation":"select","values":["Income Statement","Balance Sheet","Cash Flow"],"state":"documented-unbound","completion":"selected statement and table headings match"},
+        {"feature":"periodicity","operation":"select","values":["Quarterly","Yearly"],"state":"documented-unbound","completion":"control and fiscal columns match"},
+        {"feature":"export","operation":"download","values":["Excel","JSON"],"state":"documented-unbound","completion":"non-empty expected-format artifact passes download gate"}
+      ],
+      "voice":["Switch this to the annual cash-flow statement.","Export this statement as JSON."],
+      "evidence":["https://godelterminal.com/docs/commands/fa","data/commands.json#FA"]
+    },
+    {
+      "command": "OMON",
+      "aliases": ["OPT","CALL","PUT"],
+      "actions": [
+        {"feature":"strike depth","operation":"set","values":"exact live slider value","state":"source-verified","completion":"slider, independent N Strikes label and changed rendered option-table signature agree"},
+        {"feature":"mode","operation":"select","values":["Both","Calls","Puts"],"state":"documented-unbound","completion":"semantic mode and displayed sides agree"},
+        {"feature":"expiration","operation":"select","values":"exact live expiration","state":"blocked-live-vocabulary","completion":"expiry control and every contract row expiry agree"},
+        {"feature":"months out","operation":"set","values":"non-negative integer","state":"documented-unbound","completion":"control and displayed expiry horizon agree"},
+        {"feature":"strikes above","operation":"set","values":"non-negative integer","state":"documented-unbound","completion":"rendered strikes above spot equal request"},
+        {"feature":"strikes below","operation":"set","values":"non-negative integer","state":"documented-unbound","completion":"rendered strikes below spot equal request"},
+        {"feature":"Greek visibility","operation":"show_hide","values":["Delta","Gamma","Vega","Theta","Rho","Lambda","Epsilon"],"state":"documented-unbound","completion":"exact requested Greek columns are visible/hidden"},
+        {"feature":"columns","operation":"configure","values":"dynamic ordered live subset","state":"blocked-live-vocabulary","completion":"visible ordered columns match exactly"},
+        {"feature":"contract","operation":"open","values":["FOCUS","G","OVME"],"state":"documented-unbound","completion":"exact selected option identity opens in destination"}
+      ],
+      "blockers":["Expiration and column lists must be read from the live option chain.","“N strikes around spot” is ambiguous; above and below must be specified separately.","Option entitlement and one exact selected contract are prerequisites.","No action may place an order."],
+      "voice":["Show fifteen strikes in the Apple option chain.","Show calls, three months out, ten strikes above and five below, with delta gamma vega and theta.","Open the selected contract in Black-Scholes."],
+      "evidence":["https://godelterminal.com/docs/commands/omon","data/commands.json#OMON","extension/main-world.js#runOMON","reports/options-news-filings-next-binding.md"]
+    }
+  ],
+  "contextual_followup_module": "src/chart-options-followup.mjs",
+  "integration_state": "partially integrated; OMON native strike depth is executable, while other candidates remain separated into source-verified, documented-unbound and blocked actions"
+}

@@ -4,7 +4,21 @@ set -euo pipefail
 project_dir="${0:A:h:h}"
 secret_file="$project_dir/.godel-voice-secret"
 server_url="http://127.0.0.1:17841"
+protocol_version="4"
+lsof_bin="$(command -v lsof || true)"
 voice_input="$(</dev/stdin)"
+request_id="$(/usr/bin/openssl rand -hex 16)"
+
+same_checkout_server() {
+  local pid="${1:-}" command_line process_cwd
+  command_line="$(/bin/ps -p "$pid" -o command= 2>/dev/null || true)"
+  [[ "$command_line" == *"$project_dir/src/handoff-server.mjs"* ]] && return 0
+  if [[ "$command_line" == *"src/handoff-server.mjs"* && -n "$lsof_bin" ]]; then
+    process_cwd="$($lsof_bin -a -p "$pid" -d cwd -Fn 2>/dev/null | /usr/bin/sed -n 's/^n//p' | /usr/bin/head -1)"
+    [[ "$process_cwd" == "$project_dir" ]] && return 0
+  fi
+  return 1
+}
 
 if [[ ! -f "$secret_file" || ! -f "$project_dir/extension/config.local.js" ]]; then
   "$project_dir/bin/setup-local"
@@ -12,26 +26,76 @@ if [[ ! -f "$secret_file" || ! -f "$project_dir/extension/config.local.js" ]]; t
   exit 2
 fi
 
-if marker="$(/usr/bin/printf '%s' "$voice_input" | /usr/bin/env node "$project_dir/src/consume-intent.mjs" --marker 2>/dev/null)"; then
+if marker="$(/usr/bin/printf '%s' "$voice_input" | /usr/bin/env node "$project_dir/src/compile-fast-followup.mjs" 2>/dev/null)"; then
+  :
+elif marker="$(/usr/bin/printf '%s' "$voice_input" | /usr/bin/env node "$project_dir/src/consume-intent.mjs" --marker 2>/dev/null)"; then
   :
 else
-  marker="$(/usr/bin/printf '%s' "$voice_input" | /usr/bin/env node --env-file-if-exists="$project_dir/.env" "$project_dir/src/compile-marker.mjs")"
+  compiler_error="$(/usr/bin/mktemp "${TMPDIR:-/tmp}/godel-voice-compile.XXXXXX")"
+  if ! marker="$(/usr/bin/printf '%s' "$voice_input" | /usr/bin/env \
+      GODEL_VOICE_REQUEST_ID="$request_id" \
+      GODEL_VOICE_DIAGNOSTICS_PATH="$project_dir/logs/model-inference.jsonl" \
+      node --env-file-if-exists="$project_dir/.env" "$project_dir/src/compile-marker.mjs" 2>"$compiler_error")"; then
+    /usr/bin/printf '%s' "$voice_input" | /usr/bin/env node --env-file-if-exists="$project_dir/.env" \
+      "$project_dir/src/record-voice-failure.mjs" 2>/dev/null || true
+    /bin/cat "$compiler_error" >&2
+    /bin/rm -f "$compiler_error"
+    exit 1
+  fi
+  /bin/rm -f "$compiler_error"
 fi
 secret="$(<"$secret_file")"
+auth_config="$(/usr/bin/mktemp "${TMPDIR:-/tmp}/godel-voice-curl.XXXXXX")"
+/bin/chmod 600 "$auth_config"
+/usr/bin/printf 'header = "Authorization: Bearer %s"\n' "$secret" > "$auth_config"
+trap '/bin/rm -f "$auth_config"' EXIT
+expected_instance="$(/usr/bin/printf '%s' "$project_dir" | /usr/bin/openssl dgst -sha256 -r | /usr/bin/cut -c1-16)"
+expected_build="$(/usr/bin/env node "$project_dir/src/runtime-build-id.mjs")"
 
-if ! /usr/bin/curl --silent --fail --max-time 0.3 "$server_url/health?token=$secret" >/dev/null 2>&1; then
-  /usr/bin/nohup /usr/bin/env node "$project_dir/src/handoff-server.mjs" \
-    >"/tmp/godel-voice-server-$UID.log" 2>&1 &
+health="$(/usr/bin/curl --config "$auth_config" --silent --fail --max-time 0.3 "$server_url/health" 2>/dev/null || true)"
+health_ok="$(/usr/bin/printf '%s' "$health" | /usr/bin/env node -e '
+let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{const v=JSON.parse(s);process.stdout.write(v.protocol_version===Number(process.argv[1])&&v.instance_id===process.argv[2]&&v.build_id===process.argv[3]?"yes":"no")}catch{process.stdout.write("no")}})' "$protocol_version" "$expected_instance" "$expected_build")"
+if [[ "$health_ok" != "yes" ]]; then
+  plist="$HOME/Library/LaunchAgents/com.godelvoice.handoff.plist"
+  if [[ "$(uname -s)" == "Darwin" && -f "$plist" ]]; then
+    "$project_dir/bin/godel-voice-service" restart
+  else
+    # Only stop an obsolete process started from this exact checkout. Never
+    # kill an unrelated service or another Godel Voice checkout on the port.
+    for old_pid in $(${lsof_bin:-/usr/bin/false} -nP -tiTCP:17841 -sTCP:LISTEN 2>/dev/null); do
+      old_command="$(/bin/ps -p "$old_pid" -o command= 2>/dev/null || true)"
+      if same_checkout_server "$old_pid"; then
+        /bin/kill "$old_pid" 2>/dev/null || true
+        for _ in {1..20}; do /bin/kill -0 "$old_pid" 2>/dev/null || break; /bin/sleep 0.05; done
+      else
+        print -u2 "Godel Voice cannot start because port 17841 belongs to another process. Run npm run doctor for details."
+        exit 3
+      fi
+    done
+    "$project_dir/bin/godel-voice-service" start
+  fi
   for _ in {1..30}; do
-    /usr/bin/curl --silent --fail --max-time 0.3 "$server_url/health?token=$secret" >/dev/null 2>&1 && break
-    sleep 0.1
+    health="$(/usr/bin/curl --config "$auth_config" --silent --fail --max-time 0.3 "$server_url/health" 2>/dev/null || true)"
+    health_ok="$(/usr/bin/printf '%s' "$health" | /usr/bin/env node -e '
+let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{const v=JSON.parse(s);process.stdout.write(v.protocol_version===Number(process.argv[1])&&v.instance_id===process.argv[2]&&v.build_id===process.argv[3]?"yes":"no")}catch{process.stdout.write("no")}})' "$protocol_version" "$expected_instance" "$expected_build")"
+    [[ "$health_ok" == "yes" ]] && break
+    /bin/sleep 0.1
   done
+  if [[ "$health_ok" != "yes" ]]; then
+    print -u2 "Godel Voice handoff did not become ready. Run npm run doctor; macOS service logs are under ~/Library/Application Support/GodelVoice/logs."
+    exit 3
+  fi
 fi
 
-/usr/bin/curl --silent --show-error --fail \
+response="$(/usr/bin/printf '%s' "$marker" | /usr/bin/curl --config "$auth_config" --silent --show-error --fail \
   -X POST "$server_url/plan" \
-  -H "Authorization: Bearer $secret" \
+  -H "X-Godel-Request-Id: $request_id" \
   -H "Content-Type: text/plain" \
-  --data-binary "$marker" >/dev/null
+  --data-binary @-)"
 
-print "Godel voice plan queued for the visible Godel tab"
+workflow_id="$(/usr/bin/printf '%s' "$response" | /usr/bin/env node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{process.stdout.write(JSON.parse(s).id||"")}catch{}})')"
+if [[ -z "$workflow_id" ]]; then
+  print -u2 "Godel Voice could not confirm that the workflow was queued. No Godel action was claimed; run npm run doctor and repeat once."
+  exit 4
+fi
+print "Godel voice plan queued${workflow_id:+ ($workflow_id)} for the visible Godel tab"

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godel FX and GR strict candidate actions",
+  "description": "Read-only conversion and ratio-analysis planning. Dynamic identities must be live/trusted; new strict bindings remain disabled and numeric narration requires grounded panel evidence.",
+  "$defs": {
+    "ticker":{"type":"string","pattern":"^[A-Z][A-Z0-9.-]{0,9}$"},
+    "currency":{"type":"string","pattern":"^[A-Z]{3}$"}
+  },
+  "oneOf": [
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"conversion"},"operation":{"const":"configure"},"value":{"type":"object","additionalProperties":false,"required":["from","to","amount"],"properties":{"from":{"$ref":"#/$defs/currency"},"to":{"$ref":"#/$defs/currency"},"amount":{"type":"number","minimum":0},"invert":{"type":"boolean"}}},"scope":{"const":"calculator"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"enum":["buy leg","sell leg"]},"operation":{"const":"select"},"value":{"$ref":"#/$defs/ticker"},"scope":{"const":"ratio"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"period"},"operation":{"const":"select"},"value":{"type":"string","minLength":2,"maxLength":20},"scope":{"const":"ratio"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"enum":["correlation toggle","regression toggle"]},"operation":{"const":"select"},"value":{"enum":["on","off"]},"scope":{"const":"statistics"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"correlation window"},"operation":{"const":"set"},"value":{"type":"integer","minimum":2,"maximum":730},"scope":{"const":"statistics"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"full/filtered data"},"operation":{"const":"select"},"value":{"enum":["Full","Filtered"]},"scope":{"const":"statistics"}}}
+  ],
+  "x-runtime-enabled": false,
+  "x-existing-gr-runtime-preserved": true,
+  "x-safety": "read-only; Buy/Sell are numerator/denominator labels, never order instructions"
+}

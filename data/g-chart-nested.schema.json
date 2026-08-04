@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godel G chart candidate action",
+  "description": "Strict planning schema. Contextual 1h resolution is live-verified; rejected inline CLI intervals and every other TradingView action remain runtime-disabled pending exact live proof. Layout save and alert creation are confirmation-gated.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["feature", "operation", "value", "scope"],
+  "oneOf": [
+    {"properties":{"feature":{"const":"resolution"},"operation":{"const":"select"},"value":{"enum":["1m","5m","15m","30m","1h","1d"]},"scope":{"const":"chart"}}},
+    {"properties":{"feature":{"const":"range"},"operation":{"const":"select"},"value":{"enum":["5y","1y","6m","3m","1m","5d","1d"]},"scope":{"const":"chart"}}},
+    {"properties":{"feature":{"const":"range"},"operation":{"const":"set"},"value":{"type":"object","additionalProperties":false,"required":["start","end"],"properties":{"start":{"type":"string","format":"date"},"end":{"type":"string","format":"date"}}},"scope":{"const":"chart"}}},
+    {"properties":{"feature":{"const":"style"},"operation":{"const":"select"},"value":{"enum":["Candles","Bars","Line","Area","Baseline","Heikin Ashi","Hollow Candles","Renko","Kagi","Point & Figure","Line Break"]},"scope":{"const":"chart"}}},
+    {"properties":{"feature":{"const":"scale"},"operation":{"const":"select"},"value":{"enum":["linear","percent","indexed","log"]},"scope":{"const":"chart"}}},
+    {"properties":{"feature":{"const":"compare"},"operation":{"const":"add"},"value":{"type":"string","pattern":"^[A-Z][A-Z0-9.-]{0,9}$"},"scope":{"const":"chart"}}},
+    {"properties":{"feature":{"const":"indicator"},"operation":{"const":"add"},"value":{"type":"string","minLength":1,"maxLength":100},"scope":{"const":"chart"}}},
+    {"properties":{"feature":{"const":"drawings toolbar"},"operation":{"const":"select"},"value":{"enum":["Show","Hide"]},"scope":{"const":"chart"}}},
+    {"properties":{"feature":{"const":"layout"},"operation":{"const":"select"},"value":{"type":"string","minLength":1,"maxLength":100},"scope":{"const":"chart"}}},
+    {"properties":{"feature":{"const":"layout save"},"operation":{"const":"save"},"value":{"const":"Current"},"scope":{"const":"account"}}},
+    {"properties":{"feature":{"const":"snapshot"},"operation":{"const":"download"},"value":{"const":"PNG"},"scope":{"const":"artifact"}}},
+    {"properties":{"feature":{"const":"alert"},"operation":{"const":"create"},"value":{"type":"object","additionalProperties":false,"required":["request","confirmed"],"properties":{"request":{"type":"string","minLength":1,"maxLength":240},"confirmed":{"type":"boolean"}}},"scope":{"const":"account"}}}
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godel WEI, WEIF and GLCO nested voice architecture",
+  "oneOf": [
+    {
+      "type": "object", "additionalProperties": false, "required": ["feature", "operation", "value"],
+      "properties": {
+        "feature": { "enum": ["category", "venue", "filter"] }, "operation": { "const": "select" },
+        "value": { "type": "string", "minLength": 1, "maxLength": 100 }
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false, "required": ["feature", "operation", "value"],
+      "properties": {
+        "feature": { "const": "sort" }, "operation": { "const": "set" },
+        "value": {
+          "type": "object", "additionalProperties": false, "required": ["field", "direction"],
+          "properties": { "field": { "type": "string", "minLength": 1, "maxLength": 100 }, "direction": { "enum": ["ascending", "descending"] } }
+        }
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false, "required": ["feature", "operation", "value"],
+      "properties": { "feature": { "const": "category" }, "operation": { "const": "select" }, "value": { "type": "string", "minLength": 1, "maxLength": 100 } }
+    },
+    {
+      "type": "object", "additionalProperties": false, "required": ["feature", "operation", "value"],
+      "properties": {
+        "feature": { "const": "contract" }, "operation": { "const": "select" },
+        "value": {
+          "type": "object", "additionalProperties": false, "required": ["id", "label", "category"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 100 },
+            "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+            "category": { "type": "string", "minLength": 1, "maxLength": 100 }
+          }
+        }
+      }
+    }
+  ],
+  "x-runtime-enabled": false,
+  "x-world-status-grounding": "Active/Closed and next-open timestamps require exact current Godel WEI or WEIF panel facts",
+  "x-filter-sort-policy": "Filters and sorts require exact controls explicitly documented for the current panel",
+  "x-glco-identity-policy": "Commodity and futures identities must resolve against exact current live or documented Godel lists; no coal or FX symbol may be invented"
+}

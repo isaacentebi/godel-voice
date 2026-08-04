@@ -1,18 +1,1521 @@
 {
-  "generated_at": "2026-08-03T19:42:15.334Z",
+  "generated_at": "2026-08-03T23:23:33.192Z",
   "model": "openai/gpt-oss-120b",
-  "total": 1,
-  "passed": 1,
-  "failed": 0,
-  "accuracy": 1,
+  "total": 76,
+  "passed": 75,
+  "failed": 1,
+  "accuracy": 0.9868421052631579,
   "providers": {
-    "Cerebras": 1
+    "Groq": 76
   },
   "latency_ms": {
-    "p50": 1617,
-    "p95": 1617
+    "p50": 818,
+    "p95": 1409
   },
   "results": [
+    {
+      "id": "Q-phonetic",
+      "utterance": "uh quick coat for amazon please",
+      "expected": "Q",
+      "actual": "Q",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "Q",
+          "query": null,
+          "security": {
+            "spoken_name": "amazon",
+            "ticker": "AMZN",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for a quick quote (coat) for Amazon, resolved to AMZN EQ."
+        },
+        "terminalCommand": "AMZN US EQ Q",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1175,
+          "prompt_tokens": 5688,
+          "completion_tokens": 123,
+          "cost": 0.0008694
+        }
+      }
+    },
+    {
+      "id": "DES-misspell",
+      "utterance": "open the company discription for apple",
+      "expected": "DES",
+      "actual": "DES",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "DES",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked to open the company description for Apple, mapping to DES command with resolved security."
+        },
+        "terminalCommand": "AAPL US EQ DES",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 929,
+          "prompt_tokens": 5689,
+          "completion_tokens": 156,
+          "cost": 0.00088935
+        }
+      }
+    },
+    {
+      "id": "FA-noisy",
+      "utterance": "can i get nvidia financals um income statment",
+      "expected": "FA",
+      "actual": "FA",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "FA",
+          "query": null,
+          "security": {
+            "spoken_name": "nvidia",
+            "ticker": "NVDA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for Nvidia financials, specifically income statement, mapping to FA command."
+        },
+        "terminalCommand": "NVDA US EQ FA",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1519,
+          "prompt_tokens": 5694,
+          "completion_tokens": 110,
+          "cost": 0.0008625
+        }
+      }
+    },
+    {
+      "id": "ERN-noisy",
+      "utterance": "meta earnins estimates and the beat miss history",
+      "expected": "ERN",
+      "actual": "ERN",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "ERN",
+          "query": null,
+          "security": {
+            "spoken_name": "meta",
+            "ticker": "META",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for meta earnings estimates and beat miss history, which maps to ERN command for the resolved META security."
+        },
+        "terminalCommand": "META US EQ ERN",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1021,
+          "prompt_tokens": 5690,
+          "completion_tokens": 152,
+          "cost": 0.0008871
+        }
+      }
+    },
+    {
+      "id": "EM-phonetic",
+      "utterance": "open amazon earnins metrics sorry matrix",
+      "expected": "EM",
+      "actual": "EM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "EM",
+          "query": null,
+          "security": {
+            "spoken_name": "amazon",
+            "ticker": "AMZN",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested earnings matrix for Amazon, mapping to EM command with resolved security."
+        },
+        "terminalCommand": "AMZN US EQ EM",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1214,
+          "prompt_tokens": 5689,
+          "completion_tokens": 116,
+          "cost": 0.00090375
+        }
+      }
+    },
+    {
+      "id": "SI-misspell",
+      "utterance": "tesla short intrest days to cover",
+      "expected": "SI",
+      "actual": "SI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "SI",
+          "query": null,
+          "security": {
+            "spoken_name": "tesla",
+            "ticker": "TSLA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for Tesla short interest days to cover, maps to SI command with resolved security"
+        },
+        "terminalCommand": "TSLA US EQ SI",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1150,
+          "prompt_tokens": 5691,
+          "completion_tokens": 132,
+          "cost": 0.00087525
+        }
+      }
+    },
+    {
+      "id": "GR-noisy",
+      "utterance": "ratio chart spy verses q q q with rolling carrelation",
+      "expected": "GR",
+      "actual": "GR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "GR",
+          "query": null,
+          "security": {
+            "spoken_name": "spy",
+            "ticker": "SPY",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "sell leg",
+              "operation": "add",
+              "value": "QQQ"
+            },
+            {
+              "feature": "correlation toggle",
+              "operation": "select",
+              "value": "on"
+            }
+          ],
+          "clarification": null,
+          "reason": "User asked for a ratio chart spy versus qqq with rolling correlation, mapping to GR with primary SPY and adding QQQ as sell leg and enabling correlation."
+        },
+        "terminalCommand": "SPY US EQ GR",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1174,
+          "prompt_tokens": 5713,
+          "completion_tokens": 305,
+          "cost": 0.00098235
+        }
+      }
+    },
+    {
+      "id": "ANR-noisy",
+      "utterance": "microsoft analyst raitings upgrades and price targets",
+      "expected": "ANR",
+      "actual": "ANR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "ANR",
+          "query": null,
+          "security": {
+            "spoken_name": "microsoft",
+            "ticker": "MSFT",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for analyst ratings, upgrades and price targets for Microsoft; maps to ANR command with resolved security."
+        },
+        "terminalCommand": "MSFT US EQ ANR",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 933,
+          "prompt_tokens": 5693,
+          "completion_tokens": 141,
+          "cost": 0.00093855
+        }
+      }
+    },
+    {
+      "id": "DVD-phonetic",
+      "utterance": "coke divident yeeld and payment history",
+      "expected": "DVD",
+      "actual": "DVD",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "DVD",
+          "query": null,
+          "security": {
+            "spoken_name": "coke",
+            "ticker": null,
+            "venue": null,
+            "asset_class": null,
+            "needs_resolution": true
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for dividend yield and payment history, maps to DVD command for the resolved KO security."
+        },
+        "terminalCommand": null,
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 571,
+          "prompt_tokens": 5691,
+          "completion_tokens": 140,
+          "cost": 0.00051525
+        }
+      }
+    },
+    {
+      "id": "QM-noisy",
+      "utterance": "open my coat monitor uh quote monitor",
+      "expected": "QM",
+      "actual": "QM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "QM",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested quote monitor, maps to QM command"
+        },
+        "terminalCommand": "QM",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 739,
+          "prompt_tokens": 5668,
+          "completion_tokens": 92,
+          "cost": 0.0008478
+        }
+      }
+    },
+    {
+      "id": "FOCUS-noisy",
+      "utterance": "give me the little live price focus thing for oracle",
+      "expected": "FOCUS",
+      "actual": "FOCUS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "FOCUS",
+          "query": null,
+          "security": {
+            "spoken_name": "oracle",
+            "ticker": "ORCL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for the live price focus view for Oracle, mapping to FOCUS command with resolved security."
+        },
+        "terminalCommand": "ORCL US EQ FOCUS",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 957,
+          "prompt_tokens": 5692,
+          "completion_tokens": 128,
+          "cost": 0.0005082
+        }
+      }
+    },
+    {
+      "id": "TAS-phonetic",
+      "utterance": "apple time and sells trade tape",
+      "expected": "TAS",
+      "actual": "TAS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.97,
+          "command": "TAS",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for Apple trade tape (time and sales)."
+        },
+        "terminalCommand": "AAPL US EQ TAS",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 882,
+          "prompt_tokens": 5688,
+          "completion_tokens": 168,
+          "cost": 0.0008964
+        }
+      }
+    },
+    {
+      "id": "HCP-noisy",
+      "utterance": "historic change persent for reddit over three months",
+      "expected": "HCP",
+      "actual": "HCP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "HCP",
+          "query": null,
+          "security": {
+            "spoken_name": "reddit",
+            "ticker": "RDDT",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for historic change percent for Reddit over three months; maps to HCP command with resolved security."
+        },
+        "terminalCommand": "RDDT US EQ HCP",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 498,
+          "prompt_tokens": 5691,
+          "completion_tokens": 147,
+          "cost": 0.00051945
+        }
+      }
+    },
+    {
+      "id": "WEI-noisy",
+      "utterance": "show the world stock indexes screen",
+      "expected": "WEI",
+      "actual": "WEI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "WEI",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested world stock indexes screen, maps to WEI command."
+        },
+        "terminalCommand": "WEI",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 383,
+          "prompt_tokens": 6179,
+          "completion_tokens": 105,
+          "cost": 0.00056745
+        }
+      }
+    },
+    {
+      "id": "WEIF-noisy",
+      "utterance": "world equity index fewchers by region",
+      "expected": "WEIF",
+      "actual": "WEIF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "WEIF",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for world equity index futures (fewchers) which maps to WEIF command."
+        },
+        "terminalCommand": "WEIF",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 818,
+          "prompt_tokens": 5668,
+          "completion_tokens": 106,
+          "cost": 0.0008562
+        }
+      }
+    },
+    {
+      "id": "IMAP-noisy",
+      "utterance": "which s and p sectors are driving todays move wheel map",
+      "expected": "IMAP",
+      "actual": "IMAP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.96,
+          "command": "IMAP",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requests sector wheel map of S&P sectors driving today's move, matches IMAP command."
+        },
+        "terminalCommand": "IMAP",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 641,
+          "prompt_tokens": 5672,
+          "completion_tokens": 120,
+          "cost": 0.0008652
+        }
+      }
+    },
+    {
+      "id": "HMAP-noisy",
+      "utterance": "heat map my biotech watch list then table view",
+      "expected": "HMAP",
+      "actual": "HMAP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.97,
+          "command": "HMAP",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "view",
+              "operation": "select",
+              "value": "table"
+            }
+          ],
+          "clarification": null,
+          "reason": "User asked for a heat map of biotech watch list and then table view; map command HMAP opened with UI view set to table."
+        },
+        "terminalCommand": "HMAP",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 837,
+          "prompt_tokens": 5926,
+          "completion_tokens": 193,
+          "cost": 0.0005823
+        }
+      }
+    },
+    {
+      "id": "GLCO-noisy",
+      "utterance": "global commodities fewchers energy metals agriculture",
+      "expected": "GLCO",
+      "actual": "GLCO",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "GLCO",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested global commodities futures (energy, metals, agriculture) which maps to GLCO command."
+        },
+        "terminalCommand": "GLCO",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 816,
+          "prompt_tokens": 5668,
+          "completion_tokens": 94,
+          "cost": 0.000849
+        }
+      }
+    },
+    {
+      "id": "FX-noisy",
+      "utterance": "open the four x currency cross matrix",
+      "expected": "FX",
+      "actual": "FX",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "FX",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested a currency cross matrix, which maps to the FX command with no security or additional arguments."
+        },
+        "terminalCommand": "FX",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 446,
+          "prompt_tokens": 6180,
+          "completion_tokens": 118,
+          "cost": 0.0005754
+        }
+      }
+    },
+    {
+      "id": "MOST-noisy",
+      "utterance": "most active tech gainers over two billon market cap",
+      "expected": "MOST",
+      "actual": "MOST",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.97,
+          "command": "MOST",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "ranking",
+              "operation": "select",
+              "value": "gainers"
+            },
+            {
+              "feature": "sector filter",
+              "operation": "select",
+              "value": "Technology"
+            },
+            {
+              "feature": "minimum market cap",
+              "operation": "select",
+              "value": "2B"
+            }
+          ],
+          "clarification": null,
+          "reason": "User asked for most active tech gainers with market cap over two billion, mapping to MOST with ranking=gainers and filters for sector Technology and minimum market cap 2B."
+        },
+        "terminalCommand": "MOST",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1208,
+          "prompt_tokens": 5672,
+          "completion_tokens": 310,
+          "cost": 0.0009792
+        }
+      }
+    },
+    {
+      "id": "MOSO-noisy",
+      "utterance": "most active options contracts market wide",
+      "expected": "MOSO",
+      "actual": "MOSO",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "MOSO",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested market‑wide most active options contracts, which maps to MOSO command."
+        },
+        "terminalCommand": "MOSO",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1241,
+          "prompt_tokens": 5667,
+          "completion_tokens": 103,
+          "cost": 0.00085425
+        }
+      }
+    },
+    {
+      "id": "HDS-noisy",
+      "utterance": "who owns nvidia show instatutional holders",
+      "expected": "HDS",
+      "actual": "HDS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "HDS",
+          "query": null,
+          "security": {
+            "spoken_name": "nvidia",
+            "ticker": "NVDA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for institutional owners of Nvidia; maps to HDS command with resolved security."
+        },
+        "terminalCommand": "NVDA US EQ HDS",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 867,
+          "prompt_tokens": 5693,
+          "completion_tokens": 122,
+          "cost": 0.00086955
+        }
+      }
+    },
+    {
+      "id": "HLDR-noisy",
+      "utterance": "what stocks does berkshire own latest holdins",
+      "expected": "HLDR",
+      "actual": "HLDR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "HLDR",
+          "query": null,
+          "security": {
+            "spoken_name": "berkshire",
+            "ticker": null,
+            "venue": null,
+            "asset_class": null,
+            "needs_resolution": true
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asks for latest holdings of Berkshire, matches HLDR command with provided resolved security"
+        },
+        "terminalCommand": null,
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 971,
+          "prompt_tokens": 5694,
+          "completion_tokens": 174,
+          "cost": 0.0009009
+        }
+      }
+    },
+    {
+      "id": "N-noisy",
+      "utterance": "news for my farmer watch list exclude class actions",
+      "expected": "N",
+      "actual": "N",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "N",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "class action",
+              "operation": "select",
+              "value": "hide"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested news for a watchlist and to exclude class actions; use N with UI action to hide class actions."
+        },
+        "terminalCommand": "N",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1053,
+          "prompt_tokens": 5670,
+          "completion_tokens": 212,
+          "cost": 0.0005553
+        }
+      }
+    },
+    {
+      "id": "NI-noisy",
+      "utterance": "search the news for anti trust regulation",
+      "expected": "NI",
+      "actual": "NI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "NI",
+          "query": "anti trust regulation",
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "NI command for free-text news search"
+        },
+        "terminalCommand": "anti trust regulation NI",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1263,
+          "prompt_tokens": 5668,
+          "completion_tokens": 98,
+          "cost": 0.0008514
+        }
+      }
+    },
+    {
+      "id": "TOP-noisy",
+      "utterance": "read the top fifteen rooters stories",
+      "expected": "TOP",
+      "actual": "TOP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "TOP",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for Reuters top fifteen stories, mapping to TOP command."
+        },
+        "terminalCommand": "TOP",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 529,
+          "prompt_tokens": 6180,
+          "completion_tokens": 105,
+          "cost": 0.0005676
+        }
+      }
+    },
+    {
+      "id": "RES-noisy",
+      "utterance": "find sell side reserch reports on oracle",
+      "expected": "RES",
+      "actual": "RES",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "RES",
+          "query": null,
+          "security": {
+            "spoken_name": "oracle",
+            "ticker": "ORCL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User wants sell-side research reports on Oracle; RES command with resolved security"
+        },
+        "terminalCommand": "ORCL US EQ RES",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 651,
+          "prompt_tokens": 5691,
+          "completion_tokens": 190,
+          "cost": 0.00054525
+        }
+      }
+    },
+    {
+      "id": "TREND-noisy",
+      "utterance": "whats trendin most searched on godel",
+      "expected": "TREND",
+      "actual": "TREND",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "TREND",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for the most‑searched securities trend, maps to TREND command with no security or extra arguments."
+        },
+        "terminalCommand": "TREND",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 552,
+          "prompt_tokens": 5670,
+          "completion_tokens": 101,
+          "cost": 0.0004887
+        }
+      }
+    },
+    {
+      "id": "HALT-noisy",
+      "utterance": "show only the active market holts",
+      "expected": "HALT",
+      "actual": "HALT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "HALT",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "tab",
+              "operation": "select",
+              "value": "Active"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested active market halts; map to HALT command with UI tab set to Active."
+        },
+        "terminalCommand": "HALT",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 687,
+          "prompt_tokens": 5668,
+          "completion_tokens": 135,
+          "cost": 0.0005088
+        }
+      }
+    },
+    {
+      "id": "ALLQ-phonetic",
+      "utterance": "all coats and venues for apple",
+      "expected": "ALLQ",
+      "actual": "ALLQ",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "ALLQ",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for all quotes and venues for Apple, mapping to ALLQ command with resolved security."
+        },
+        "terminalCommand": "AAPL US EQ ALLQ",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 543,
+          "prompt_tokens": 5688,
+          "completion_tokens": 128,
+          "cost": 0.0005076
+        }
+      }
+    },
+    {
+      "id": "SECF-noisy",
+      "utterance": "security finder search gold man corporate bonds on trace",
+      "expected": "SECF",
+      "actual": "SECF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.97,
+          "command": "SECF",
+          "query": "gold man corporate bonds on trace",
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked to search for securities matching the description; SECF handles free-text instrument search."
+        },
+        "terminalCommand": "gold man corporate bonds on trace SECF",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 552,
+          "prompt_tokens": 5670,
+          "completion_tokens": 164,
+          "cost": 0.0005265
+        }
+      }
+    },
+    {
+      "id": "WJI-phonetic",
+      "utterance": "open the wojack sentiment index",
+      "expected": "WJI",
+      "actual": "WJI",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "WJI",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested the Wojak sentiment index, which maps to the WJI command with no security or additional arguments."
+        },
+        "terminalCommand": "WJI",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 633,
+          "prompt_tokens": 5923,
+          "completion_tokens": 101,
+          "cost": 0.00052665
+        }
+      }
+    },
+    {
+      "id": "EQS-noisy",
+      "utterance": "screen us tech stocks forward p e under ten",
+      "expected": "EQS",
+      "actual": "EQS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "EQS",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "forward/trailing P/E",
+              "operation": "select",
+              "value": "under 10"
+            }
+          ],
+          "clarification": null,
+          "reason": "Screen US tech stocks for forward P/E under ten using EQS command with appropriate UI filter"
+        },
+        "terminalCommand": "EQS",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 766,
+          "prompt_tokens": 6438,
+          "completion_tokens": 239,
+          "cost": 0.0006867
+        }
+      }
+    },
+    {
+      "id": "OMON-noisy",
+      "utterance": "apple option chain calls only with gamma",
+      "expected": "OMON",
+      "actual": "OMON",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "OMON",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "mode",
+              "operation": "select",
+              "value": "Calls"
+            },
+            {
+              "feature": "Greek visibility",
+              "operation": "select",
+              "value": "gamma"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested Apple option chain for calls only and wants to see gamma, mapping to OMON with mode Calls and Greek visibility gamma."
+        },
+        "terminalCommand": "AAPL US EQ OMON",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1580,
+          "prompt_tokens": 5689,
+          "completion_tokens": 293,
+          "cost": 0.00060675
+        }
+      }
+    },
+    {
+      "id": "OVME-phonetic",
+      "utterance": "black shoals implied vol calculator",
+      "expected": "OVME",
+      "actual": "OVME",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "OVME",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested implied volatility calculator, maps to OVME command with no security"
+        },
+        "terminalCommand": "OVME",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 510,
+          "prompt_tokens": 5923,
+          "completion_tokens": 109,
+          "cost": 0.00053145
+        }
+      }
+    },
+    {
+      "id": "CALC-noisy",
+      "utterance": "open the finance calculater time value money",
+      "expected": "CALC",
+      "actual": "CALC",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "CALC",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested finance calculator for time value of money; maps to CALC command with no security or arguments."
+        },
+        "terminalCommand": "CALC",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 471,
+          "prompt_tokens": 5669,
+          "completion_tokens": 96,
+          "cost": 0.00048555
+        }
+      }
+    },
+    {
+      "id": "BROK-noisy",
+      "utterance": "open read only brockerage connections",
+      "expected": "BROK",
+      "actual": "BROK",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "BROK",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requests opening read‑only brokerage connections, which maps to BROK command."
+        },
+        "terminalCommand": "BROK",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 822,
+          "prompt_tokens": 5668,
+          "completion_tokens": 117,
+          "cost": 0.000498
+        }
+      }
+    },
+    {
+      "id": "AUM-phonetic",
+      "utterance": "show my connected broker a u m",
+      "expected": "AUM",
+      "actual": "AUM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "AUM",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested AUM overview of connected broker"
+        },
+        "terminalCommand": "AUM",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1207,
+          "prompt_tokens": 5668,
+          "completion_tokens": 105,
+          "cost": 0.0004908
+        }
+      }
+    },
+    {
+      "id": "G-noisy",
+      "utterance": "chart apple in five minit candles",
+      "expected": "G",
+      "actual": "G",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "G",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [
+            "5m"
+          ],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested a chart for Apple with five‑minute candles, mapping to G command with 5m resolution argument."
+        },
+        "terminalCommand": "AAPL US EQ G 5m",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 592,
+          "prompt_tokens": 5689,
+          "completion_tokens": 162,
+          "cost": 0.00052815
+        }
+      }
+    },
+    {
+      "id": "HMS-noisy",
+      "utterance": "compare apple microsoft nvidia historical on one chart",
+      "expected": "HMS",
+      "actual": "HMS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "HMS",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "add/remove securities",
+              "operation": "add",
+              "value": "MSFT"
+            },
+            {
+              "feature": "add/remove securities",
+              "operation": "add",
+              "value": "NVDA"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested compare apple microsoft nvidia historical on one chart, mapping to HMS with primary AAPL and adding MSFT and NVDA."
+        },
+        "terminalCommand": "HMS",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 865,
+          "prompt_tokens": 5731,
+          "completion_tokens": 244,
+          "cost": 0.00058365
+        }
+      }
+    },
     {
       "id": "HP-noisy",
       "utterance": "historical one minit o h l c v prices for bitcoin",
@@ -31,10 +1534,10 @@
           "query": null,
           "security": {
             "spoken_name": "bitcoin",
-            "ticker": "BTCUSD",
-            "venue": "GBL",
-            "asset_class": "CRYPTO",
-            "needs_resolution": false
+            "ticker": null,
+            "venue": null,
+            "asset_class": null,
+            "needs_resolution": true
           },
           "arguments": [],
           "post_open_actions": [
@@ -45,16 +1548,1409 @@
             }
           ],
           "clarification": null,
-          "reason": "User requested minute OHLCV historical data; HP supports resolution UI with 1M option."
+          "reason": "User requested historical one‑minute OHLCV prices for Bitcoin; HP provides OHLCV history and UI resolution selects 1M."
         },
-        "terminalCommand": "BTCUSD GBL CRYPTO HP",
+        "terminalCommand": null,
         "inference": {
           "model": "openai/gpt-oss-120b",
-          "provider": "Cerebras",
-          "latency_ms": 1617,
-          "prompt_tokens": 4824,
-          "completion_tokens": 266,
-          "cost": 0.0018879
+          "provider": "Groq",
+          "latency_ms": 1194,
+          "prompt_tokens": 5697,
+          "completion_tokens": 213,
+          "cost": 0.00096315
+        }
+      }
+    },
+    {
+      "id": "GF-noisy",
+      "utterance": "graph fundementals revenue and ebit da for microsoft",
+      "expected": "GF",
+      "actual": "GF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.97,
+          "command": "GF",
+          "query": null,
+          "security": {
+            "spoken_name": "microsoft",
+            "ticker": "MSFT",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "add metric",
+              "operation": "add",
+              "value": "Revenue"
+            },
+            {
+              "feature": "add metric",
+              "operation": "add",
+              "value": "EBITDA"
+            }
+          ],
+          "clarification": null,
+          "reason": "User asked for a fundamentals graph of revenue and EBITDA for Microsoft; map to GF (fundamentals chart) with Microsoft security and add the two metrics."
+        },
+        "terminalCommand": "MSFT US EQ GF",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 742,
+          "prompt_tokens": 5694,
+          "completion_tokens": 271,
+          "cost": 0.0005943
+        }
+      }
+    },
+    {
+      "id": "CF-noisy",
+      "utterance": "apple sec fillings only eight kays",
+      "expected": "CF",
+      "actual": "CF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.97,
+          "command": "CF",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "filing type filter",
+              "operation": "select",
+              "value": "8-K"
+            }
+          ],
+          "clarification": null,
+          "reason": "User asked for SEC filings (fillings) for Apple, specifying only 8‑K forms."
+        },
+        "terminalCommand": "AAPL US EQ CF",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 674,
+          "prompt_tokens": 5689,
+          "completion_tokens": 209,
+          "cost": 0.00055635
+        }
+      }
+    },
+    {
+      "id": "IPO-noisy",
+      "utterance": "upcoming eye p o offerings and after market performance",
+      "expected": "IPO",
+      "actual": "IPO",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "IPO",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for upcoming IPO offerings and after‑market performance, which maps to the IPO command without a security scope."
+        },
+        "terminalCommand": "IPO",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 352,
+          "prompt_tokens": 5671,
+          "completion_tokens": 100,
+          "cost": 0.00048825
+        }
+      }
+    },
+    {
+      "id": "TRAN-noisy",
+      "utterance": "latest apple earnins call trans cript",
+      "expected": "TRAN",
+      "actual": "TRAN",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "TRAN",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for the latest Apple earnings call transcript; map to TRAN command with resolved Apple security."
+        },
+        "terminalCommand": "AAPL US EQ TRAN",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1248,
+          "prompt_tokens": 5689,
+          "completion_tokens": 159,
+          "cost": 0.00052635
+        }
+      }
+    },
+    {
+      "id": "PAT-noisy",
+      "utterance": "find similar historical price pattrens for tesla",
+      "expected": "PAT",
+      "actual": "PAT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "PAT",
+          "query": null,
+          "security": {
+            "spoken_name": "tesla",
+            "ticker": "TSLA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requests historical price patterns for Tesla, matches PAT command with resolved security"
+        },
+        "terminalCommand": "TSLA US EQ PAT",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 604,
+          "prompt_tokens": 5693,
+          "completion_tokens": 165,
+          "cost": 0.00053055
+        }
+      }
+    },
+    {
+      "id": "PRT-noisy",
+      "utterance": "batch rank systematic pattrens and realised outcomes",
+      "expected": "PRT",
+      "actual": "PRT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.97,
+          "command": "PRT",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked to batch rank systematic patterns and realized outcomes, which maps to PRT command."
+        },
+        "terminalCommand": "PRT",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 433,
+          "prompt_tokens": 5670,
+          "completion_tokens": 129,
+          "cost": 0.0005055
+        }
+      }
+    },
+    {
+      "id": "MAP-noisy",
+      "utterance": "world map which stock exchanges are open right now",
+      "expected": "MAP",
+      "actual": "MAP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "MAP",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for world map of stock exchanges showing open/closed status"
+        },
+        "terminalCommand": "MAP",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 355,
+          "prompt_tokens": 5670,
+          "completion_tokens": 87,
+          "cost": 0.0004803
+        }
+      }
+    },
+    {
+      "id": "CITADEL-noisy",
+      "utterance": "open the sit a dell overview",
+      "expected": "CITADEL",
+      "actual": "CITADEL",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "CITADEL",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User said 'open the sit a dell overview' which maps to CITADEL command with no security"
+        },
+        "terminalCommand": "CITADEL",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 929,
+          "prompt_tokens": 5667,
+          "completion_tokens": 102,
+          "cost": 0.00091125
+        }
+      }
+    },
+    {
+      "id": "KELLY-noisy",
+      "utterance": "kelly cry tear ion position sizing game",
+      "expected": "KELLY",
+      "actual": "KELLY",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "KELLY",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested the Kelly sizing game; command KELLY with no security or arguments."
+        },
+        "terminalCommand": "KELLY",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 814,
+          "prompt_tokens": 5669,
+          "completion_tokens": 97,
+          "cost": 0.00085095
+        }
+      }
+    },
+    {
+      "id": "HELP-noisy",
+      "utterance": "help me with terminal comands and key strokes",
+      "expected": "HELP",
+      "actual": "HELP",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "HELP",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asks for help with terminal commands and keystrokes, maps to HELP command."
+        },
+        "terminalCommand": "HELP",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 690,
+          "prompt_tokens": 5670,
+          "completion_tokens": 100,
+          "cost": 0.0004881
+        }
+      }
+    },
+    {
+      "id": "CHAT-noisy",
+      "utterance": "open the godel chat rooms",
+      "expected": "CHAT",
+      "actual": "CHAT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "CHAT",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open chat interface"
+        },
+        "terminalCommand": "CHAT",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 528,
+          "prompt_tokens": 6435,
+          "completion_tokens": 78,
+          "cost": 0.00058965
+        }
+      }
+    },
+    {
+      "id": "ACM-noisy",
+      "utterance": "open acount management billing and invoices",
+      "expected": "ACM",
+      "actual": "ACM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "ACM",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested account management billing and invoices, which maps to ACM command."
+        },
+        "terminalCommand": "ACM",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1409,
+          "prompt_tokens": 5668,
+          "completion_tokens": 109,
+          "cost": 0.0004932
+        }
+      }
+    },
+    {
+      "id": "PDF-noisy",
+      "utterance": "open terminal settings appearance and keybord prefs",
+      "expected": "PDF",
+      "actual": "PDF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "PDF",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested opening terminal settings appearance and keyboard preferences, which maps to the PDF command."
+        },
+        "terminalCommand": "PDF",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1300,
+          "prompt_tokens": 5669,
+          "completion_tokens": 119,
+          "cost": 0.00086415
+        }
+      }
+    },
+    {
+      "id": "AL-noisy",
+      "utterance": "open alerts for apple dont create one yet",
+      "expected": "AL",
+      "actual": "AL",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "AL",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open alerts view for Apple without creating a new alert"
+        },
+        "terminalCommand": "AAPL US EQ AL",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 807,
+          "prompt_tokens": 5690,
+          "completion_tokens": 135,
+          "cost": 0.0008769
+        }
+      }
+    },
+    {
+      "id": "NOTE-noisy",
+      "utterance": "open my notes for apple",
+      "expected": "NOTE",
+      "actual": "NOTE",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "NOTE",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open notes linked to Apple using NOTE command"
+        },
+        "terminalCommand": "AAPL US EQ NOTE",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1875,
+          "prompt_tokens": 5687,
+          "completion_tokens": 144,
+          "cost": 0.00092025
+        }
+      }
+    },
+    {
+      "id": "ENT-noisy",
+      "utterance": "show my exchange feed entitelements",
+      "expected": "ENT",
+      "actual": "ENT",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "ENT",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested to view exchange feed entitlements, mapping to ENT command with no arguments or UI actions."
+        },
+        "terminalCommand": "ENT",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1164,
+          "prompt_tokens": 5668,
+          "completion_tokens": 172,
+          "cost": 0.0008958
+        }
+      }
+    },
+    {
+      "id": "CHANGE-noisy",
+      "utterance": "whats new open the change log",
+      "expected": "CHANGE",
+      "actual": "CHANGE",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "CHANGE",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Open change log as requested"
+        },
+        "terminalCommand": "CHANGE",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 360,
+          "prompt_tokens": 5668,
+          "completion_tokens": 81,
+          "cost": 0.0004764
+        }
+      }
+    },
+    {
+      "id": "ERR-noisy",
+      "utterance": "open bug report support but dont send anythin",
+      "expected": "ERR",
+      "actual": "ERR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "ERR",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested to open bug report support UI without submitting anything; ERR opens the bug report interface."
+        },
+        "terminalCommand": "ERR",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 748,
+          "prompt_tokens": 5670,
+          "completion_tokens": 169,
+          "cost": 0.0008943
+        }
+      }
+    },
+    {
+      "id": "ambiguous-earnings",
+      "utterance": "uh show me amazon earnins",
+      "expected": "clarify",
+      "actual": "clarify",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "clarify",
+          "confidence": 0.97,
+          "command": null,
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": "Do you want the earnings fundamentals matrix, the analyst consensus EPS estimates, or the earnings call transcript?",
+          "reason": "\"earnings\" is ambiguous among EM, ERN, and TRAN; need clarification per spec."
+        },
+        "terminalCommand": null,
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 729,
+          "prompt_tokens": 5688,
+          "completion_tokens": 184,
+          "cost": 0.0005412
+        }
+      }
+    },
+    {
+      "id": "self-correct-news",
+      "utterance": "show top news no wait search news for anti trust",
+      "expected": "NI",
+      "actual": "clarify",
+      "pass": false,
+      "command_ok": false,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "clarify",
+          "confidence": 0.92,
+          "command": null,
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": "Do you want the Reuters Top 15 news headlines (TOP) or a news search for \"antitrust\" (NI)?",
+          "reason": "User mentioned both \"show top news\" and \"search news for antitrust\" which map to different commands (TOP vs NI)."
+        },
+        "terminalCommand": null,
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 487,
+          "prompt_tokens": 6439,
+          "completion_tokens": 138,
+          "cost": 0.00062625
+        }
+      }
+    },
+    {
+      "id": "self-correct-chart",
+      "utterance": "compare apple to microsoft no sorry just chart apple five minutes",
+      "expected": "G",
+      "actual": "G",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "G",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [
+            "5m"
+          ],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User corrected to only chart Apple with a five‑minute resolution; use G command with 5m argument."
+        },
+        "terminalCommand": "AAPL US EQ G 5m",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 542,
+          "prompt_tokens": 5693,
+          "completion_tokens": 177,
+          "cost": 0.00053775
+        }
+      }
+    },
+    {
+      "id": "filler-option-chain",
+      "utterance": "could you like pull up um the apple calls chain",
+      "expected": "OMON",
+      "actual": "OMON",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "OMON",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for Apple calls chain, mapping to OMON option chain command with resolved Apple security."
+        },
+        "terminalCommand": "AAPL US EQ OMON",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 587,
+          "prompt_tokens": 5692,
+          "completion_tokens": 137,
+          "cost": 0.0005136
+        }
+      }
+    },
+    {
+      "id": "confuse-holders",
+      "utterance": "berkshire holders i mean what does berkshire hold",
+      "expected": "HLDR",
+      "actual": "HLDR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "HLDR",
+          "query": null,
+          "security": {
+            "spoken_name": "berkshire",
+            "ticker": null,
+            "venue": null,
+            "asset_class": null,
+            "needs_resolution": true
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asked for Berkshire holdings; HLDR provides latest holdings owned by a company."
+        },
+        "terminalCommand": null,
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 735,
+          "prompt_tokens": 5696,
+          "completion_tokens": 137,
+          "cost": 0.000879
+        }
+      }
+    },
+    {
+      "id": "GF-peer-pe-natural",
+      "utterance": "compare apple and microsoft p e for five years and include forward estimates",
+      "expected": "GF",
+      "actual": "GF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "GF",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "add company",
+              "operation": "add",
+              "value": "MSFT"
+            },
+            {
+              "feature": "ratio metric",
+              "operation": "select",
+              "value": "P/E"
+            },
+            {
+              "feature": "range",
+              "operation": "select",
+              "value": "5Y"
+            },
+            {
+              "feature": "include consensus estimates",
+              "operation": "select",
+              "value": "on"
+            }
+          ],
+          "clarification": null,
+          "reason": "User wants a fundamentals chart comparing P/E for Apple and Microsoft over five years with forward estimates, mapping to GF with add company, ratio metric, range, and include consensus estimates actions."
+        },
+        "terminalCommand": "AAPL US EQ GF",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1030,
+          "prompt_tokens": 5715,
+          "completion_tokens": 279,
+          "cost": 0.00096705
+        }
+      }
+    },
+    {
+      "id": "GF-peer-revenue-noisy",
+      "utterance": "put nvidia and a m d revenue on the same fundamental chart with street estimates",
+      "expected": "GF",
+      "actual": "GF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "GF",
+          "query": null,
+          "security": {
+            "spoken_name": "nvidia",
+            "ticker": "NVDA",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "add company",
+              "operation": "add",
+              "value": "AMD"
+            },
+            {
+              "feature": "add metric",
+              "operation": "add",
+              "value": "Revenue"
+            },
+            {
+              "feature": "include consensus estimates",
+              "operation": "select",
+              "value": "on"
+            }
+          ],
+          "clarification": null,
+          "reason": "User wants revenue chart for NVDA and AMD with street estimates"
+        },
+        "terminalCommand": "NVDA US EQ GF",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1371,
+          "prompt_tokens": 5719,
+          "completion_tokens": 297,
+          "cost": 0.00061365
+        }
+      }
+    },
+    {
+      "id": "GF-margin-split",
+      "utterance": "graph meta verses google operating margins split view annual ten years",
+      "expected": "GF",
+      "actual": "GF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "GF",
+          "query": null,
+          "security": {
+            "spoken_name": "meta",
+            "ticker": "META",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "margin metric",
+              "operation": "select",
+              "value": "Operating Margin"
+            },
+            {
+              "feature": "range",
+              "operation": "select",
+              "value": "10Y"
+            },
+            {
+              "feature": "periodicity",
+              "operation": "select",
+              "value": "Annual"
+            },
+            {
+              "feature": "layout",
+              "operation": "select",
+              "value": "Split"
+            }
+          ]
+        },
+        "terminalCommand": "META US EQ GF",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1212,
+          "prompt_tokens": 5711,
+          "completion_tokens": 500,
+          "cost": 0.00073425
+        }
+      }
+    },
+    {
+      "id": "GR-price-ratio-edge",
+      "utterance": "apple versus microsoft price ratio correlation not their p e",
+      "expected": "GR",
+      "actual": "GR",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "GR",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "sell leg",
+              "operation": "select",
+              "value": "MSFT"
+            },
+            {
+              "feature": "correlation toggle",
+              "operation": "select",
+              "value": "on"
+            }
+          ],
+          "clarification": null,
+          "reason": "User requested price ratio and correlation between Apple and Microsoft, not P/E; use GR with primary Apple and secondary MSFT, enable correlation."
+        },
+        "terminalCommand": "GR",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 791,
+          "prompt_tokens": 5712,
+          "completion_tokens": 227,
+          "cost": 0.0005706
+        }
+      }
+    },
+    {
+      "id": "compare-unspecified-hms",
+      "utterance": "compare apple against microsoft on a chart",
+      "expected": "HMS",
+      "actual": "HMS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "HMS",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "add/remove securities",
+              "operation": "add",
+              "value": "MSFT"
+            }
+          ],
+          "clarification": null,
+          "reason": "User wants to compare Apple and Microsoft on a chart, mapping to HMS with Apple primary and adding Microsoft."
+        },
+        "terminalCommand": "AAPL US EQ HMS",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 1016,
+          "prompt_tokens": 5709,
+          "completion_tokens": 277,
+          "cost": 0.00060015
+        }
+      }
+    },
+    {
+      "id": "ERN-forward-pe",
+      "utterance": "show amazon consensus e p s and forward p e by fiscal year",
+      "expected": "ERN",
+      "actual": "ERN",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "ERN",
+          "query": null,
+          "security": {
+            "spoken_name": "amazon",
+            "ticker": "AMZN",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requested consensus EPS and forward P/E for Amazon, mapping to ERN command with resolved security"
+        },
+        "terminalCommand": "AMZN US EQ ERN",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 819,
+          "prompt_tokens": 5695,
+          "completion_tokens": 132,
+          "cost": 0.00087585
+        }
+      }
+    },
+    {
+      "id": "EM-forward-multiples",
+      "utterance": "amazon historical and next four quarter p e multiples table",
+      "expected": "EM",
+      "actual": "EM",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "EM",
+          "query": null,
+          "security": {
+            "spoken_name": "amazon",
+            "ticker": "AMZN",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User requests historical and forward P/E multiples table for Amazon; EM provides fundamentals matrix with P/E metric."
+        },
+        "terminalCommand": "AMZN US EQ EM",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 885,
+          "prompt_tokens": 5692,
+          "completion_tokens": 151,
+          "cost": 0.0008868
+        }
+      }
+    },
+    {
+      "id": "DES-forward-pe-snapshot",
+      "utterance": "just give me the current forward p e snapshot for amazon",
+      "expected": "DES",
+      "actual": "DES",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "DES",
+          "query": null,
+          "security": {
+            "spoken_name": "amazon",
+            "ticker": "AMZN",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asks for current forward P/E snapshot, which is provided by the DES overview command for a single security."
+        },
+        "terminalCommand": "AMZN US EQ DES",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 907,
+          "prompt_tokens": 5693,
+          "completion_tokens": 145,
+          "cost": 0.00094095
+        }
+      }
+    },
+    {
+      "id": "EQS-forward-pe-screen",
+      "utterance": "screen us software stocks forward p e below fifteen and market cap above ten billion",
+      "expected": "EQS",
+      "actual": "EQS",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.97,
+          "command": "EQS",
+          "query": null,
+          "security": null,
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "Screen US software equities with forward P/E <15 and market cap >10B"
+        },
+        "terminalCommand": "EQS",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 853,
+          "prompt_tokens": 5676,
+          "completion_tokens": 297,
+          "cost": 0.0006072
+        }
+      }
+    },
+    {
+      "id": "self-correct-pe",
+      "utterance": "compare apple microsoft prices no sorry their p e over five years",
+      "expected": "GF",
+      "actual": "GF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.97,
+          "command": "GF",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "add company",
+              "operation": "add",
+              "value": "MSFT"
+            },
+            {
+              "feature": "ratio metric",
+              "operation": "select",
+              "value": "P/E"
+            },
+            {
+              "feature": "range",
+              "operation": "select",
+              "value": "5Y"
+            }
+          ],
+          "clarification": null,
+          "reason": "User wants to compare Apple and Microsoft P/E over five years; use GF with Apple as primary, add Microsoft, set metric P/E and timeframe 5Y."
+        },
+        "terminalCommand": "AAPL US EQ GF",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 966,
+          "prompt_tokens": 5714,
+          "completion_tokens": 261,
+          "cost": 0.0005913
+        }
+      }
+    },
+    {
+      "id": "filler-forward-pe",
+      "utterance": "uh can you like show me meta forward price to earnins with the analyst consensus",
+      "expected": "ERN",
+      "actual": "ERN",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 0.99,
+          "command": "ERN",
+          "query": null,
+          "security": {
+            "spoken_name": "meta",
+            "ticker": "META",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [],
+          "clarification": null,
+          "reason": "User asks for forward price-to-earnings with analyst consensus for Meta; ERN provides consensus EPS and forward P/E."
+        },
+        "terminalCommand": "META US EQ ERN",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 661,
+          "prompt_tokens": 5697,
+          "completion_tokens": 149,
+          "cost": 0.00052155
+        }
+      }
+    },
+    {
+      "id": "negative-capability",
+      "utterance": "compare apple and microsoft forward p e but only if godel actually has the data",
+      "expected": "GF",
+      "actual": "GF",
+      "pass": true,
+      "command_ok": true,
+      "query_ok": true,
+      "argument_ok": true,
+      "action_ok": true,
+      "result": {
+        "intent": {
+          "kind": "execute",
+          "confidence": 1,
+          "command": "GF",
+          "query": null,
+          "security": {
+            "spoken_name": "apple",
+            "ticker": "AAPL",
+            "venue": "US",
+            "asset_class": "EQ",
+            "needs_resolution": false
+          },
+          "arguments": [],
+          "post_open_actions": [
+            {
+              "feature": "add company",
+              "operation": "add",
+              "value": "MSFT"
+            },
+            {
+              "feature": "ratio metric",
+              "operation": "select",
+              "value": "P/E"
+            },
+            {
+              "feature": "include consensus estimates",
+              "operation": "select",
+              "value": "on"
+            }
+          ],
+          "clarification": null,
+          "reason": "User wants to compare Apple and Microsoft forward P/E; use GF with primary AAPL, add MSFT, select P/E metric and include consensus estimates."
+        },
+        "terminalCommand": "AAPL US EQ GF",
+        "inference": {
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "latency_ms": 705,
+          "prompt_tokens": 5718,
+          "completion_tokens": 237,
+          "cost": 0.0005775
         }
       }
     }

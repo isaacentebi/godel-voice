@@ -1,0 +1,3450 @@
+{
+  "schema_version": 2,
+  "case_schema_versions": [
+    2
+  ],
+  "generated_at": "2026-08-04T07:38:39.403Z",
+  "offline": false,
+  "cases_file": "data/jarvis-eval-expansion-v2.json",
+  "routes_file": "data/model-eval-routes-comparison.json",
+  "reports": [
+    {
+      "route": {
+        "id": "cerebras-oss-120b-json",
+        "model": "openai/gpt-oss-120b",
+        "base_url": "https://openrouter.ai/api/v1",
+        "provider_only": [
+          "cerebras"
+        ],
+        "allow_fallbacks": false,
+        "observed_providers": [
+          "Cerebras"
+        ],
+        "provider_pin_ok": true
+      },
+      "configuration": {
+        "repeat": 1,
+        "warmup": 0,
+        "concurrency": 1,
+        "retries": 0,
+        "retry_base_ms": 1000
+      },
+      "cases": 26,
+      "runs": 26,
+      "overall": {
+        "passed": 15,
+        "total": 26,
+        "accuracy": 0.5769230769230769
+      },
+      "metrics": {
+        "availability": {
+          "passed": 26,
+          "total": 26,
+          "accuracy": 1
+        },
+        "command": {
+          "passed": 18,
+          "total": 20,
+          "accuracy": 0.9
+        },
+        "workflow": {
+          "passed": 21,
+          "total": 26,
+          "accuracy": 0.8076923076923077
+        },
+        "executable": {
+          "passed": 16,
+          "total": 20,
+          "accuracy": 0.8
+        },
+        "action": {
+          "passed": 4,
+          "total": 7,
+          "accuracy": 0.5714285714285714
+        },
+        "entity": {
+          "passed": 9,
+          "total": 12,
+          "accuracy": 0.75
+        },
+        "clarification": {
+          "passed": 2,
+          "total": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "malformed": {
+          "passed": 26,
+          "total": 26,
+          "accuracy": 1
+        },
+        "step": {
+          "passed": 13,
+          "total": 20,
+          "accuracy": 0.65
+        },
+        "control": {
+          "passed": 0,
+          "total": 0,
+          "accuracy": null
+        },
+        "configure": {
+          "passed": 0,
+          "total": 0,
+          "accuracy": null
+        },
+        "query": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "argument": {
+          "passed": 0,
+          "total": 0,
+          "accuracy": null
+        }
+      },
+      "tags": {
+        "alerts": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "ambiguity": {
+          "passed": 0,
+          "total": 2,
+          "accuracy": 0
+        },
+        "brokerage": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "charts": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "chat": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "clarification": {
+          "passed": 2,
+          "total": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "close": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "comparison": {
+          "passed": 1,
+          "total": 3,
+          "accuracy": 0.3333333333333333
+        },
+        "compound": {
+          "passed": 1,
+          "total": 4,
+          "accuracy": 0.25
+        },
+        "context": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "control": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "correction": {
+          "passed": 1,
+          "total": 3,
+          "accuracy": 0.3333333333333333
+        },
+        "disambiguation": {
+          "passed": 5,
+          "total": 7,
+          "accuracy": 0.7142857142857143
+        },
+        "earnings": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "entity": {
+          "passed": 6,
+          "total": 11,
+          "accuracy": 0.5454545454545454
+        },
+        "expansion": {
+          "passed": 15,
+          "total": 26,
+          "accuracy": 0.5769230769230769
+        },
+        "fail-closed": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "filings": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "filters": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "fundamentals": {
+          "passed": 0,
+          "total": 2,
+          "accuracy": 0
+        },
+        "holders": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "holdings": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "layout": {
+          "passed": 1,
+          "total": 4,
+          "accuracy": 0.25
+        },
+        "map": {
+          "passed": 2,
+          "total": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "market": {
+          "passed": 1,
+          "total": 2,
+          "accuracy": 0.5
+        },
+        "news": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "noise": {
+          "passed": 1,
+          "total": 3,
+          "accuracy": 0.3333333333333333
+        },
+        "options": {
+          "passed": 1,
+          "total": 2,
+          "accuracy": 0.5
+        },
+        "query": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "ratio": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "regression": {
+          "passed": 2,
+          "total": 2,
+          "accuracy": 1
+        },
+        "research": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "safety": {
+          "passed": 3,
+          "total": 4,
+          "accuracy": 0.75
+        },
+        "screener": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "support": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "unsupported": {
+          "passed": 1,
+          "total": 3,
+          "accuracy": 0.3333333333333333
+        }
+      },
+      "stability": {
+        "stable_cases": 26,
+        "total_cases": 26,
+        "consistency": 1,
+        "unstable_cases": []
+      },
+      "runtime": {
+        "expected": 0,
+        "observed": 0,
+        "coverage": null,
+        "passed": 0,
+        "accuracy": null
+      },
+      "latency_ms": {
+        "count": 26,
+        "p50": 518,
+        "p90": 726,
+        "p95": 787,
+        "max": 909
+      },
+      "provider_latency_ms": {
+        "count": 26,
+        "p50": 518,
+        "p90": 726,
+        "p95": 786,
+        "max": 903
+      },
+      "usage": {
+        "prompt_tokens": {
+          "total": 208456,
+          "average": 8017.538461538462
+        },
+        "completion_tokens": {
+          "total": 10555,
+          "average": 405.96153846153845
+        },
+        "cost": {
+          "total": 0.08087584999999999,
+          "average": 0.0031106096153846147
+        }
+      },
+      "results": [
+        {
+          "case_id": "xv2-gr-pair-spoken",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "ratio",
+            "comparison",
+            "entity"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "GR",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "apple",
+                    "ticker": "AAPL",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "buy leg",
+                      "operation": "select",
+                      "value": "AAPL"
+                    },
+                    {
+                      "feature": "sell leg",
+                      "operation": "select",
+                      "value": "MSFT"
+                    },
+                    {
+                      "feature": "correlation toggle",
+                      "operation": "select",
+                      "value": "on"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "comparison",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 903,
+            "prompt_tokens": 8036,
+            "completion_tokens": 461,
+            "cost": 0.00315835,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 909
+          }
+        },
+        {
+          "case_id": "xv2-imap-not-world-map",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "map",
+            "disambiguation",
+            "regression"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "IMAP",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 409,
+            "prompt_tokens": 8004,
+            "completion_tokens": 290,
+            "cost": 0.0030189,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 411
+          }
+        },
+        {
+          "case_id": "xv2-hds-who-owns",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "holders",
+            "disambiguation",
+            "entity"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "HDS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "nvidia",
+                    "ticker": "NVDA",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 786,
+            "prompt_tokens": 8019,
+            "completion_tokens": 262,
+            "cost": 0.00300315,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 787
+          }
+        },
+        {
+          "case_id": "xv2-hldr-what-fund-owns",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "holdings",
+            "disambiguation",
+            "entity"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "HLDR",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "berkshire",
+                    "ticker": "BRK.B",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 549,
+            "prompt_tokens": 8022,
+            "completion_tokens": 287,
+            "cost": 0.00302295,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 549
+          }
+        },
+        {
+          "case_id": "xv2-ni-query-correction",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "news",
+            "query",
+            "correction"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": true,
+              "pass": true
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "NI",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": "fed rate cuts",
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 386,
+            "prompt_tokens": 7998,
+            "completion_tokens": 262,
+            "cost": 0.0029958,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 387
+          }
+        },
+        {
+          "case_id": "xv2-eqs-basic-screen",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "screener",
+            "filters"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EQS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "market_cap",
+                      "operation": "set",
+                      "value": {
+                        "minimum": {
+                          "value": 10,
+                          "unit": "B"
+                        },
+                        "maximum": null
+                      }
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": "EQS supports only structured range_filter.add or Run/Clear screen actions"
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 479,
+            "prompt_tokens": 7999,
+            "completion_tokens": 393,
+            "cost": 0.0030944,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 480
+          }
+        },
+        {
+          "case_id": "xv2-omon-puts",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "options",
+            "entity"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "OMON",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "amazon",
+                    "ticker": "AMZN",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "mode",
+                      "operation": "select",
+                      "value": "Puts"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "options",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": "UI automation is not allowlisted for OMON"
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 366,
+            "prompt_tokens": 8012,
+            "completion_tokens": 257,
+            "cost": 0.00299695,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 367
+          }
+        },
+        {
+          "case_id": "xv2-brok-readonly-manager",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "brokerage",
+            "safety"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "BROK",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 418,
+            "prompt_tokens": 7999,
+            "completion_tokens": 308,
+            "cost": 0.00303065,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 419
+          }
+        },
+        {
+          "case_id": "xv2-hms-three-way",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "charts",
+            "comparison",
+            "entity"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "HMS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "amazon",
+                    "ticker": "AMZN",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "add/remove securities",
+                      "operation": "add",
+                      "value": "META"
+                    },
+                    {
+                      "feature": "add/remove securities",
+                      "operation": "add",
+                      "value": "MSFT"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "comparison",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 469,
+            "prompt_tokens": 8057,
+            "completion_tokens": 406,
+            "cost": 0.00312445,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 470
+          }
+        },
+        {
+          "case_id": "xv2-gf-margin-comparison",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "fundamentals",
+            "comparison",
+            "entity"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "GF",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "meta",
+                    "ticker": "META",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "add company",
+                      "operation": "add",
+                      "value": "MSFT"
+                    },
+                    {
+                      "feature": "add metric",
+                      "operation": "add",
+                      "value": "Operating Margin"
+                    },
+                    {
+                      "feature": "range",
+                      "operation": "select",
+                      "value": "5Y"
+                    },
+                    {
+                      "feature": "include consensus estimates",
+                      "operation": "select",
+                      "value": "on"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "comparison",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 508,
+            "prompt_tokens": 8038,
+            "completion_tokens": 628,
+            "cost": 0.0032843,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 509
+          }
+        },
+        {
+          "case_id": "xv2-cf-company-filings",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "filings",
+            "entity"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "CF",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "apple",
+                    "ticker": "AAPL",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 518,
+            "prompt_tokens": 8019,
+            "completion_tokens": 386,
+            "cost": 0.00309615,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 518
+          }
+        },
+        {
+          "case_id": "xv2-map-not-index",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "map",
+            "disambiguation",
+            "regression"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "MAP",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 390,
+            "prompt_tokens": 8003,
+            "completion_tokens": 276,
+            "cost": 0.00300805,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 391
+          }
+        },
+        {
+          "case_id": "xv2-err-open-not-submit",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "support",
+            "safety"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "ERR",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 334,
+            "prompt_tokens": 7997,
+            "completion_tokens": 231,
+            "cost": 0.0029722,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 334
+          }
+        },
+        {
+          "case_id": "xv2-workflow-company-desk-noisy",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "compound",
+            "research",
+            "noise",
+            "layout"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": false
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "DES",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "microsoft",
+                    "ticker": "MSFT",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "step_kind": "command",
+                  "command": "EM",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "microsoft",
+                    "ticker": "MSFT",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "step_kind": "command",
+                  "command": "ERN",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "microsoft",
+                    "ticker": "MSFT",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "step_kind": "command",
+                  "command": "HDS",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "microsoft",
+                    "ticker": "MSFT",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "step_kind": "command",
+                  "command": "N",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "microsoft",
+                    "ticker": "MSFT",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 571,
+            "prompt_tokens": 8036,
+            "completion_tokens": 920,
+            "cost": 0.0035026,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 572
+          }
+        },
+        {
+          "case_id": "xv2-workflow-market-open-map-distinction",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "compound",
+            "market",
+            "map",
+            "disambiguation",
+            "layout"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": false
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "IMAP",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": "upper left"
+                },
+                {
+                  "step_kind": "command",
+                  "command": "IMAP",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": "lower left"
+                },
+                {
+                  "step_kind": "command",
+                  "command": "HMAP",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": "upper right"
+                },
+                {
+                  "step_kind": "command",
+                  "command": "HALT",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "tab",
+                      "operation": "select",
+                      "value": "Active"
+                    }
+                  ],
+                  "required": true,
+                  "placement": "lower right"
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": false,
+                "new_screen": true
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": "Invalid steps[0].layout.placement"
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 567,
+            "prompt_tokens": 8012,
+            "completion_tokens": 696,
+            "cost": 0.0033262,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 568
+          }
+        },
+        {
+          "case_id": "xv2-workflow-options-correction",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "compound",
+            "options",
+            "correction",
+            "layout"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": true,
+              "pass": false
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "OMON",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "apple",
+                    "ticker": "AAPL",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "mode",
+                      "operation": "select",
+                      "value": "Puts"
+                    }
+                  ],
+                  "required": true,
+                  "placement": "left"
+                },
+                {
+                  "step_kind": "command",
+                  "command": "OVME",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": "right"
+                },
+                {
+                  "step_kind": "command",
+                  "command": "G",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "apple",
+                    "ticker": "AAPL",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": "top"
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": "UI automation is not allowlisted for OMON"
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 726,
+            "prompt_tokens": 8025,
+            "completion_tokens": 891,
+            "cost": 0.003477,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 726
+          }
+        },
+        {
+          "case_id": "xv2-workflow-macro-strip",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "compound",
+            "market",
+            "layout"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "WEI",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "step_kind": "command",
+                  "command": "WEIF",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "step_kind": "command",
+                  "command": "GLCO",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "step_kind": "command",
+                  "command": "FX",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": true,
+                "new_screen": true
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 520,
+            "prompt_tokens": 7999,
+            "completion_tokens": 598,
+            "cost": 0.00324815,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 521
+          }
+        },
+        {
+          "case_id": "xv2-entity-alphabet-share-class",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "entity",
+            "ambiguity",
+            "clarification"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": true,
+              "pass": false
+            },
+            "step": {
+              "applicable": false,
+              "pass": null
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Do you want the earnings matrix (EM), consensus EPS estimates (ERN), or the earnings transcript (TRAN) for Alphabet?",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 368,
+            "prompt_tokens": 7991,
+            "completion_tokens": 186,
+            "cost": 0.00293635,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 369
+          }
+        },
+        {
+          "case_id": "xv2-entity-square-block",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "entity",
+            "ambiguity",
+            "correction"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": false
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "EM",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "block",
+                    "ticker": null,
+                    "venue": null,
+                    "asset_class": null,
+                    "needs_resolution": true
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 427,
+            "prompt_tokens": 8019,
+            "completion_tokens": 380,
+            "cost": 0.00309165,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 429
+          }
+        },
+        {
+          "case_id": "xv2-entity-meta-not-metals",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "entity",
+            "noise",
+            "disambiguation"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": true
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "G",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "meta",
+                    "ticker": "META",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 518,
+            "prompt_tokens": 8015,
+            "completion_tokens": 269,
+            "cost": 0.003007,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 518
+          }
+        },
+        {
+          "case_id": "xv2-entity-unity-game-engine",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "entity",
+            "noise",
+            "disambiguation"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": false
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": true,
+              "pass": false
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "DES",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "unity",
+                    "ticker": null,
+                    "venue": null,
+                    "asset_class": null,
+                    "needs_resolution": true
+                  },
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 500,
+            "prompt_tokens": 8016,
+            "completion_tokens": 234,
+            "cost": 0.0029811,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 501
+          }
+        },
+        {
+          "case_id": "xv2-ambiguous-earnings",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "clarification",
+            "earnings"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": true,
+              "pass": true
+            },
+            "step": {
+              "applicable": false,
+              "pass": null
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Do you mean the earnings matrix, analyst estimates, or earnings-call transcript?",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 659,
+            "prompt_tokens": 8012,
+            "completion_tokens": 267,
+            "cost": 0.00300445,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 660
+          }
+        },
+        {
+          "case_id": "xv2-unsupported-forward-pe-label",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "fundamentals",
+            "unsupported",
+            "fail-closed"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": false,
+              "pass": null
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "GF",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": {
+                    "spoken_name": "amazon",
+                    "ticker": "AMZN",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "add company",
+                      "operation": "add",
+                      "value": "META"
+                    },
+                    {
+                      "feature": "ratio metric",
+                      "operation": "select",
+                      "value": "P/E"
+                    },
+                    {
+                      "feature": "include consensus estimates",
+                      "operation": "select",
+                      "value": "on"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "comparison",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 669,
+            "prompt_tokens": 8043,
+            "completion_tokens": 557,
+            "cost": 0.0032328,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 669
+          }
+        },
+        {
+          "case_id": "xv2-unsupported-chat-send",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "chat",
+            "safety",
+            "unsupported"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": false
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": false,
+              "pass": null
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": false,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "step_kind": "command",
+                  "command": "CHAT",
+                  "control_operation": null,
+                  "control_target": null,
+                  "control_value": null,
+                  "configure_target": null,
+                  "query": null,
+                  "security": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 525,
+            "prompt_tokens": 8015,
+            "completion_tokens": 424,
+            "cost": 0.00312325,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 526
+          }
+        },
+        {
+          "case_id": "xv2-unsupported-alert-create",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "alerts",
+            "safety",
+            "unsupported"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "step": {
+              "applicable": false,
+              "pass": null
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "unsupported",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null,
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 530,
+            "prompt_tokens": 8021,
+            "completion_tokens": 530,
+            "cost": 0.00320485,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 531
+          }
+        },
+        {
+          "case_id": "xv2-clarify-close-ambiguous",
+          "repeat": 1,
+          "tags": [
+            "expansion",
+            "control",
+            "close",
+            "clarification",
+            "context"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": true,
+              "pass": true
+            },
+            "step": {
+              "applicable": false,
+              "pass": null
+            },
+            "control": {
+              "applicable": false,
+              "pass": null
+            },
+            "configure": {
+              "applicable": false,
+              "pass": null
+            },
+            "query": {
+              "applicable": false,
+              "pass": null
+            },
+            "argument": {
+              "applicable": false,
+              "pass": null
+            },
+            "runtime": {
+              "expected": false,
+              "observed": false,
+              "pass": null
+            },
+            "overall": true,
+            "end_to_end_overall": null,
+            "actual": {
+              "kind": "clarify",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": "Which Meta window should be closed: the earnings matrix (EM) or the news feed (N)?",
+              "execution": null
+            },
+            "plan_error": null
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Cerebras",
+            "latency_ms": 518,
+            "prompt_tokens": 8049,
+            "completion_tokens": 156,
+            "cost": 0.00293415,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 518
+          }
+        }
+      ]
+    }
+  ]
+}

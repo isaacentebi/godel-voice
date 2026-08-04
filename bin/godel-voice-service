@@ -1,0 +1,218 @@
+#!/bin/zsh
+set -euo pipefail
+
+project_dir="${0:A:h:h}"
+server_script="$project_dir/src/handoff-server.mjs"
+secret_file="$project_dir/.godel-voice-secret"
+pid_file="$project_dir/.godel-voice-server.pid"
+label="com.godelvoice.handoff"
+launch_agents_dir="$HOME/Library/LaunchAgents"
+plist="$launch_agents_dir/$label.plist"
+log_dir="$project_dir/logs"
+runtime_dir="$HOME/Library/Application Support/GodelVoice"
+runtime_src="$runtime_dir/src"
+runtime_data="$runtime_dir/data"
+runtime_logs="$runtime_dir/logs"
+runtime_server="$runtime_src/handoff-server.mjs"
+action="${1:-status}"
+lsof_bin="$(command -v lsof || true)"
+
+exact_server_pid() {
+  local pid="${1:-}"
+  [[ "$pid" == <-> ]] || return 1
+  local command_line="$(/bin/ps -p "$pid" -o command= 2>/dev/null || true)"
+  [[ "$command_line" == *"$server_script"* || "$command_line" == *"$runtime_server"* ]] && return 0
+  if [[ "$command_line" == *"src/handoff-server.mjs"* && -n "$lsof_bin" ]]; then
+    local process_cwd="$($lsof_bin -a -p "$pid" -d cwd -Fn 2>/dev/null | /usr/bin/sed -n 's/^n//p' | /usr/bin/head -1)"
+    [[ "$process_cwd" == "$project_dir" ]] && return 0
+  fi
+  return 1
+}
+
+portable_pid() {
+  [[ -f "$pid_file" ]] || return 1
+  local pid="$(<"$pid_file")"
+  exact_server_pid "$pid" || return 1
+  print -r -- "$pid"
+}
+
+write_plist() {
+  local node_path="$(command -v node || true)"
+  [[ -n "$node_path" ]] || { print -u2 "Node.js is required"; return 1; }
+  sync_runtime
+  /bin/mkdir -p "$launch_agents_dir" "$runtime_logs"
+  local escaped_project escaped_node escaped_script escaped_stdout escaped_stderr temporary
+  escaped_project="$(/usr/bin/printf '%s' "$runtime_dir" | /usr/bin/sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')"
+  escaped_node="$(/usr/bin/printf '%s' "$node_path" | /usr/bin/sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')"
+  escaped_script="$(/usr/bin/printf '%s' "$runtime_server" | /usr/bin/sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')"
+  escaped_stdout="$(/usr/bin/printf '%s' "$runtime_logs/server.stdout.log" | /usr/bin/sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')"
+  escaped_stderr="$(/usr/bin/printf '%s' "$runtime_logs/server.stderr.log" | /usr/bin/sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')"
+  local instance_id="$(/usr/bin/printf '%s' "$project_dir" | /usr/bin/openssl dgst -sha256 -r | /usr/bin/cut -c1-16)"
+  temporary="$(/usr/bin/mktemp "$launch_agents_dir/.godel-voice.XXXXXX")"
+  /bin/cat > "$temporary" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>$label</string>
+  <key>ProgramArguments</key><array>
+    <string>$escaped_node</string>
+    <string>--env-file-if-exists=$escaped_project/.env</string>
+    <string>$escaped_script</string>
+  </array>
+  <key>WorkingDirectory</key><string>$escaped_project</string>
+  <key>EnvironmentVariables</key><dict><key>GODEL_VOICE_INSTANCE_ID</key><string>$instance_id</string></dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ProcessType</key><string>Interactive</string>
+  <key>StandardOutPath</key><string>$escaped_stdout</string>
+  <key>StandardErrorPath</key><string>$escaped_stderr</string>
+  <key>ThrottleInterval</key><integer>2</integer>
+</dict></plist>
+PLIST
+  /usr/bin/plutil -lint "$temporary" >/dev/null
+  /bin/chmod 600 "$temporary"
+  /bin/mv -f "$temporary" "$plist"
+}
+
+sync_runtime() {
+  /bin/mkdir -p "$runtime_src" "$runtime_data" "$runtime_logs"
+  /bin/chmod 700 "$runtime_dir" "$runtime_src" "$runtime_data" "$runtime_logs"
+  /bin/cp -f "$project_dir/src/"*.mjs "$runtime_src/"
+  for data_file in commands.json intent.schema.json workflow.schema.json; do
+    /bin/cp -f "$project_dir/data/$data_file" "$runtime_data/$data_file"
+  done
+  /usr/bin/env node -e '
+const fs=require("fs"),path=require("path");const root=process.argv[1];
+const files=fs.readdirSync(path.join(root,"src")).filter(v=>v.endsWith(".mjs")).sort().map(v=>`src/${v}`);files.push("data/commands.json","data/intent.schema.json","data/workflow.schema.json");
+process.stdout.write(JSON.stringify(files));' "$project_dir" > "$runtime_dir/runtime-manifest.json"
+  /bin/cp -f "$secret_file" "$runtime_dir/.godel-voice-secret"
+  if [[ -f "$project_dir/.env" ]]; then /bin/cp -f "$project_dir/.env" "$runtime_dir/.env"; else /bin/rm -f "$runtime_dir/.env"; fi
+  if [[ ! -f "$runtime_dir/.godel-voice-queue.json" && -f "$project_dir/.godel-voice-queue.json" ]]; then
+    /bin/cp -f "$project_dir/.godel-voice-queue.json" "$runtime_dir/.godel-voice-queue.json"
+  fi
+  /bin/chmod 600 "$runtime_dir/.godel-voice-secret" "$runtime_src/"*.mjs "$runtime_data/"*.json "$runtime_dir/runtime-manifest.json"
+  [[ ! -f "$runtime_dir/.env" ]] || /bin/chmod 600 "$runtime_dir/.env"
+  [[ ! -f "$runtime_dir/.godel-voice-queue.json" ]] || /bin/chmod 600 "$runtime_dir/.godel-voice-queue.json"
+  /usr/bin/touch "$runtime_logs/server.stdout.log" "$runtime_logs/server.stderr.log"
+  /bin/chmod 600 "$runtime_logs/server.stdout.log" "$runtime_logs/server.stderr.log"
+}
+
+wait_for_listener() {
+  local listener
+  for _ in {1..40}; do
+    listener="$(${lsof_bin:-/usr/bin/false} -nP -tiTCP:17841 -sTCP:LISTEN 2>/dev/null | /usr/bin/head -1 || true)"
+    [[ -n "$listener" ]] && exact_server_pid "$listener" && return 0
+    /bin/sleep 0.1
+  done
+  print -u2 "Godel Voice service did not open port 17841. Check $runtime_logs/server.stderr.log"
+  return 1
+}
+
+mac_bootstrap() {
+  /bin/launchctl bootout "gui/$UID" "$plist" >/dev/null 2>&1 || true
+  for listener in $(${lsof_bin:-/usr/bin/false} -nP -tiTCP:17841 -sTCP:LISTEN 2>/dev/null); do
+    if exact_server_pid "$listener"; then
+      /bin/kill "$listener" 2>/dev/null || true
+      for _ in {1..20}; do /bin/kill -0 "$listener" 2>/dev/null || break; /bin/sleep 0.05; done
+    else
+      print -u2 "Refusing to replace unrelated process $listener on port 17841"
+      return 1
+    fi
+  done
+  /bin/launchctl bootstrap "gui/$UID" "$plist"
+  /bin/launchctl enable "gui/$UID/$label" >/dev/null 2>&1 || true
+  /bin/launchctl kickstart -k "gui/$UID/$label" >/dev/null
+}
+
+portable_start() {
+  local existing="$(portable_pid 2>/dev/null || true)"
+  [[ -z "$existing" ]] || return 0
+  local listener command_line
+  listener="$(${lsof_bin:-/usr/bin/false} -nP -tiTCP:17841 -sTCP:LISTEN 2>/dev/null | /usr/bin/head -1 || true)"
+  if [[ -n "$listener" ]]; then
+    if exact_server_pid "$listener"; then
+      print -r -- "$listener" > "$pid_file"
+      /bin/chmod 600 "$pid_file"
+      return 0
+    fi
+    print -u2 "Refusing to replace unrelated process $listener on port 17841"
+    return 1
+  fi
+  /bin/mkdir -p "$log_dir"
+  /bin/chmod 700 "$log_dir"
+  /usr/bin/touch "$log_dir/server.stdout.log" "$log_dir/server.stderr.log"
+  /bin/chmod 600 "$log_dir/server.stdout.log" "$log_dir/server.stderr.log"
+  /usr/bin/nohup /usr/bin/env node --env-file-if-exists="$project_dir/.env" "$server_script" \
+    >>"$log_dir/server.stdout.log" 2>>"$log_dir/server.stderr.log" &
+  print -r -- "$!" > "$pid_file"
+  /bin/chmod 600 "$pid_file"
+}
+
+case "$action" in
+  install)
+    [[ -f "$secret_file" ]] || { print -u2 "Run bin/setup-local first"; exit 1; }
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+      write_plist
+      mac_bootstrap
+      wait_for_listener
+      print "Godel Voice will start automatically when you sign in."
+    else
+      portable_start
+      print "Godel Voice started. Add 'bin/godel-voice-service start' to your session startup for persistence."
+    fi
+    ;;
+  start)
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+      sync_runtime
+      [[ -f "$plist" ]] || write_plist
+      if ! /bin/launchctl print "gui/$UID/$label" >/dev/null 2>&1; then mac_bootstrap; else /bin/launchctl kickstart "gui/$UID/$label" >/dev/null; fi
+      wait_for_listener
+    else
+      portable_start
+    fi
+    ;;
+  restart)
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+      write_plist
+      mac_bootstrap
+      wait_for_listener
+    else
+      existing="$(portable_pid 2>/dev/null || true)"
+      if [[ -n "$existing" ]]; then /bin/kill "$existing"; fi
+      for _ in {1..20}; do exact_server_pid "$existing" || break; /bin/sleep 0.05; done
+      portable_start
+    fi
+    ;;
+  stop)
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+      /bin/launchctl bootout "gui/$UID" "$plist" >/dev/null 2>&1 || true
+    else
+      existing="$(portable_pid 2>/dev/null || true)"
+      if [[ -n "$existing" ]]; then /bin/kill "$existing"; fi
+      /bin/rm -f "$pid_file"
+    fi
+    ;;
+  uninstall)
+    "$0" stop
+    [[ "$(uname -s)" != "Darwin" ]] || /bin/rm -f "$plist"
+    print "Godel Voice automatic startup removed. Local configuration and logs were kept."
+    ;;
+  status)
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+      if /bin/launchctl print "gui/$UID/$label" >/dev/null 2>&1; then
+        listener="$(${lsof_bin:-/usr/bin/false} -nP -tiTCP:17841 -sTCP:LISTEN 2>/dev/null | /usr/bin/head -1 || true)"
+        if [[ -n "$listener" ]] && exact_server_pid "$listener"; then print "running (launchd)"; exit 0; fi
+        print "registered but not listening"
+        exit 1
+      fi
+    elif portable_pid >/dev/null 2>&1; then
+      print "running (portable background process)"; exit 0
+    fi
+    print "stopped"
+    exit 1
+    ;;
+  *)
+    print -u2 "Usage: $0 {install|start|restart|stop|status|uninstall}"
+    exit 2
+    ;;
+esac

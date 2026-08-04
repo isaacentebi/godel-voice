@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godel HMAP candidate action",
+  "description": "Strict planning schema. Only view Map/Table is currently executable; every other action remains runtime-disabled until per-control live proof.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["feature", "operation", "value"],
+  "oneOf": [
+    {"properties":{"feature":{"const":"universe"},"operation":{"const":"select"},"value":{"enum":["S&P 500","DJIA"]}}},
+    {"properties":{"feature":{"const":"watchlist"},"operation":{"const":"select"},"value":{"type":"string","minLength":1,"maxLength":64}}},
+    {"properties":{"feature":{"const":"size by"},"operation":{"const":"select"},"value":{"type":"string","minLength":1,"maxLength":64}}},
+    {"properties":{"feature":{"const":"label"},"operation":{"const":"select"},"value":{"type":"string","minLength":1,"maxLength":64}}},
+    {"properties":{"feature":{"const":"sectors"},"operation":{"const":"select"},"value":{"enum":["Show","Hide"]}}},
+    {"properties":{"feature":{"const":"animate"},"operation":{"const":"select"},"value":{"enum":["On","Off"]}}},
+    {"properties":{"feature":{"const":"update interval"},"operation":{"const":"set"},"value":{"type":"integer","minimum":1}}},
+    {"properties":{"feature":{"const":"color"},"operation":{"const":"select"},"value":{"enum":["Auto","Manual"]}}},
+    {"properties":{"feature":{"const":"movers"},"operation":{"const":"select"},"value":{"enum":["Open","Closed"]}}},
+    {"properties":{"feature":{"const":"view"},"operation":{"const":"select"},"value":{"enum":["Map","Table"]}}},
+    {"properties":{"feature":{"const":"tile quick action"},"operation":{"const":"handoff"},"value":{"type":"object","additionalProperties":false,"required":["ticker","action"],"properties":{"ticker":{"type":"string","pattern":"^[A-Z][A-Z0-9.-]{0,9}$"},"action":{"type":"string","minLength":1,"maxLength":64}}}}}
+  ]
+}

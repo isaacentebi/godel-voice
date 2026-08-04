@@ -1,0 +1,13 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Godel ERN earnings-estimates actions",
+  "oneOf":[
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"date_range"},"operation":{"const":"set"},"value":{"type":"object","additionalProperties":false,"required":["start","end"],"properties":{"start":{"type":"string","format":"date"},"end":{"type":"string","format":"date"}}}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"period"},"operation":{"const":"select"},"value":{"enum":["Quarterly","Annual"]}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"display"},"operation":{"const":"select"},"value":{"type":"array","minItems":1,"maxItems":9,"uniqueItems":true,"items":{"enum":["Analyst Count","Low EPS","High EPS","Average EPS","Forward P/E","EPS YoY","Earnings History","Estimate vs Actual","Beat/Miss Percentage"]}}}}
+  ],
+  "$defs":{"groundedForwardPE":{"type":"array","minItems":1,"maxItems":40,"items":{"type":"object","additionalProperties":false,"required":["period","value"],"properties":{"period":{"type":"string","pattern":"^(FY|Q[1-4]) ?[0-9]{2,4}$"},"value":{"type":"string","pattern":"^[0-9]{1,4}(\\.[0-9]{1,4})?x$"}}}}},
+  "x-runtime-enabled":false,
+  "x-grounded-narration":"Forward P/E only; values must come from exact labeled ERN panel facts",
+  "x-no-invention":"No estimate, analyst count, EPS, history, actual, or beat/miss value may be synthesized from speech or model knowledge"
+}

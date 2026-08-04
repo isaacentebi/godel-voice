@@ -1,0 +1,15 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://godel.voice/schemas/focus-alerts-settings-nested.schema.json",
+  "title":"Strict FOCUS, AL, and PDF settings actions",
+  "oneOf":[
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"price flashing"},"operation":{"const":"select"},"value":{"enum":["on","off"]},"scope":{"const":"panel"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"native popout"},"operation":{"const":"open"},"value":{"type":"object","additionalProperties":false,"required":["security"],"properties":{"security":{"$ref":"#/$defs/security"}}},"scope":{"const":"native-window"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"alert list"},"operation":{"const":"open"},"value":{"const":"existing"},"scope":{"const":"panel"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"settings"},"operation":{"const":"open"},"value":{"const":"read-only"},"scope":{"const":"panel"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"preference"},"operation":{"const":"set"},"value":{"type":"object","additionalProperties":false,"required":["key","value"],"properties":{"key":{"enum":["theme","font","table_animation","grid_snapping","grid_size","terminal_zoom","help_popout_icons","terminal_key","des_default_chart","command_titles","breaking_news","ticker_click_behavior","pinned_commands","external_link_trust"]},"value":{}}},"scope":{"const":"account"}}}
+  ],
+  "$defs":{"security":{"type":"object","additionalProperties":false,"required":["ticker","venue","asset_class"],"properties":{"ticker":{"type":"string","pattern":"^[A-Z][A-Z0-9.-]{0,14}$"},"venue":{"type":"string","minLength":1},"asset_class":{"type":"string","minLength":1}}}},
+  "x-runtime-enabled":false,
+  "x-safety":{"grounded-quotes":"exact observed FOCUS facts only","alert-mutations":"explicit confirmation proposal only","persistent-preferences":"confirmation proposal only","external-link-trust":"separate explicit trust confirmation","pdf-command":"settings, never file export"}
+}

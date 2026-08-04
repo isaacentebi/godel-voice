@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godel FA and HP documented-unbound actions",
+  "$defs": {
+    "format": {"enum": ["Excel", "JSON"]},
+    "faAction": {"oneOf": [
+      {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"statement"},"operation":{"const":"select"},"value":{"enum":["Income Statement","Balance Sheet","Cash Flow"]}}},
+      {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"periodicity"},"operation":{"const":"select"},"value":{"enum":["Quarterly","Yearly"]}}},
+      {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"export"},"operation":{"const":"download"},"value":{"type":"object","additionalProperties":false,"required":["format","statement","periodicity","receipt_required"],"properties":{"format":{"$ref":"#/$defs/format"},"statement":{"enum":["Income Statement","Balance Sheet","Cash Flow"]},"periodicity":{"enum":["Quarterly","Yearly"]},"receipt_required":{"const":true}}}}}
+    ]},
+    "hpAction": {"oneOf": [
+      {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"date_range"},"operation":{"const":"set"},"value":{"type":"object","additionalProperties":false,"required":["start","end","anchor"],"properties":{"start":{"type":"string","format":"date"},"end":{"type":"string","format":"date"},"anchor":{"oneOf":[{"type":"null"},{"type":"object","additionalProperties":false,"required":["current_date","timezone"],"properties":{"current_date":{"type":"string","format":"date"},"timezone":{"type":"string"}}}]}}}}},
+      {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"resolution"},"operation":{"const":"select"},"value":{"type":"object","additionalProperties":false,"required":["resolution","entitlement"],"properties":{"resolution":{"enum":["1D","1H","1M"]},"entitlement":{"enum":["Not Required","Confirmed"]}}}}},
+      {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"page"},"operation":{"const":"select"},"value":{"enum":["Previous","Next"]}}},
+      {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"export"},"operation":{"const":"download"},"value":{"type":"object","additionalProperties":false,"required":["format","scope","expected_loaded_rows","receipt_required"],"properties":{"format":{"$ref":"#/$defs/format"},"scope":{"const":"All Loaded Rows"},"expected_loaded_rows":{"type":"integer","minimum":1},"receipt_required":{"const":true}}}}}
+    ]}
+  },
+  "oneOf": [{"$ref":"#/$defs/faAction"},{"$ref":"#/$defs/hpAction"}],
+  "x-capability-state": "documented-unbound",
+  "x-runtime-enabled": false,
+  "x-download-gate": "register before activation; verify expected extension, MIME, non-zero size, exact scope, and no silent overwrite"
+}

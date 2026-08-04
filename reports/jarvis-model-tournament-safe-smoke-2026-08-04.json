@@ -1,0 +1,890 @@
+{
+  "schema_version": 1,
+  "privacy": {
+    "contains_transcripts": false,
+    "contains_prompts": false,
+    "contains_raw_responses": false,
+    "contains_credentials_or_headers": false
+  },
+  "generated_at": "2026-08-04T15:41:25.798Z",
+  "configuration": {
+    "repeat": 1,
+    "concurrency": 1,
+    "request_timeout_ms": 6000,
+    "request_retries": 0
+  },
+  "reports": [
+    {
+      "route": {
+        "id": "cerebras-oss-120b",
+        "model": "openai/gpt-oss-120b",
+        "provider_only": [
+          "cerebras"
+        ],
+        "allow_fallbacks": false,
+        "observed_providers": [
+          "Cerebras"
+        ],
+        "provider_pin_ok": true
+      },
+      "runs": 12,
+      "semantic_success": {
+        "passed": 6,
+        "total": 12,
+        "accuracy": 0.5
+      },
+      "exact_plan_validity": {
+        "passed": 5,
+        "total": 10,
+        "accuracy": 0.5
+      },
+      "availability": {
+        "passed": 11,
+        "total": 12,
+        "accuracy": 0.9166666666666666
+      },
+      "well_formed": {
+        "passed": 10,
+        "total": 12,
+        "accuracy": 0.8333333333333334
+      },
+      "provider_latency_ms": {
+        "count": 11,
+        "p50": 579,
+        "p90": 1016,
+        "p95": 1048,
+        "max": 1048
+      },
+      "total_latency_ms": {
+        "count": 12,
+        "p50": 563,
+        "p90": 1021,
+        "p95": 1049,
+        "max": 1049
+      },
+      "results": [
+        {
+          "case_id": "xv2-q-noisy-oracle",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": true,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Cerebras",
+          "provider_latency_ms": 1016,
+          "total_latency_ms": 1021,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-gr-pair-spoken",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Cerebras",
+          "provider_latency_ms": 560,
+          "total_latency_ms": 563,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-ni-query-correction",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": true,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Cerebras",
+          "provider_latency_ms": 442,
+          "total_latency_ms": 444,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-hms-three-way",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": true,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Cerebras",
+          "provider_latency_ms": 882,
+          "total_latency_ms": 883,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-gf-margin-comparison",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Cerebras",
+          "provider_latency_ms": 1048,
+          "total_latency_ms": 1049,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-workflow-company-desk-noisy",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "openai/gpt-oss-120b",
+          "provider": null,
+          "provider_latency_ms": 207,
+          "total_latency_ms": 208,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-workflow-macro-strip",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": true,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Cerebras",
+          "provider_latency_ms": 949,
+          "total_latency_ms": 950,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-followup-gf-metric-range",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": true,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Cerebras",
+          "provider_latency_ms": 941,
+          "total_latency_ms": 943,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-control-layout-followup",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": true,
+          "well_formed": false,
+          "model": "openai/gpt-oss-120b",
+          "provider": null,
+          "provider_latency_ms": null,
+          "total_latency_ms": 560,
+          "retry_count": 0,
+          "failure_category": "validation_or_configuration"
+        },
+        {
+          "case_id": "xv2-entity-square-block",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Cerebras",
+          "provider_latency_ms": 579,
+          "total_latency_ms": 581,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-ambiguous-earnings",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": null,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Cerebras",
+          "provider_latency_ms": 424,
+          "total_latency_ms": 425,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-unsupported-chat-send",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": null,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Cerebras",
+          "provider_latency_ms": 524,
+          "total_latency_ms": 525,
+          "retry_count": 0,
+          "failure_category": null
+        }
+      ]
+    },
+    {
+      "route": {
+        "id": "groq-oss-120b",
+        "model": "openai/gpt-oss-120b",
+        "provider_only": [
+          "groq"
+        ],
+        "allow_fallbacks": false,
+        "observed_providers": [
+          "Groq"
+        ],
+        "provider_pin_ok": true
+      },
+      "runs": 12,
+      "semantic_success": {
+        "passed": 7,
+        "total": 12,
+        "accuracy": 0.5833333333333334
+      },
+      "exact_plan_validity": {
+        "passed": 5,
+        "total": 10,
+        "accuracy": 0.5
+      },
+      "availability": {
+        "passed": 12,
+        "total": 12,
+        "accuracy": 1
+      },
+      "well_formed": {
+        "passed": 12,
+        "total": 12,
+        "accuracy": 1
+      },
+      "provider_latency_ms": {
+        "count": 12,
+        "p50": 1131,
+        "p90": 1549,
+        "p95": 1878,
+        "max": 1878
+      },
+      "total_latency_ms": {
+        "count": 12,
+        "p50": 1132,
+        "p90": 1551,
+        "p95": 1880,
+        "max": 1880
+      },
+      "results": [
+        {
+          "case_id": "xv2-q-noisy-oracle",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": true,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "provider_latency_ms": 1131,
+          "total_latency_ms": 1132,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-gr-pair-spoken",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "provider_latency_ms": 1173,
+          "total_latency_ms": 1174,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-ni-query-correction",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": true,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "provider_latency_ms": 1010,
+          "total_latency_ms": 1010,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-hms-three-way",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": true,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "provider_latency_ms": 1082,
+          "total_latency_ms": 1084,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-gf-margin-comparison",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": true,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "provider_latency_ms": 1392,
+          "total_latency_ms": 1393,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-workflow-company-desk-noisy",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "provider_latency_ms": 1878,
+          "total_latency_ms": 1880,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-workflow-macro-strip",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "provider_latency_ms": 1241,
+          "total_latency_ms": 1242,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-followup-gf-metric-range",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": true,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "provider_latency_ms": 1176,
+          "total_latency_ms": 1177,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-control-layout-followup",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "provider_latency_ms": 1549,
+          "total_latency_ms": 1551,
+          "retry_count": 0,
+          "failure_category": "local_plan_validation"
+        },
+        {
+          "case_id": "xv2-entity-square-block",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "provider_latency_ms": 629,
+          "total_latency_ms": 630,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-ambiguous-earnings",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": null,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "provider_latency_ms": 926,
+          "total_latency_ms": 928,
+          "retry_count": 0,
+          "failure_category": null
+        },
+        {
+          "case_id": "xv2-unsupported-chat-send",
+          "repeat": 1,
+          "semantic_success": true,
+          "exact_plan_valid": null,
+          "available": true,
+          "well_formed": true,
+          "model": "openai/gpt-oss-120b",
+          "provider": "Groq",
+          "provider_latency_ms": 850,
+          "total_latency_ms": 850,
+          "retry_count": 0,
+          "failure_category": null
+        }
+      ]
+    },
+    {
+      "route": {
+        "id": "groq-minimax-m2.7",
+        "model": "minimax/minimax-m2.7",
+        "provider_only": [
+          "groq"
+        ],
+        "allow_fallbacks": false,
+        "observed_providers": [],
+        "provider_pin_ok": false
+      },
+      "runs": 12,
+      "semantic_success": {
+        "passed": 0,
+        "total": 12,
+        "accuracy": 0
+      },
+      "exact_plan_validity": {
+        "passed": 0,
+        "total": 10,
+        "accuracy": 0
+      },
+      "availability": {
+        "passed": 0,
+        "total": 12,
+        "accuracy": 0
+      },
+      "well_formed": {
+        "passed": 0,
+        "total": 12,
+        "accuracy": 0
+      },
+      "provider_latency_ms": {
+        "count": 12,
+        "p50": 97,
+        "p90": 143,
+        "p95": 314,
+        "max": 314
+      },
+      "total_latency_ms": {
+        "count": 12,
+        "p50": 97,
+        "p90": 145,
+        "p95": 314,
+        "max": 314
+      },
+      "results": [
+        {
+          "case_id": "xv2-q-noisy-oracle",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "minimax/minimax-m2.7",
+          "provider": null,
+          "provider_latency_ms": 125,
+          "total_latency_ms": 126,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-gr-pair-spoken",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "minimax/minimax-m2.7",
+          "provider": null,
+          "provider_latency_ms": 98,
+          "total_latency_ms": 98,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-ni-query-correction",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "minimax/minimax-m2.7",
+          "provider": null,
+          "provider_latency_ms": 97,
+          "total_latency_ms": 97,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-hms-three-way",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "minimax/minimax-m2.7",
+          "provider": null,
+          "provider_latency_ms": 112,
+          "total_latency_ms": 113,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-gf-margin-comparison",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "minimax/minimax-m2.7",
+          "provider": null,
+          "provider_latency_ms": 314,
+          "total_latency_ms": 314,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-workflow-company-desk-noisy",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "minimax/minimax-m2.7",
+          "provider": null,
+          "provider_latency_ms": 68,
+          "total_latency_ms": 69,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-workflow-macro-strip",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "minimax/minimax-m2.7",
+          "provider": null,
+          "provider_latency_ms": 143,
+          "total_latency_ms": 145,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-followup-gf-metric-range",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "minimax/minimax-m2.7",
+          "provider": null,
+          "provider_latency_ms": 100,
+          "total_latency_ms": 100,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-control-layout-followup",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "minimax/minimax-m2.7",
+          "provider": null,
+          "provider_latency_ms": 89,
+          "total_latency_ms": 90,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-entity-square-block",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "minimax/minimax-m2.7",
+          "provider": null,
+          "provider_latency_ms": 73,
+          "total_latency_ms": 74,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-ambiguous-earnings",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": null,
+          "available": false,
+          "well_formed": false,
+          "model": "minimax/minimax-m2.7",
+          "provider": null,
+          "provider_latency_ms": 68,
+          "total_latency_ms": 69,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-unsupported-chat-send",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": null,
+          "available": false,
+          "well_formed": false,
+          "model": "minimax/minimax-m2.7",
+          "provider": null,
+          "provider_latency_ms": 82,
+          "total_latency_ms": 82,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        }
+      ]
+    },
+    {
+      "route": {
+        "id": "google-gemini-3.6-flash",
+        "model": "google/gemini-3.6-flash",
+        "provider_only": [
+          "google"
+        ],
+        "allow_fallbacks": false,
+        "observed_providers": [],
+        "provider_pin_ok": false
+      },
+      "runs": 12,
+      "semantic_success": {
+        "passed": 0,
+        "total": 12,
+        "accuracy": 0
+      },
+      "exact_plan_validity": {
+        "passed": 0,
+        "total": 10,
+        "accuracy": 0
+      },
+      "availability": {
+        "passed": 0,
+        "total": 12,
+        "accuracy": 0
+      },
+      "well_formed": {
+        "passed": 0,
+        "total": 12,
+        "accuracy": 0
+      },
+      "provider_latency_ms": {
+        "count": 12,
+        "p50": 78,
+        "p90": 122,
+        "p95": 158,
+        "max": 158
+      },
+      "total_latency_ms": {
+        "count": 12,
+        "p50": 78,
+        "p90": 123,
+        "p95": 159,
+        "max": 159
+      },
+      "results": [
+        {
+          "case_id": "xv2-q-noisy-oracle",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "google/gemini-3.6-flash",
+          "provider": null,
+          "provider_latency_ms": 106,
+          "total_latency_ms": 107,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-gr-pair-spoken",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "google/gemini-3.6-flash",
+          "provider": null,
+          "provider_latency_ms": 78,
+          "total_latency_ms": 78,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-ni-query-correction",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "google/gemini-3.6-flash",
+          "provider": null,
+          "provider_latency_ms": 115,
+          "total_latency_ms": 116,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-hms-three-way",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "google/gemini-3.6-flash",
+          "provider": null,
+          "provider_latency_ms": 67,
+          "total_latency_ms": 68,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-gf-margin-comparison",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "google/gemini-3.6-flash",
+          "provider": null,
+          "provider_latency_ms": 67,
+          "total_latency_ms": 68,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-workflow-company-desk-noisy",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "google/gemini-3.6-flash",
+          "provider": null,
+          "provider_latency_ms": 72,
+          "total_latency_ms": 73,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-workflow-macro-strip",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "google/gemini-3.6-flash",
+          "provider": null,
+          "provider_latency_ms": 122,
+          "total_latency_ms": 123,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-followup-gf-metric-range",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "google/gemini-3.6-flash",
+          "provider": null,
+          "provider_latency_ms": 75,
+          "total_latency_ms": 75,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-control-layout-followup",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "google/gemini-3.6-flash",
+          "provider": null,
+          "provider_latency_ms": 114,
+          "total_latency_ms": 115,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-entity-square-block",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": false,
+          "available": false,
+          "well_formed": false,
+          "model": "google/gemini-3.6-flash",
+          "provider": null,
+          "provider_latency_ms": 74,
+          "total_latency_ms": 78,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-ambiguous-earnings",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": null,
+          "available": false,
+          "well_formed": false,
+          "model": "google/gemini-3.6-flash",
+          "provider": null,
+          "provider_latency_ms": 99,
+          "total_latency_ms": 99,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        },
+        {
+          "case_id": "xv2-unsupported-chat-send",
+          "repeat": 1,
+          "semantic_success": false,
+          "exact_plan_valid": null,
+          "available": false,
+          "well_formed": false,
+          "model": "google/gemini-3.6-flash",
+          "provider": null,
+          "provider_latency_ms": 158,
+          "total_latency_ms": 159,
+          "retry_count": 0,
+          "failure_category": "provider_availability"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Strict Q, HLDR, and HMS voice contracts",
+  "type":"object",
+  "additionalProperties":false,
+  "properties":{"command":{"enum":["Q","HLDR","HMS"]},"runtime_enabled":{"type":"boolean"},"policy":{"type":"string"}},
+  "required":["command","runtime_enabled","policy"],
+  "x-q":{"grounding":"exact security, venue, last, bid, ask, volume, displayed units, and timestamp from Godel Q panel only","handoffs":"none documented; separate command required","prediction":false},
+  "x-hldr":{"grounding":"exact owner identity, held-security identities, composition fields, report/filing/transaction dates from Godel HLDR panel only","hds_confusion":"HLDR is what a fund/company owns; HDS is who owns a security","nested_controls":"none documented"},
+  "x-hms":{"runtime_enabled":true,"secure_identity":"add/remove only exact pre-resolved entities; removal requires exact current membership","timeframes":["1M","3M","6M","YTD","1Y","5Y","All Time"],"metrics":["Change percent","Dollar value"],"displays":["Normalize","Overlay","Side-by-side"],"atomic":true}
+}

@@ -1,0 +1,1320 @@
+[
+  {
+    "schema_version": 2,
+    "id": "he-hds-open-table",
+    "mode": "workflow",
+    "tags": [
+      "hds",
+      "view",
+      "executable",
+      "natural"
+    ],
+    "utterance": "show Meta institutional holders as a table",
+    "resolved_entities": [
+      {
+        "spoken_name": "meta",
+        "ticker": "META",
+        "venue": "US",
+        "asset_class": "EQ"
+      }
+    ],
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "command": "HDS",
+          "ticker": "META",
+          "actions": [
+            {
+              "feature": "view",
+              "operation": "select",
+              "value": "Table"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-hds-open-treemap",
+    "mode": "workflow",
+    "tags": [
+      "hds",
+      "view",
+      "executable",
+      "natural"
+    ],
+    "utterance": "open Nvidia institutional ownership as a treemap",
+    "resolved_entities": [
+      {
+        "spoken_name": "nvidia",
+        "ticker": "NVDA",
+        "venue": "US",
+        "asset_class": "EQ"
+      }
+    ],
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "command": "HDS",
+          "ticker": "NVDA",
+          "actions": [
+            {
+              "feature": "view",
+              "operation": "select",
+              "value": "Treemap"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-hds-open-bubble-noisy",
+    "mode": "workflow",
+    "tags": [
+      "hds",
+      "view",
+      "executable",
+      "noise"
+    ],
+    "utterance": "uh show me micro soft institushunal holders in the bub bull view",
+    "resolved_entities": [
+      {
+        "spoken_name": "microsoft",
+        "ticker": "MSFT",
+        "venue": "US",
+        "asset_class": "EQ"
+      }
+    ],
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "command": "HDS",
+          "ticker": "MSFT",
+          "actions": [
+            {
+              "feature": "view",
+              "operation": "select",
+              "value": "Bubble"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-hds-followup-table",
+    "mode": "workflow",
+    "tags": [
+      "hds",
+      "view",
+      "readiness-gap",
+      "follow-up",
+      "context"
+    ],
+    "utterance": "put this back in the table",
+    "context": {
+      "focused_panel": {
+        "window_id": "hds-meta",
+        "command": "HDS",
+        "security": "META"
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "HDS",
+            "security": "META"
+          },
+          "actions": [
+            {
+              "feature": "view",
+              "operation": "select",
+              "value": "Table"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-hds-followup-treemap",
+    "mode": "workflow",
+    "tags": [
+      "hds",
+      "view",
+      "executable",
+      "follow-up",
+      "context",
+      "noise"
+    ],
+    "utterance": "switch that ownership thing to the tree map",
+    "context": {
+      "focused_panel": {
+        "window_id": "hds-meta",
+        "command": "HDS",
+        "security": "META"
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "HDS",
+            "security": "META"
+          },
+          "actions": [
+            {
+              "feature": "view",
+              "operation": "select",
+              "value": "Treemap"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-hds-followup-bubble",
+    "mode": "workflow",
+    "tags": [
+      "hds",
+      "view",
+      "executable",
+      "follow-up",
+      "context"
+    ],
+    "utterance": "make the holders window bubbles",
+    "context": {
+      "focused_panel": {
+        "window_id": "hds-meta",
+        "command": "HDS",
+        "security": "META"
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "HDS",
+            "security": "META"
+          },
+          "actions": [
+            {
+              "feature": "view",
+              "operation": "select",
+              "value": "Bubble"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-hds-followup-explicit-company",
+    "mode": "workflow",
+    "tags": [
+      "hds",
+      "view",
+      "executable",
+      "follow-up",
+      "entity"
+    ],
+    "utterance": "switch Meta institutional holders to bubbles",
+    "resolved_entities": [
+      {
+        "spoken_name": "meta",
+        "ticker": "META",
+        "venue": "US",
+        "asset_class": "EQ"
+      }
+    ],
+    "context": {
+      "focused_panel": {
+        "window_id": "hds-meta",
+        "command": "HDS",
+        "security": "META"
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "command",
+            "command": "HDS",
+            "security": "META"
+          },
+          "actions": [
+            {
+              "feature": "view",
+              "operation": "select",
+              "value": "Bubble"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-hds-versus-hldr-who-owns",
+    "mode": "workflow",
+    "tags": [
+      "hds",
+      "disambiguation",
+      "executable",
+      "entity"
+    ],
+    "utterance": "who owns Berkshire show me the institutions holding the company not what Berkshire owns",
+    "resolved_entities": [
+      {
+        "spoken_name": "berkshire",
+        "ticker": "BRK.B",
+        "venue": "US",
+        "asset_class": "EQ"
+      }
+    ],
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "command": "HDS",
+          "ticker": "BRK.B"
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-hds-no-context-view",
+    "mode": "workflow",
+    "tags": [
+      "hds",
+      "view",
+      "clarification",
+      "context"
+    ],
+    "utterance": "make that a bubble view",
+    "context": null,
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "clarify",
+      "clarification_contains": [
+        "which",
+        "holders",
+        "window"
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-eqs-run-followup",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "run-clear",
+      "executable",
+      "follow-up",
+      "context"
+    ],
+    "utterance": "run the screener query",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "screen",
+              "operation": "run",
+              "value": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-eqs-run-immediate",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "run-clear",
+      "executable",
+      "follow-up",
+      "natural"
+    ],
+    "utterance": "run it",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      },
+      "last_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "screen",
+              "operation": "run",
+              "value": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-eqs-run-noisy",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "run-clear",
+      "executable",
+      "follow-up",
+      "noise"
+    ],
+    "utterance": "okay apply teh screener results now",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "screen",
+              "operation": "run",
+              "value": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-eqs-clear-followup",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "run-clear",
+      "executable",
+      "follow-up",
+      "context"
+    ],
+    "utterance": "clear the screener filters",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "screen",
+              "operation": "clear",
+              "value": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-eqs-clear-natural",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "run-clear",
+      "executable",
+      "follow-up",
+      "natural"
+    ],
+    "utterance": "reset this equity screen",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "screen",
+              "operation": "clear",
+              "value": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-eqs-clear-no-context",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "run-clear",
+      "clarification",
+      "context"
+    ],
+    "utterance": "clear those filters",
+    "context": null,
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "clarify",
+      "clarification_contains": [
+        "which",
+        "filters",
+        "window"
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-eqs-run-clear-sequence",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "run-clear",
+      "aspirational",
+      "compound",
+      "follow-up"
+    ],
+    "utterance": "run this screener then clear it after I see the results",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "screen",
+              "operation": "run",
+              "value": null
+            }
+          ]
+        },
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "screen",
+              "operation": "clear",
+              "value": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-market-cap",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "natural"
+    ],
+    "utterance": "screen companies above two billion market cap",
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "command": "EQS",
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "Market Cap (USD)",
+                "minimum": 2000000000,
+                "maximum": null
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-pe-fwd",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "noise"
+    ],
+    "utterance": "forward pee below twenty five",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "P/E (Fwd)",
+                "minimum": null,
+                "maximum": 25
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-pe-ttm",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "natural"
+    ],
+    "utterance": "trailing P E between five and thirty",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "P/E (TTM)",
+                "minimum": 5,
+                "maximum": 30
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-ps-fwd",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "noise"
+    ],
+    "utterance": "forward price to sails under eight",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "P/S (Fwd)",
+                "minimum": null,
+                "maximum": 8
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-ps-ttm",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "natural"
+    ],
+    "utterance": "trailing price to sales below four",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "P/S (TTM)",
+                "minimum": null,
+                "maximum": 4
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-pb-fwd",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "natural"
+    ],
+    "utterance": "forward price to book no more than three",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "P/B (Fwd)",
+                "minimum": null,
+                "maximum": 3
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-pb-ttm",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "natural"
+    ],
+    "utterance": "trailing book multiple under two",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "P/B (TTM)",
+                "minimum": null,
+                "maximum": 2
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-pcf-fwd",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "noise"
+    ],
+    "utterance": "forward price to cash flow under twenty",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "P/CF (Fwd)",
+                "minimum": null,
+                "maximum": 20
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-pcf-ttm",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "natural"
+    ],
+    "utterance": "trailing cash flow multiple between five and fifteen",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "P/CF (TTM)",
+                "minimum": 5,
+                "maximum": 15
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-eps-fwd",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "natural"
+    ],
+    "utterance": "forward twelve month EPS above five dollars",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "EPS (Fwd 12mo)",
+                "minimum": 5,
+                "maximum": null
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-revenue-ttm",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "natural"
+    ],
+    "utterance": "last twelve month revenue above one billion",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "Rev. (TTM, USD)",
+                "minimum": 1000000000,
+                "maximum": null
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-revenue-fwd",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "noise"
+    ],
+    "utterance": "forward rev a new above two point five bill",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "Rev. (Fwd 12mo, USD)",
+                "minimum": 2500000000,
+                "maximum": null
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-net-income-ttm",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "natural"
+    ],
+    "utterance": "trailing net income over one hundred million",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "Net Inc. (TTM, USD)",
+                "minimum": 100000000,
+                "maximum": null
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 2,
+    "id": "he-range-net-income-fwd",
+    "mode": "workflow",
+    "tags": [
+      "eqs",
+      "range-filter",
+      "executable",
+      "natural"
+    ],
+    "utterance": "forward net income above five hundred million",
+    "context": {
+      "focused_panel": {
+        "window_id": "eqs",
+        "command": "EQS",
+        "security": null
+      }
+    },
+    "scoring": {
+      "strict_steps": true,
+      "actions": "exact"
+    },
+    "expected": {
+      "kind": "execute",
+      "steps": [
+        {
+          "step_kind": "configure",
+          "configure_target": {
+            "mode": "focused",
+            "command": "EQS",
+            "security": null
+          },
+          "actions": [
+            {
+              "feature": "range_filter",
+              "operation": "add",
+              "value": {
+                "field": "Net Inc. (Fwd 12mo, USD)",
+                "minimum": 500000000,
+                "maximum": null
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

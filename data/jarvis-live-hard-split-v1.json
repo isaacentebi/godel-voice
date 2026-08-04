@@ -1,0 +1,30 @@
+{
+  "hard_live": [
+    "xv2-workflow-company-desk-noisy",
+    "xv2-workflow-market-open-map-distinction",
+    "xv2-workflow-options-correction",
+    "xv2-workflow-macro-strip",
+    "xv2-hms-three-way",
+    "xv2-gf-margin-comparison",
+    "xv2-eqs-basic-screen",
+    "xv2-cf-company-filings",
+    "xv2-omon-puts",
+    "xv2-gr-pair-spoken",
+    "xv2-ni-query-correction",
+    "xv2-imap-not-world-map",
+    "xv2-map-not-index",
+    "xv2-hldr-what-fund-owns",
+    "xv2-hds-who-owns",
+    "xv2-entity-alphabet-share-class",
+    "xv2-entity-square-block",
+    "xv2-entity-meta-not-metals",
+    "xv2-entity-unity-game-engine",
+    "xv2-ambiguous-earnings",
+    "xv2-unsupported-forward-pe-label",
+    "xv2-unsupported-chat-send",
+    "xv2-unsupported-alert-create",
+    "xv2-clarify-close-ambiguous",
+    "xv2-brok-readonly-manager",
+    "xv2-err-open-not-submit"
+  ]
+}

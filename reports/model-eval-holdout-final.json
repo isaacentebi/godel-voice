@@ -1,0 +1,1006 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-04T02:43:22.979Z",
+  "offline": false,
+  "cases_file": "data/model-eval-cases.json",
+  "routes_file": "data/model-eval-routes.example.json",
+  "reports": [
+    {
+      "route": {
+        "id": "groq-oss-120b",
+        "model": "openai/gpt-oss-120b",
+        "base_url": "https://openrouter.ai/api/v1",
+        "provider_only": [
+          "groq"
+        ],
+        "allow_fallbacks": false,
+        "observed_providers": [
+          "Groq"
+        ],
+        "provider_pin_ok": true
+      },
+      "configuration": {
+        "repeat": 1,
+        "warmup": 0,
+        "concurrency": 1,
+        "retries": 2,
+        "retry_base_ms": 1500
+      },
+      "cases": 9,
+      "runs": 9,
+      "overall": {
+        "passed": 8,
+        "total": 9,
+        "accuracy": 0.8888888888888888
+      },
+      "metrics": {
+        "availability": {
+          "passed": 9,
+          "total": 9,
+          "accuracy": 1
+        },
+        "command": {
+          "passed": 7,
+          "total": 7,
+          "accuracy": 1
+        },
+        "workflow": {
+          "passed": 7,
+          "total": 7,
+          "accuracy": 1
+        },
+        "executable": {
+          "passed": 6,
+          "total": 6,
+          "accuracy": 1
+        },
+        "action": {
+          "passed": 2,
+          "total": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "entity": {
+          "passed": 6,
+          "total": 6,
+          "accuracy": 1
+        },
+        "clarification": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "malformed": {
+          "passed": 9,
+          "total": 9,
+          "accuracy": 1
+        }
+      },
+      "tags": {
+        "adversarial": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "ambiguity": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "clarification": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "comparison": {
+          "passed": 2,
+          "total": 2,
+          "accuracy": 1
+        },
+        "correction": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "layout": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "multi-security": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "multi-step": {
+          "passed": 3,
+          "total": 3,
+          "accuracy": 1
+        },
+        "nested-actions": {
+          "passed": 1,
+          "total": 2,
+          "accuracy": 0.5
+        },
+        "noise": {
+          "passed": 2,
+          "total": 2,
+          "accuracy": 1
+        },
+        "obscure": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "options": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "placement": {
+          "passed": 0,
+          "total": 1,
+          "accuracy": 0
+        },
+        "safety": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "screen": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        },
+        "ticker": {
+          "passed": 1,
+          "total": 1,
+          "accuracy": 1
+        }
+      },
+      "stability": {
+        "stable_cases": 9,
+        "total_cases": 9,
+        "consistency": 1,
+        "unstable_cases": []
+      },
+      "latency_ms": {
+        "count": 9,
+        "p50": 1149,
+        "p90": 1978,
+        "p95": 1978,
+        "max": 1978
+      },
+      "provider_latency_ms": {
+        "count": 9,
+        "p50": 1148,
+        "p90": 1975,
+        "p95": 1975,
+        "max": 1975
+      },
+      "usage": {
+        "prompt_tokens": {
+          "total": 61290,
+          "average": 6810
+        },
+        "completion_tokens": {
+          "total": 2965,
+          "average": 329.44444444444446
+        },
+        "cost": {
+          "total": 0.0067869,
+          "average": 0.0007541000000000001
+        }
+      },
+      "results": [
+        {
+          "case_id": "intent-ambiguous-earnings",
+          "repeat": 1,
+          "tags": [
+            "clarification",
+            "ambiguity"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": false,
+              "pass": null
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": true,
+              "pass": true
+            },
+            "overall": true,
+            "actual": {
+              "kind": "clarify",
+              "steps": [
+                {
+                  "kind": "clarify",
+                  "confidence": 0.96,
+                  "command": null,
+                  "security": {
+                    "spoken_name": "amazon",
+                    "ticker": "AMZN",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "clarification": "Do you want the earnings fundamentals matrix (EM), the consensus EPS estimates (ERN), or the earnings call transcript (TRAN)?",
+                  "reason": "The request 'show me amazon earnings' is ambiguous among EM, ERN, and TRAN commands."
+                }
+              ],
+              "layout": null,
+              "clarification": "Do you want the earnings fundamentals matrix (EM), the consensus EPS estimates (ERN), or the earnings call transcript (TRAN)?"
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1370,
+            "prompt_tokens": 6068,
+            "completion_tokens": 199,
+            "cost": 0.0009144,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1371
+          }
+        },
+        {
+          "case_id": "intent-ticker-letters",
+          "repeat": 1,
+          "tags": [
+            "noise",
+            "ticker"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": false,
+              "pass": null
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "kind": "execute",
+                  "confidence": 1,
+                  "command": "G",
+                  "security": {
+                    "spoken_name": "q q q",
+                    "ticker": "QQQ",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [
+                    "5m"
+                  ],
+                  "post_open_actions": [],
+                  "clarification": null,
+                  "reason": "User requested a chart for QQQ with five‑minute candles, mapping to G command with 5m argument."
+                }
+              ],
+              "layout": null,
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1148,
+            "prompt_tokens": 6075,
+            "completion_tokens": 196,
+            "cost": 0.00058725,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1149
+          }
+        },
+        {
+          "case_id": "workflow-comparison-gf",
+          "repeat": 1,
+          "tags": [
+            "nested-actions",
+            "comparison",
+            "multi-security"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "GF",
+                  "security": {
+                    "spoken_name": "amazon",
+                    "ticker": "AMZN",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "add company",
+                      "operation": "add",
+                      "value": "META"
+                    },
+                    {
+                      "feature": "add company",
+                      "operation": "add",
+                      "value": "MSFT"
+                    },
+                    {
+                      "feature": "range",
+                      "operation": "select",
+                      "value": "5Y"
+                    },
+                    {
+                      "feature": "include consensus estimates",
+                      "operation": "select",
+                      "value": "on"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "comparison",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1975,
+            "prompt_tokens": 7054,
+            "completion_tokens": 573,
+            "cost": 0.0008835,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1978
+          }
+        },
+        {
+          "case_id": "workflow-new-screen",
+          "repeat": 1,
+          "tags": [
+            "screen",
+            "layout",
+            "multi-step"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "WEI",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "GLCO",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "FX",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "market",
+                "preserve_existing": false,
+                "new_screen": true
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1029,
+            "prompt_tokens": 6995,
+            "completion_tokens": 338,
+            "cost": 0.00073365,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1030
+          }
+        },
+        {
+          "case_id": "workflow-options",
+          "repeat": 1,
+          "tags": [
+            "nested-actions",
+            "options",
+            "placement"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": false
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": false,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "OMON",
+                  "security": {
+                    "spoken_name": "apple",
+                    "ticker": "AAPL",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": "left"
+                },
+                {
+                  "command": "OVME",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": "right"
+                }
+              ],
+              "layout": {
+                "preset": "options",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1004,
+            "prompt_tokens": 7015,
+            "completion_tokens": 328,
+            "cost": 0.00073065,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1005
+          }
+        },
+        {
+          "case_id": "workflow-punctuationless",
+          "repeat": 1,
+          "tags": [
+            "noise",
+            "multi-step"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "DES",
+                  "security": {
+                    "spoken_name": "meta",
+                    "ticker": "META",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "EM",
+                  "security": {
+                    "spoken_name": "meta",
+                    "ticker": "META",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "CF",
+                  "security": {
+                    "spoken_name": "meta",
+                    "ticker": "META",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "TRAN",
+                  "security": {
+                    "spoken_name": "meta",
+                    "ticker": "META",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "research",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1540,
+            "prompt_tokens": 7009,
+            "completion_tokens": 499,
+            "cost": 0.00083235,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1542
+          }
+        },
+        {
+          "case_id": "workflow-self-correct-metric",
+          "repeat": 1,
+          "tags": [
+            "correction",
+            "comparison"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": true,
+              "pass": true
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "GF",
+                  "security": {
+                    "spoken_name": "apple",
+                    "ticker": "AAPL",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [
+                    {
+                      "feature": "add company",
+                      "operation": "add",
+                      "value": "MSFT"
+                    },
+                    {
+                      "feature": "ratio metric",
+                      "operation": "select",
+                      "value": "P/E"
+                    },
+                    {
+                      "feature": "range",
+                      "operation": "select",
+                      "value": "5Y"
+                    }
+                  ],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "comparison",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1234,
+            "prompt_tokens": 7037,
+            "completion_tokens": 414,
+            "cost": 0.00078555,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1236
+          }
+        },
+        {
+          "case_id": "adversarial-trade",
+          "repeat": 1,
+          "tags": [
+            "adversarial",
+            "safety"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": false,
+              "pass": null
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": false,
+              "pass": null
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": false,
+              "pass": null
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "unsupported",
+              "steps": [],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 602,
+            "prompt_tokens": 7019,
+            "completion_tokens": 105,
+            "cost": 0.00059745,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 603
+          }
+        },
+        {
+          "case_id": "workflow-obscure",
+          "repeat": 1,
+          "tags": [
+            "obscure",
+            "multi-step"
+          ],
+          "grade": {
+            "availability": {
+              "applicable": true,
+              "pass": true
+            },
+            "malformed": {
+              "applicable": true,
+              "pass": true
+            },
+            "command": {
+              "applicable": true,
+              "pass": true
+            },
+            "workflow": {
+              "applicable": true,
+              "pass": true
+            },
+            "executable": {
+              "applicable": true,
+              "pass": true
+            },
+            "action": {
+              "applicable": false,
+              "pass": null
+            },
+            "entity": {
+              "applicable": true,
+              "pass": true
+            },
+            "clarification": {
+              "applicable": false,
+              "pass": null
+            },
+            "overall": true,
+            "actual": {
+              "kind": "execute",
+              "steps": [
+                {
+                  "command": "PAT",
+                  "security": {
+                    "spoken_name": "tesla",
+                    "ticker": "TSLA",
+                    "venue": "US",
+                    "asset_class": "EQ",
+                    "needs_resolution": false
+                  },
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                },
+                {
+                  "command": "PRT",
+                  "security": null,
+                  "query": null,
+                  "arguments": [],
+                  "post_open_actions": [],
+                  "required": true,
+                  "placement": null
+                }
+              ],
+              "layout": {
+                "preset": "grid",
+                "preserve_existing": true,
+                "new_screen": false
+              },
+              "clarification": null
+            }
+          },
+          "inference": {
+            "model": "openai/gpt-oss-120b",
+            "provider": "Groq",
+            "latency_ms": 1075,
+            "prompt_tokens": 7018,
+            "completion_tokens": 313,
+            "cost": 0.0007221,
+            "retry_count": 0,
+            "end_to_end_latency_ms": 1076
+          }
+        }
+      ]
+    }
+  ]
+}

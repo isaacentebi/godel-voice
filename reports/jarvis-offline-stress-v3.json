@@ -1,0 +1,153 @@
+{
+  "schema_version": 3,
+  "generated_at": "2026-08-04T07:37:02.531Z",
+  "mode": "offline-deterministic-no-model",
+  "honesty": {
+    "model_accuracy": null,
+    "reason": "No live model or synthetic oracle result was scored. Metrics below measure corpus coverage and deterministic local parser behavior only.",
+    "runtime_execution_accuracy": null,
+    "reason_runtime": "No Arc session was used. Executable coverage is the declared verified adapter snapshot, not an execution claim."
+  },
+  "corpus": {
+    "sources": [
+      "data/jarvis-eval-expansion-v2.json",
+      "data/jarvis-adversarial-cases-v1.json"
+    ],
+    "new_cases": 24,
+    "total_cases": 149,
+    "unique_ids": 149,
+    "strict_exact_cases": 149,
+    "expected_kinds": {
+      "execute": 120,
+      "clarify": 17,
+      "unsupported": 12
+    },
+    "command_coverage": {
+      "covered": 59,
+      "total": 59,
+      "missing": []
+    },
+    "required_tag_coverage": {
+      "covered": 14,
+      "total": 14,
+      "missing": []
+    }
+  },
+  "architecture": {
+    "strict_or_live_commands": 59,
+    "total_commands": 59,
+    "generic_only": [],
+    "verified_nested_bindings": [
+      "EQS.range_filter.add",
+      "EQS.list_filter.usd_technology",
+      "EQS.screen.run",
+      "EQS.screen.clear",
+      "HDS.view.select",
+      "MOST.results.select",
+      "HMAP.universe.select",
+      "HMAP.view.select",
+      "EM.metric.select",
+      "IMAP.map.configure",
+      "N.query.set",
+      "SECF.people_search.configure",
+      "OMON.strike_depth.set",
+      "G.chart.resolution.1h",
+      "HMS.comparison.configure"
+    ]
+  },
+  "deterministic_fast_path": {
+    "passed": 11,
+    "total": 11,
+    "accuracy": 1,
+    "results": [
+      {
+        "id": "stress3-hms-live-full",
+        "expected_outcome": "plan",
+        "observed_outcome": "plan",
+        "outcome_pass": true,
+        "shape_pass": true,
+        "error": null
+      },
+      {
+        "id": "stress3-hms-correction",
+        "expected_outcome": "plan",
+        "observed_outcome": "plan",
+        "outcome_pass": true,
+        "shape_pass": true,
+        "error": null
+      },
+      {
+        "id": "stress3-hms-contradiction",
+        "expected_outcome": "decline",
+        "observed_outcome": "decline",
+        "outcome_pass": true,
+        "shape_pass": true,
+        "error": null
+      },
+      {
+        "id": "stress3-hms-unresolved-entity",
+        "expected_outcome": "decline",
+        "observed_outcome": "decline",
+        "outcome_pass": true,
+        "shape_pass": true,
+        "error": null
+      },
+      {
+        "id": "stress3-news-exact-phonetic",
+        "expected_outcome": "plan",
+        "observed_outcome": "plan",
+        "outcome_pass": true,
+        "shape_pass": true,
+        "error": null
+      },
+      {
+        "id": "stress3-hmap-live-plus-export",
+        "expected_outcome": "decline",
+        "observed_outcome": "decline",
+        "outcome_pass": true,
+        "shape_pass": true,
+        "error": null
+      },
+      {
+        "id": "stress3-window-move",
+        "expected_outcome": "plan",
+        "observed_outcome": "plan",
+        "outcome_pass": true,
+        "shape_pass": true,
+        "error": null
+      },
+      {
+        "id": "stress3-window-close-exact",
+        "expected_outcome": "plan",
+        "observed_outcome": "plan",
+        "outcome_pass": true,
+        "shape_pass": true,
+        "error": null
+      },
+      {
+        "id": "stress3-window-close-all",
+        "expected_outcome": "decline",
+        "observed_outcome": "decline",
+        "outcome_pass": true,
+        "shape_pass": true,
+        "error": null
+      },
+      {
+        "id": "stress3-eqs-live-plus-unbound",
+        "expected_outcome": "decline",
+        "observed_outcome": "decline",
+        "outcome_pass": true,
+        "shape_pass": true,
+        "error": null
+      },
+      {
+        "id": "stress3-resize-correction",
+        "expected_outcome": "plan",
+        "observed_outcome": "plan",
+        "outcome_pass": true,
+        "shape_pass": true,
+        "error": null
+      }
+    ]
+  }
+}

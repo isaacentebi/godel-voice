@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godel QM documented-unbound action",
+  "oneOf": [
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["feature", "operation", "value"],
+      "properties": {
+        "feature": {"const": "watchlist"}, "operation": {"const": "configure"},
+        "value": {
+          "type": "object", "additionalProperties": false,
+          "required": ["action", "name", "new_name", "relative_to", "placement", "confirmed"],
+          "properties": {
+            "action": {"enum": ["create", "switch", "rename", "delete", "reorder"]},
+            "name": {"type": "string", "minLength": 1, "maxLength": 64},
+            "new_name": {"type": ["string", "null"], "maxLength": 64},
+            "relative_to": {"type": ["string", "null"], "maxLength": 64},
+            "placement": {"enum": ["Before", "After", null]},
+            "confirmed": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["feature", "operation", "value"],
+      "properties": {
+        "feature": {"const": "tickers"}, "operation": {"const": "configure"},
+        "value": {
+          "type": "object", "additionalProperties": false,
+          "required": ["action", "watchlist", "securities", "confirmed"],
+          "properties": {
+            "action": {"enum": ["add", "remove", "batch-import"]},
+            "watchlist": {"type": "string", "minLength": 1, "maxLength": 64},
+            "securities": {"type": "array", "minItems": 1, "maxItems": 400, "items": {"$ref": "#/$defs/security"}},
+            "confirmed": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["feature", "operation", "value"],
+      "properties": {
+        "feature": {"const": "columns"}, "operation": {"const": "configure"},
+        "value": {
+          "type": "object", "additionalProperties": false,
+          "required": ["visible", "order", "widths", "confirmed"],
+          "properties": {
+            "visible": {"$ref": "#/$defs/columns"}, "order": {"$ref": "#/$defs/columns"},
+            "widths": {"type": "array", "maxItems": 64, "items": {"type": "object", "additionalProperties": false, "required": ["column", "pixels"], "properties": {"column": {"type": "string", "minLength": 1, "maxLength": 64}, "pixels": {"type": "integer", "minimum": 24, "maximum": 2000}}}},
+            "confirmed": {"const": true}
+          }
+        }
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["feature", "operation", "value"],
+      "properties": {
+        "feature": {"const": "scale"}, "operation": {"const": "configure"},
+        "value": {"type": "object", "additionalProperties": false, "required": ["percent", "confirmed"], "properties": {"percent": {"type": "number", "exclusiveMinimum": 0, "maximum": 500}, "confirmed": {"const": true}}}
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["feature", "operation", "value"],
+      "properties": {
+        "feature": {"const": "sort"}, "operation": {"const": "configure"},
+        "value": {"type": "object", "additionalProperties": false, "required": ["column", "direction", "confirmed"], "properties": {"column": {"type": "string", "minLength": 1, "maxLength": 64}, "direction": {"enum": ["Ascending", "Descending", "Off"]}, "confirmed": {"const": true}}}
+      }
+    }
+  ],
+  "$defs": {
+    "security": {
+      "type": "object", "additionalProperties": false,
+      "required": ["spoken_name", "ticker", "venue", "asset_class", "needs_resolution"],
+      "properties": {
+        "spoken_name": {"type": ["string", "null"], "maxLength": 64},
+        "ticker": {"type": ["string", "null"], "maxLength": 24},
+        "venue": {"type": ["string", "null"], "maxLength": 24},
+        "asset_class": {"type": ["string", "null"], "maxLength": 24},
+        "needs_resolution": {"type": "boolean"}
+      }
+    },
+    "columns": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 64}}
+  },
+  "x-capability-state": "documented-unbound",
+  "x-runtime-enabled": false,
+  "x-account-scope": "persistent synchronized watchlist state"
+}

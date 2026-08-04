@@ -1,0 +1,13 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","title":"PAT PRT KELLY strict actions",
+  "$defs":{"pattern":{"type":"object","additionalProperties":false,"required":["id","label"],"properties":{"id":{"type":"string","minLength":1},"label":{"type":"string","minLength":1}}}},
+  "oneOf":[
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"pattern"},"operation":{"const":"select"},"value":{"$ref":"#/$defs/pattern"},"scope":{"const":"panel"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"occurrence_count"},"operation":{"const":"select"},"value":{"type":"integer","minimum":1},"scope":{"const":"panel"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"forecast_horizon"},"operation":{"const":"select"},"value":{"type":"string","minLength":1},"scope":{"const":"panel"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"patterns"},"operation":{"const":"set"},"value":{"type":"array","minItems":1,"maxItems":50,"uniqueItems":true,"items":{"$ref":"#/$defs/pattern"}},"scope":{"const":"panel"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"ranking"},"operation":{"const":"select"},"value":{"type":"string","minLength":1},"scope":{"const":"panel"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"realized_outcomes"},"operation":{"const":"select"},"value":{"enum":["show","hide"]},"scope":{"const":"panel"}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value","scope"],"properties":{"feature":{"const":"simulation"},"operation":{"const":"configure"},"scope":{"const":"panel"},"value":{"type":"object","additionalProperties":false,"required":["starting_balance","currency","win_probability","bet_percent"],"properties":{"starting_balance":{"type":"number","exclusiveMinimum":0,"maximum":1000000000000000},"currency":{"type":"string","minLength":3,"maxLength":8},"win_probability":{"type":"number","minimum":0,"maximum":1},"bet_percent":{"type":"number","minimum":0,"maximum":100}}}}}
+  ],"x-runtime-enabled":false,"x-dynamic-grammar":"PAT and PRT identities/options require current live capture","x-grounding":"statistical results and outcomes only from exact observed Godel panels","x-safety":"educational simulation only; no trading, betting, or order actions"
+}

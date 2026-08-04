@@ -1,0 +1,13 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Godel SI short-interest architecture",
+  "oneOf":[
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"date_range"},"operation":{"const":"set"},"value":{"type":"object","additionalProperties":false,"required":["from","to"],"properties":{"from":{"type":"string","format":"date"},"to":{"type":"string","format":"date"}}}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"display"},"operation":{"const":"select"},"value":{"type":"array","minItems":1,"maxItems":4,"uniqueItems":true,"items":{"enum":["Latest Report Date","Short Interest","Short Ratio / Days to Cover","Average Daily Volume"]}}}},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"refresh"},"operation":{"const":"refresh"},"value":{"type":"null"}}}
+  ],
+  "$defs":{"groundedFacts":{"type":"object","additionalProperties":false,"required":["report_date","short_interest_shares","days_to_cover","average_daily_volume_shares","latest_report_confirmed","source"],"properties":{"report_date":{"type":"string","format":"date"},"short_interest_shares":{"type":"integer","minimum":0},"days_to_cover":{"type":"number","minimum":0},"average_daily_volume_shares":{"type":"integer","minimum":0},"latest_report_confirmed":{"const":true},"source":{"const":"Godel SI panel"}}}},
+  "x-runtime-enabled":false,
+  "x-data-cadence":"FINRA twice-monthly",
+  "x-no-invention":"Narration requires exact current Godel SI panel facts with confirmed latest report identity"
+}

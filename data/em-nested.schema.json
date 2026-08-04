@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godel EM exact action architecture",
+  "oneOf": [
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"metric"},"operation":{"const":"select"},"value":{"enum":["Sales","EBITDA","Net Income","EPS (GAAP)","Total Assets","Current Assets","Current Liabilities","Shareholder Equity","Cash Flow From Operations","Cash Flow From Investing","Cash Flow From Financing"]}},"x-runtime-enabled":true},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"growth"},"operation":{"const":"select"},"value":{"enum":["YoY % Growth","PoP % Growth"]}},"x-runtime-enabled":false},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"chart"},"operation":{"const":"select"},"value":{"enum":["Values Chart","Growth Chart"]}},"x-runtime-enabled":false},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"series"},"operation":{"enum":["show","hide"]},"value":{"enum":["Historical","Estimates"]}},"x-runtime-enabled":false},
+    {"type":"object","additionalProperties":false,"required":["feature","operation","value"],"properties":{"feature":{"const":"valuation"},"operation":{"const":"read"},"value":{"oneOf":[{"type":"object","additionalProperties":false,"required":["row","section","semantic_unit"],"properties":{"row":{"enum":["P/E","P/B","P/S","P/CF","EV/EBITDA","EV/Sales","EV/CF","EV/FCF"]},"section":{"const":"Multiples"},"semantic_unit":{"const":"Multiple"}}},{"type":"object","additionalProperties":false,"required":["row","section","semantic_unit"],"properties":{"row":{"const":"Dividend Yield"},"section":{"const":"Multiples"},"semantic_unit":{"const":"Percent"}}}]}},"x-runtime-enabled":true}
+  ],
+  "x-capability-state": "metric-and-valuation-read-live; visual controls observed-unbound",
+  "x-valuation-semantics": "P/E, P/B, P/S, P/CF and EV ratios are multiples; Dividend Yield is percent"
+}

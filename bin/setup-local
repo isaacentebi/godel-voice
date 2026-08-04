@@ -16,7 +16,13 @@ fi
 /usr/bin/printf '%s\n' \
   'globalThis.GodelVoiceConfig = {' \
   '  handoffUrl: "http://127.0.0.1:17841",' \
-  "  secret: \"$secret\"" \
+  "  secret: \"$secret\"," \
+  '  spokenFeedback: true' \
   '};' > "$config_file"
+/bin/chmod 600 "$secret_file" "$config_file"
+[[ ! -f "$project_dir/.env" ]] || /bin/chmod 600 "$project_dir/.env"
 
 print "Local Godel Voice handoff configured"
+if [[ "${GODEL_VOICE_SKIP_SERVICE_INSTALL:-0}" != "1" ]]; then
+  "$project_dir/bin/godel-voice-service" install
+fi

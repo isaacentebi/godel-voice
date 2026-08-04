@@ -1,0 +1,7 @@
+# Q, HLDR, and HMS voice architecture
+
+`Q` is a grounded read. Jarvis may read the exact addressed security and venue, last, bid, ask, volume, displayed units, and timestamp only when those facts come from the authenticated Godel Q panel. It does not calculate missing fields, forecast, recommend, or invent a handoff. Q has no documented exact nested destination action, so a chart, description, options, or news request must be expressed as a separate Godel command.
+
+`HLDR` answers what one exact fund, ETF, company, or instrument owns. It is deliberately separate from `HDS`, which answers who owns a security. Narration binds the exact owner identity and exact holding-row identities, and may include only displayed portfolio weight, shares, market value, change, report date, filing date, or last-transaction date. Sorting, filtering, paging, and export remain unsupported because no exact control is documented.
+
+`HMS` preserves the existing live Godel comparison behavior while adding a strict local parser. Add/remove operations require exact pre-resolved securities; removal additionally requires exact current membership. Timeframe is closed to 1M, 3M, 6M, YTD, 1Y, 5Y, or All Time. Metric is Change percent or Dollar value. Display is Normalize, Overlay, or Side-by-side. Corrections discard superseded language; direct contradictions block the entire configure step. Fundamental and valuation requests are redirected to GF instead of being mislabeled as price comparisons.

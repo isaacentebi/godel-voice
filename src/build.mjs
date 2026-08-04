@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildCompactCatalog, commandMaps, loadRegistry } from "./catalog.mjs";
-import { systemPrompt } from "./prompt.mjs";
+import { systemPrompt, workflowSystemPrompt } from "./prompt.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.resolve(here, "../data");
@@ -19,11 +19,13 @@ const manifest = {
   catalog_characters: catalog.length,
   catalog_approx_tokens: Math.ceil(catalog.length / 4),
   full_system_prompt_characters: systemPrompt().length,
-  full_system_prompt_approx_tokens: Math.ceil(systemPrompt().length / 4)
+  full_system_prompt_approx_tokens: Math.ceil(systemPrompt().length / 4),
+  workflow_system_prompt_characters: workflowSystemPrompt().length,
+  workflow_system_prompt_approx_tokens: Math.ceil(workflowSystemPrompt().length / 4)
 };
 
 fs.writeFileSync(path.join(dataDir, "catalog.min.txt"), catalog + "\n");
-fs.writeFileSync(path.join(dataDir, "voiceink-system-prompt.txt"), systemPrompt() + "\n");
+fs.writeFileSync(path.join(dataDir, "voiceink-system-prompt.txt"), workflowSystemPrompt() + "\n");
 fs.writeFileSync(path.join(dataDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
 const sourceLines = [
   "# Godel command sources",

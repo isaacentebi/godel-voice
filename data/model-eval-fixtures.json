@@ -1,0 +1,36 @@
+{
+  "fixture-intent-quote": {
+    "intent": {"kind":"execute","confidence":0.99,"command":"Q","security":{"spoken_name":"amazon","ticker":"AMZN","venue":"US","asset_class":"EQ","needs_resolution":false},"query":null,"arguments":[],"post_open_actions":[],"clarification":null,"reason":"Quick quote."},
+    "terminalCommand":"AMZN US EQ Q",
+    "inference":{"model":"fixture/model","provider":"Groq","latency_ms":90,"prompt_tokens":6000,"completion_tokens":45,"cost":0.00012}
+  },
+  "fixture-intent-clarify": {
+    "intent": {"kind":"clarify","confidence":0.6,"command":null,"security":null,"query":null,"arguments":[],"post_open_actions":[],"clarification":"Do you mean the earnings matrix, estimates, or transcript?","reason":"Ambiguous earnings request."},
+    "terminalCommand":null,
+    "inference":{"model":"fixture/model","provider":"Groq","latency_ms":110,"prompt_tokens":6000,"completion_tokens":52,"cost":0.00013}
+  },
+  "fixture-workflow-layout": {
+    "workflow":{"kind":"execute","confidence":0.99,"steps":[{"command":"HMAP","security":null,"query":null,"arguments":[],"post_open_actions":[],"required":true,"placement":"left"},{"command":"EM","security":{"spoken_name":"amazon","ticker":"AMZN","venue":"US","asset_class":"EQ","needs_resolution":false},"query":null,"arguments":[],"post_open_actions":[],"required":true,"placement":"right"}],"layout":{"preset":"market","preserve_existing":true,"new_screen":false},"clarification":null,"reason":"Market and research panels."},
+    "inference":{"model":"fixture/model","provider":"Groq","latency_ms":170,"prompt_tokens":6200,"completion_tokens":130,"cost":0.0002}
+  },
+  "fixture-workflow-action": {
+    "workflow":{"kind":"execute","confidence":0.98,"steps":[{"command":"GF","security":{"spoken_name":"apple","ticker":"AAPL","venue":"US","asset_class":"EQ","needs_resolution":false},"query":null,"arguments":[],"post_open_actions":[{"feature":"add company","operation":"add","value":"MSFT"},{"feature":"fundamental metric","operation":"select","value":"Revenue"},{"feature":"range","operation":"select","value":"5Y"}],"required":true,"placement":null}],"layout":{"preset":"comparison","preserve_existing":true,"new_screen":false},"clarification":null,"reason":"Fundamental comparison."},
+    "inference":{"model":"fixture/model","provider":"Groq","latency_ms":190,"prompt_tokens":6200,"completion_tokens":140,"cost":0.00022}
+  },
+  "fixture-workflow-optional": {
+    "workflow":{"kind":"execute","confidence":0.97,"steps":[{"command":"DES","security":{"spoken_name":"oracle","ticker":"ORCL","venue":"US","asset_class":"EQ","needs_resolution":false},"query":null,"arguments":[],"post_open_actions":[],"required":true,"placement":null},{"command":"RES","security":{"spoken_name":"oracle","ticker":"ORCL","venue":"US","asset_class":"EQ","needs_resolution":false},"query":null,"arguments":[],"post_open_actions":[],"required":false,"placement":null}],"layout":{"preset":"research","preserve_existing":true,"new_screen":false},"clarification":null,"reason":"Company research."},
+    "inference":{"model":"fixture/model","provider":"Groq","latency_ms":150,"prompt_tokens":6150,"completion_tokens":125,"cost":0.00019}
+  },
+  "fixture-workflow-new-screen": {
+    "workflow":{"kind":"execute","confidence":0.99,"steps":[{"command":"WEI","security":null,"query":null,"arguments":[],"post_open_actions":[],"required":true,"placement":null},{"command":"GLCO","security":null,"query":null,"arguments":[],"post_open_actions":[],"required":true,"placement":null}],"layout":{"preset":"market","preserve_existing":true,"new_screen":true},"clarification":null,"reason":"New market screen."},
+    "inference":{"model":"fixture/model","provider":"Groq","latency_ms":140,"prompt_tokens":6100,"completion_tokens":115,"cost":0.00018}
+  },
+  "fixture-workflow-unsupported": {
+    "workflow":{"kind":"unsupported","confidence":0.99,"steps":[],"layout":{"preset":"grid","preserve_existing":true,"new_screen":false},"clarification":null,"reason":"Unknown command."},
+    "inference":{"model":"fixture/model","provider":"Groq","latency_ms":80,"prompt_tokens":6000,"completion_tokens":35,"cost":0.0001}
+  },
+  "fixture-workflow-correction": {
+    "workflow":{"kind":"execute","confidence":0.98,"steps":[{"command":"G","security":{"spoken_name":"nvidia","ticker":"NVDA","venue":"US","asset_class":"EQ","needs_resolution":false},"query":null,"arguments":[],"post_open_actions":[],"required":true,"placement":null}],"layout":{"preset":"grid","preserve_existing":true,"new_screen":false},"clarification":null,"reason":"Final corrected request."},
+    "inference":{"model":"fixture/model","provider":"Groq","latency_ms":120,"prompt_tokens":6050,"completion_tokens":80,"cost":0.00015}
+  }
+}

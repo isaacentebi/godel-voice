@@ -4,8 +4,10 @@
   "accepted_command_tokens": 69,
   "documented_commands": 47,
   "live_undocumented_commands": 12,
-  "catalog_characters": 14241,
-  "catalog_approx_tokens": 3561,
-  "full_system_prompt_characters": 21525,
-  "full_system_prompt_approx_tokens": 5382
+  "catalog_characters": 14365,
+  "catalog_approx_tokens": 3592,
+  "full_system_prompt_characters": 26269,
+  "full_system_prompt_approx_tokens": 6568,
+  "workflow_system_prompt_characters": 32906,
+  "workflow_system_prompt_approx_tokens": 8227
 }

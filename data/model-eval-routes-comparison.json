@@ -1,0 +1,40 @@
+[
+  {
+    "id": "groq-oss-120b-json",
+    "base_url": "https://openrouter.ai/api/v1",
+    "model": "openai/gpt-oss-120b",
+    "provider_only": ["groq"],
+    "allow_fallbacks": false,
+    "require_parameters": true,
+    "response_format": "json_object",
+    "reasoning_effort": "minimal",
+    "temperature": 0,
+    "max_tokens": 1800,
+    "api_key_env": "VOICE_LLM_API_KEY"
+  },
+  {
+    "id": "cerebras-oss-120b-json",
+    "base_url": "https://openrouter.ai/api/v1",
+    "model": "openai/gpt-oss-120b",
+    "provider_only": ["cerebras"],
+    "allow_fallbacks": false,
+    "require_parameters": true,
+    "response_format": "json_object",
+    "reasoning_effort": "minimal",
+    "temperature": 0,
+    "max_tokens": 1800,
+    "api_key_env": "VOICE_LLM_API_KEY"
+  },
+  {
+    "id": "cerebras-glm-4.7-json",
+    "base_url": "https://openrouter.ai/api/v1",
+    "model": "z-ai/glm-4.7",
+    "provider_only": ["cerebras"],
+    "allow_fallbacks": false,
+    "require_parameters": true,
+    "response_format": "json_object",
+    "temperature": 0,
+    "max_tokens": 1800,
+    "api_key_env": "VOICE_LLM_API_KEY"
+  }
+]

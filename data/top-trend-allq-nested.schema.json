@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://godel.voice/schemas/top-trend-allq-nested.schema.json",
+  "title": "Strict TOP, TREND, and ALLQ nested action",
+  "description": "Runtime-disabled contracts for exact news selection, trend controls, and quote-row handoffs.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["feature", "operation", "value", "scope"],
+      "properties": {
+        "feature": { "const": "article" },
+        "operation": { "const": "open" },
+        "scope": { "const": "reader" },
+        "value": { "$ref": "#/$defs/articleIdentity" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["feature", "operation", "value", "scope"],
+      "properties": {
+        "feature": { "const": "timeframe" },
+        "operation": { "const": "select" },
+        "value": { "enum": ["1H", "24H", "WEEK", "MONTH"] },
+        "scope": { "const": "panel" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["feature", "operation", "value", "scope"],
+      "properties": {
+        "feature": { "const": "refresh" },
+        "operation": { "const": "refresh" },
+        "value": { "type": "null" },
+        "scope": { "const": "panel" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["feature", "operation", "value", "scope"],
+      "properties": {
+        "feature": { "const": "active quotes only" },
+        "operation": { "const": "select" },
+        "value": { "enum": ["on", "off"] },
+        "scope": { "const": "panel" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["feature", "operation", "value", "scope"],
+      "properties": {
+        "feature": { "const": "row context action" },
+        "operation": { "const": "open" },
+        "scope": { "const": "selected-row" },
+        "value": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["destination", "quote"],
+          "properties": {
+            "destination": { "enum": ["Q", "G", "DES", "FOCUS", "OMON"] },
+            "quote": { "$ref": "#/$defs/quoteIdentity" }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "articleIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "rank", "headline", "source", "time"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "rank": { "type": "integer", "minimum": 1, "maximum": 15 },
+        "headline": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "time": { "type": "string", "minLength": 1 }
+      }
+    },
+    "quoteIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "ticker", "venue", "active"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "ticker": { "type": "string", "pattern": "^[A-Z][A-Z0-9.-]{0,9}$" },
+        "venue": { "type": "string", "minLength": 1 },
+        "active": { "type": "boolean" }
+      }
+    }
+  },
+  "x-runtime-enabled": false,
+  "x-safety": {
+    "dynamic-identities": "authoritative-live-context-only",
+    "external-navigation": "blocked",
+    "grounded-narration": "observed-fields-only",
+    "atomic-on-clarification": true
+  }
+}

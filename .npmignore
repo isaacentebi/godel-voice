@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+.godel-voice-secret
+.godel-voice-queue.json
+.godel-voice-server.pid
+logs/
+extension/config.local.js
+node_modules/
+coverage/
+.DS_Store
+*.tgz
