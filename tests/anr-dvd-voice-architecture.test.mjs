@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
-import { ANR_DISPLAY_FIELDS, ANR_FEATURES, DVD_DISPLAY_FIELDS, DVD_FEATURES, normalizeANRAction, normalizeANRFacts, normalizeDVDAction, normalizeDVDFacts } from "../src/anr-dvd-actions.mjs";
-import { compileANRFollowup, compileDVDFollowup } from "../src/anr-dvd-followup.mjs";
+import { ANR_DISPLAY_FIELDS, ANR_FEATURES, DVD_DISPLAY_FIELDS, DVD_FEATURES, normalizeANRAction, normalizeANRFacts, normalizeDVDAction, normalizeDVDFacts } from "../src/commands/anr-dvd-actions.mjs";
+import { compileANRFollowup, compileDVDFollowup } from "../src/commands/anr-dvd-followup.mjs";
 import { validateWorkflowPlan } from "../src/workflow-plan.mjs";
 
 const anrFacts={as_of:"2026-08-03",consensus_rating:"Overweight",consensus_price_target:225,currency:"USD",rows:[{date:"2026-08-01",firm:"Example Research",analyst:"A. Analyst",rating:"Buy",price_target:240,currency:"USD",change_type:"Upgrade"}],source:"Godel ANR panel"};
@@ -24,4 +24,4 @@ test("DVD refuses absent corrupt and forecasted values",()=>{for(const grounded_
 test("strict fact and action validators reject malformed dates and types",()=>{assert.throws(()=>normalizeANRAction({feature:"date_range",operation:"set",value:{from:"2026-02-30",to:"2026-03-01"}}),/calendar/);assert.throws(()=>normalizeDVDAction({feature:"display",operation:"select",value:["Ex-Date","Ex-Date"]}),/duplicates/);assert.throws(()=>normalizeANRFacts({...anrFacts,rows:[{...anrFacts.rows[0],price_target:"240"}]}),/number/);assert.throws(()=>normalizeDVDFacts({...dvdFacts,twelve_month_yield_percent:"2.4"}),/number/);});
 test("one unsupported clause makes compound display non-executable",()=>{const d=compileANRFollowup("ANR","show firm and export as csv");assert.ok(d.actions.length);assert.ok(d.blockers.length);assert.equal(d.configure_step_draft,null);});
 test("workflow recognizes ANR and DVD shapes but enables neither",()=>{const base={version:2,failure_policy:"stop_on_any",layout:null};for(const[command,action]of[["ANR",{feature:"display",operation:"select",value:["Firm"]}],["DVD",{feature:"display",operation:"select",value:["Ex-Date"]}]]){const target={mode:"command",command,security:null};assert.throws(()=>validateWorkflowPlan({...base,steps:[{id:`${command.toLowerCase()}-1`,kind:"configure",target,actions:[action],required:true}]}),/schema-valid but not live-enabled/);}});
-test("schema records grounded-only no-inference and unresolved export",()=>{const s=JSON.parse(fs.readFileSync(new URL("../data/contracts/anr-dvd-nested.schema.json",import.meta.url),"utf8"));assert.equal(s["x-runtime-enabled"],false);assert.equal(s["x-anr-export-format"],"unresolved");assert.match(s["x-grounded-only"],/exact current/);assert.match(s["x-no-inference"],/No investment recommendation/);});
+test("schema records grounded-only no-inference and unresolved export",()=>{const s=JSON.parse(fs.readFileSync(new URL("../catalog/contracts/anr-dvd-nested.schema.json",import.meta.url),"utf8"));assert.equal(s["x-runtime-enabled"],false);assert.equal(s["x-anr-export-format"],"unresolved");assert.match(s["x-grounded-only"],/exact current/);assert.match(s["x-no-inference"],/No investment recommendation/);});

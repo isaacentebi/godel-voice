@@ -1,4 +1,4 @@
-import { commonSecurities } from "./security-resolver.mjs";
+import { commonSecurities } from "../security-resolver.mjs";
 import { CF_FILING_TYPES, normalizeCFAction } from "./cf-actions.mjs";
 
 const FORM_PATTERNS = Object.freeze([

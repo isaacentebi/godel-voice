@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
   compileGChartVoice, G_ACTION_STATES, G_RANGES, G_RESOLUTIONS, G_SCALES, G_STYLES
-} from "../src/g-chart-followup.mjs";
-import { compileChartOptionsFollowup } from "../src/chart-options-followup.mjs";
+} from "../src/commands/g-chart-followup.mjs";
+import { compileChartOptionsFollowup } from "../src/commands/chart-options-followup.mjs";
 
 const values = result => result.actions.map(({ feature, value }) => [feature, value]);
 
@@ -112,7 +112,7 @@ test("legacy wrapper preserves G blocker wording and GF HP FA OMON behavior", ()
 });
 
 test("dedicated schema enumerates all modeled G boundaries", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/g-chart-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/g-chart-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf.length, 12);
   const source = JSON.stringify(schema);
   for (const feature of Object.keys(G_ACTION_STATES)) assert.match(source, new RegExp(feature.replace(" ", "\\s")), feature);

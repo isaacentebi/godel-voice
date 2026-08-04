@@ -14,7 +14,7 @@
     ".env.example",
     "README.md",
     "bin/",
-    "data/",
+    "catalog/",
     "docs/",
     "evals/",
     "extension/adapters/",

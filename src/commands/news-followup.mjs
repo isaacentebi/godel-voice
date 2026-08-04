@@ -1,4 +1,4 @@
-import { validateWorkflowPlan } from "./workflow-plan.mjs";
+import { validateWorkflowPlan } from "../workflow-plan.mjs";
 
 export const NEWS_ACTION_STATES = Object.freeze({
   query: "live",

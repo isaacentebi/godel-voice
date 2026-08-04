@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
-import { ERN_DISPLAY_FIELDS, ERN_FEATURES, ERN_PERIODS, normalizeERNAction, normalizeGroundedForwardPE } from "../src/ern-actions.mjs";
-import { compileERNFollowup } from "../src/ern-followup.mjs";
+import { ERN_DISPLAY_FIELDS, ERN_FEATURES, ERN_PERIODS, normalizeERNAction, normalizeGroundedForwardPE } from "../src/commands/ern-actions.mjs";
+import { compileERNFollowup } from "../src/commands/ern-followup.mjs";
 import { validateWorkflowPlan } from "../src/workflow-plan.mjs";
 
 const target = { mode:"command", command:"ERN", security:null };
@@ -105,7 +105,7 @@ test("workflow recognizes every ERN display shape but enables none", () => {
 });
 
 test("schema records disabled controls and grounded-only narration", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/ern-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/ern-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.match(schema["x-grounded-narration"], /Forward P\/E only/);
   assert.match(schema["x-no-invention"], /may be synthesized/);

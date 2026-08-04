@@ -103,10 +103,10 @@ test("service manager is persistent on macOS and only replaces this checkout's e
   assert.match(service, /<key>RunAtLoad<\/key><true\/>/);
   assert.match(service, /<key>KeepAlive<\/key><true\/>/);
   assert.match(service, /Application Support\/GodelVoice/);
-  assert.match(service, /src\/"\*\.mjs/);
-  assert.match(service, /data\/commands\.json/);
-  assert.match(service, /intent\.schema\.json/);
-  assert.match(service, /workflow\.schema\.json/);
+  assert.match(service, /cp -R "\$project_dir\/src\/\." "\$runtime_src\/"/);
+  assert.match(service, /walk\("src"\)\.sort/);
+  assert.match(service, /catalog\/commands\.json/);
+  assert.match(service, /catalog\/schemas\/"\*\.json/);
   assert.match(service, /exact_server_pid/);
   assert.match(service, /Refusing to replace unrelated process/);
   assert.match(service, /head -1 \|\| true/);

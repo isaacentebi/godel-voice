@@ -16,7 +16,7 @@ Every adapter must:
 
 ## Implementation path
 
-1. Add the feature to `data/commands.json` and its capability contract.
+1. Add the feature to `catalog/commands.json` and its capability contract.
 2. Parse representative natural, noisy, corrected, and ambiguous phrases.
 3. Add the operation to the workflow and browser allowlists.
 4. Implement the panel-scoped action in `extension/content.js` or `extension/main-world.js`.

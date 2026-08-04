@@ -1,7 +1,7 @@
 import { renderTerminalCommand, validateIntent } from "./compiler.mjs";
 import { encodeWorkflowPlan, normalizeEQSRangeValue, validateWorkflowPlan } from "./workflow-plan.mjs";
-import { assertMOSTUnboundActionDisabled, MOST_UNBOUND_FEATURES } from "./most-actions.mjs";
-import { EQS_UNBOUND_FEATURES, normalizeEQSLiveDynamicAction } from "./eqs-actions.mjs";
+import { assertMOSTUnboundActionDisabled, MOST_UNBOUND_FEATURES } from "./commands/most-actions.mjs";
+import { EQS_UNBOUND_FEATURES, normalizeEQSLiveDynamicAction } from "./commands/eqs-actions.mjs";
 
 export {
   WORKFLOW_PLAN_PREFIX,

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { compileNewsFollowup, extractNewsQuery } from "../src/news-followup.mjs";
+import { compileNewsFollowup, extractNewsQuery } from "../src/commands/news-followup.mjs";
 import { parseControlFollowup } from "../src/control-followup.mjs";
 
 test("extracts exact per-window News queries from natural and noisy speech", () => {

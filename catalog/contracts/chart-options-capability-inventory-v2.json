@@ -20,7 +20,7 @@
         {"feature":"snapshot","operation":"download","values":["PNG or verified provider URL"],"state":"documented-unbound","completion":"non-empty artifact or verified snapshot URL"}
       ],
       "voice":["Make this a one-hour candle chart for six months on log scale.","Save a snapshot of this chart."],
-      "evidence":["https://godelterminal.com/docs/commands/g","data/commands.json#G"]
+      "evidence":["https://godelterminal.com/docs/commands/g","catalog/commands.json#G"]
     },
     {
       "command": "GF",
@@ -40,7 +40,7 @@
       ],
       "blockers":["Metric availability varies by company.","GF P/E is not separately verified as forward or trailing; forward P/E requests should use EM or ERN.","Export artifact types are not verified."],
       "voice":["Add Microsoft and Meta, show five years of operating margin with estimates.","Split this graph and switch it to annual data."],
-      "evidence":["extension/main-world.js#runGF","extension/content.js#executeGF","data/commands.json#GF","live-ui:2026-08-03"]
+      "evidence":["extension/main-world.js#runGF","extension/content.js#executeGF","catalog/commands.json#GF","live-ui:2026-08-03"]
     },
     {
       "command": "HP",
@@ -52,7 +52,7 @@
       ],
       "blockers":["1H and 1M require an intraday entitlement.","Browser download gate is not wired."],
       "voice":["Switch these historical prices to one-minute rows.","Export every loaded row to Excel."],
-      "evidence":["https://godelterminal.com/docs/commands/hp","data/commands.json#HP"]
+      "evidence":["https://godelterminal.com/docs/commands/hp","catalog/commands.json#HP"]
     },
     {
       "command": "FA",
@@ -62,7 +62,7 @@
         {"feature":"export","operation":"download","values":["Excel","JSON"],"state":"documented-unbound","completion":"non-empty expected-format artifact passes download gate"}
       ],
       "voice":["Switch this to the annual cash-flow statement.","Export this statement as JSON."],
-      "evidence":["https://godelterminal.com/docs/commands/fa","data/commands.json#FA"]
+      "evidence":["https://godelterminal.com/docs/commands/fa","catalog/commands.json#FA"]
     },
     {
       "command": "OMON",
@@ -80,9 +80,9 @@
       ],
       "blockers":["Expiration and column lists must be read from the live option chain.","“N strikes around spot” is ambiguous; above and below must be specified separately.","Option entitlement and one exact selected contract are prerequisites.","No action may place an order."],
       "voice":["Show fifteen strikes in the Apple option chain.","Show calls, three months out, ten strikes above and five below, with delta gamma vega and theta.","Open the selected contract in Black-Scholes."],
-      "evidence":["https://godelterminal.com/docs/commands/omon","data/commands.json#OMON","extension/main-world.js#runOMON","live-ui:2026-08-03:options"]
+      "evidence":["https://godelterminal.com/docs/commands/omon","catalog/commands.json#OMON","extension/main-world.js#runOMON","live-ui:2026-08-03:options"]
     }
   ],
-  "contextual_followup_module": "src/chart-options-followup.mjs",
+  "contextual_followup_module": "src/commands/chart-options-followup.mjs",
   "integration_state": "partially integrated; OMON native strike depth is executable, while other candidates remain separated into source-verified, documented-unbound and blocked actions"
 }

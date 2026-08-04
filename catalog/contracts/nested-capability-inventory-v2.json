@@ -57,8 +57,8 @@
           "command": "MAP",
           "identity": "WORLD VENUE MAP / MAP",
           "actions": [
-            {"id":"panel.open","operation":"open","value":{"type":"none"},"state":"open-only","completion":"exact MAP panel is present","evidence":["data/commands.json#MAP"]},
-            {"id":"venue.drilldown","operation":"select","value":{"type":"exact-live-venue"},"state":"unsupported","completion":"blocked until a unique venue control and venue-hours state are verified","evidence":["data/commands.json#MAP"]}
+            {"id":"panel.open","operation":"open","value":{"type":"none"},"state":"open-only","completion":"exact MAP panel is present","evidence":["catalog/commands.json#MAP"]},
+            {"id":"venue.drilldown","operation":"select","value":{"type":"exact-live-venue"},"state":"unsupported","completion":"blocked until a unique venue control and venue-hours state are verified","evidence":["catalog/commands.json#MAP"]}
           ],
           "voice": ["Show which world exchanges are open right now."]
         }
@@ -137,7 +137,7 @@
           "command": "HLDR",
           "identity": "LATEST HOLDINGS / HLDR",
           "actions": [
-            {"id":"panel.open","operation":"open","value":{"type":"security"},"state":"open-only","completion":"exact HLDR panel and requested security identity are present","evidence":["data/commands.json#HLDR"]}
+            {"id":"panel.open","operation":"open","value":{"type":"security"},"state":"open-only","completion":"exact HLDR panel and requested security identity are present","evidence":["catalog/commands.json#HLDR"]}
           ],
           "limitations":["Live-only command; no stable nested filters, sort, paging or export semantics are documented."],
           "voice": ["Show Berkshire Hathaway's latest holdings."]
@@ -199,7 +199,7 @@
     }
   ],
   "live_runtime_cross_reference": {
-    "source": "data/contracts/live-runtime-truth-v1.json",
+    "source": "catalog/contracts/live-runtime-truth-v1.json",
     "current_contract_controls": [
       "EQS.range_filter.add",
       "EQS.list_filter.usd_technology",

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
-import { FOCUS_FIELDS, PDF_PREFERENCES, compileALVoice, compileFOCUSVoice, compilePDFSettingsVoice, compileFocusAlertsSettingsVoice, normalizeFOCUSFacts, normalizeALGroundedFacts } from "../src/focus-alerts-settings-followup.mjs";
+import { FOCUS_FIELDS, PDF_PREFERENCES, compileALVoice, compileFOCUSVoice, compilePDFSettingsVoice, compileFocusAlertsSettingsVoice, normalizeFOCUSFacts, normalizeALGroundedFacts } from "../src/commands/focus-alerts-settings-followup.mjs";
 
 const security = { ticker:"META", venue:"US", asset_class:"EQ" };
 const focusFacts = { observed:true, source:"Godel FOCUS panel", security, last:590.2, change:12.4, change_percent:2.15, bid:590.1, ask:590.3, volume:1234567, day_low:570, day_high:595, currency:"USD", as_of:"2026-08-04T12:00:00-06:00" };
@@ -128,7 +128,7 @@ test("PDF corrections remove superseded settings", () => {
 });
 
 test("schema and dispatcher preserve runtime boundary", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/focus-alerts-settings-nested.schema.json", import.meta.url)));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/focus-alerts-settings-nested.schema.json", import.meta.url)));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.equal(schema.oneOf.length, 5);
   assert.equal(compileFocusAlertsSettingsVoice({ command:"FOCUS", security }, "turn off price flashing").command, "FOCUS");

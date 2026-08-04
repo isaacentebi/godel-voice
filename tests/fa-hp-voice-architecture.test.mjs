@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
-import { compileFAFollowup, compileHPFollowup } from "../src/fa-hp-followup.mjs";
-import { EXPORT_FORMATS, FA_FEATURES, FA_PERIODICITIES, FA_STATEMENTS, HP_FEATURES, HP_PAGES, HP_RESOLUTIONS, normalizeFAAction, normalizeHPAction } from "../src/fa-hp-actions.mjs";
+import { compileFAFollowup, compileHPFollowup } from "../src/commands/fa-hp-followup.mjs";
+import { EXPORT_FORMATS, FA_FEATURES, FA_PERIODICITIES, FA_STATEMENTS, HP_FEATURES, HP_PAGES, HP_RESOLUTIONS, normalizeFAAction, normalizeHPAction } from "../src/commands/fa-hp-actions.mjs";
 import { validateWorkflowPlan } from "../src/workflow-plan.mjs";
 
 const faTarget = { mode: "command", command: "FA", security: null };
@@ -102,7 +102,7 @@ test("workflow recognizes strict FA and HP actions but enables none", () => {
 });
 
 test("schema keeps both surfaces disabled and receipt-gated", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/fa-hp-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/fa-hp-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema["x-runtime-enabled"], false);
   const text = JSON.stringify(schema);
   for (const token of ["Income Statement", "Balance Sheet", "Cash Flow", "Quarterly", "Yearly", "1D", "1H", "1M", "Previous", "Next", "All Loaded Rows", "receipt_required"]) assert.match(text, new RegExp(token));

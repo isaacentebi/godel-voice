@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { compileOMONVoice, OMON_ACTION_STATES, OMON_DESTINATIONS, OMON_GREEKS, OMON_MODES } from "../src/omon-followup.mjs";
-import { compileChartOptionsFollowup } from "../src/chart-options-followup.mjs";
+import { compileOMONVoice, OMON_ACTION_STATES, OMON_DESTINATIONS, OMON_GREEKS, OMON_MODES } from "../src/commands/omon-followup.mjs";
+import { compileChartOptionsFollowup } from "../src/commands/chart-options-followup.mjs";
 
 const entitled = {
   command: "OMON", option_entitlement: true,
@@ -131,7 +131,7 @@ test("legacy wrapper keeps strike depth live and atomically blocks mixed actions
 });
 
 test("dedicated schema contains every action but no order operation", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/omon-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/omon-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf.length, 8);
   const source = JSON.stringify(schema);
   for (const feature of Object.keys(OMON_ACTION_STATES)) assert.match(source, new RegExp(feature), feature);

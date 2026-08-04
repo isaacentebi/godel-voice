@@ -5,8 +5,8 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const inventory = JSON.parse(fs.readFileSync(path.join(root, "data", "contracts", "nested-capability-inventory-v2.json"), "utf8"));
-const commands = JSON.parse(fs.readFileSync(path.join(root, "data", "commands.json"), "utf8"));
+const inventory = JSON.parse(fs.readFileSync(path.join(root, "catalog", "contracts", "nested-capability-inventory-v2.json"), "utf8"));
+const commands = JSON.parse(fs.readFileSync(path.join(root, "catalog", "commands.json"), "utf8"));
 const commandCodes = new Set(commands.commands.map(command => command.code));
 const allowedStates = new Set(Object.keys(inventory.states));
 

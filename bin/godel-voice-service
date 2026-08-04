@@ -11,7 +11,7 @@ plist="$launch_agents_dir/$label.plist"
 log_dir="$project_dir/logs"
 runtime_dir="$HOME/Library/Application Support/GodelVoice"
 runtime_src="$runtime_dir/src"
-runtime_data="$runtime_dir/data"
+runtime_catalog="$runtime_dir/catalog"
 runtime_logs="$runtime_dir/logs"
 runtime_server="$runtime_src/handoff-server.mjs"
 action="${1:-status}"
@@ -75,22 +75,23 @@ PLIST
 }
 
 sync_runtime() {
-  /bin/mkdir -p "$runtime_src" "$runtime_data" "$runtime_logs"
-  /bin/chmod 700 "$runtime_dir" "$runtime_src" "$runtime_data" "$runtime_logs"
-  /bin/cp -f "$project_dir/src/"*.mjs "$runtime_src/"
-  for data_file in commands.json intent.schema.json workflow.schema.json; do
-    /bin/cp -f "$project_dir/data/$data_file" "$runtime_data/$data_file"
-  done
+  /bin/mkdir -p "$runtime_src" "$runtime_catalog/schemas" "$runtime_logs"
+  /bin/chmod 700 "$runtime_dir" "$runtime_src" "$runtime_catalog" "$runtime_catalog/schemas" "$runtime_logs"
+  /bin/cp -R "$project_dir/src/." "$runtime_src/"
+  /bin/cp -f "$project_dir/catalog/commands.json" "$runtime_catalog/commands.json"
+  /bin/cp -f "$project_dir/catalog/schemas/"*.json "$runtime_catalog/schemas/"
   /usr/bin/env node -e '
 const fs=require("fs"),path=require("path");const root=process.argv[1];
-const files=fs.readdirSync(path.join(root,"src")).filter(v=>v.endsWith(".mjs")).sort().map(v=>`src/${v}`);files.push("data/commands.json","data/intent.schema.json","data/workflow.schema.json");
+function walk(relative){return fs.readdirSync(path.join(root,relative),{withFileTypes:true}).flatMap(entry=>{const next=path.join(relative,entry.name);return entry.isDirectory()?walk(next):entry.isFile()&&entry.name.endsWith(".mjs")?[next]:[]})}
+const files=walk("src").sort();files.push("catalog/commands.json","catalog/schemas/intent.schema.json","catalog/schemas/workflow.schema.json");
 process.stdout.write(JSON.stringify(files));' "$project_dir" > "$runtime_dir/runtime-manifest.json"
   /bin/cp -f "$secret_file" "$runtime_dir/.godel-voice-secret"
   if [[ -f "$project_dir/.env" ]]; then /bin/cp -f "$project_dir/.env" "$runtime_dir/.env"; else /bin/rm -f "$runtime_dir/.env"; fi
   if [[ ! -f "$runtime_dir/.godel-voice-queue.json" && -f "$project_dir/.godel-voice-queue.json" ]]; then
     /bin/cp -f "$project_dir/.godel-voice-queue.json" "$runtime_dir/.godel-voice-queue.json"
   fi
-  /bin/chmod 600 "$runtime_dir/.godel-voice-secret" "$runtime_src/"*.mjs "$runtime_data/"*.json "$runtime_dir/runtime-manifest.json"
+  /usr/bin/find "$runtime_src" -type f -name '*.mjs' -exec /bin/chmod 600 {} +
+  /bin/chmod 600 "$runtime_dir/.godel-voice-secret" "$runtime_catalog/commands.json" "$runtime_catalog/schemas/"*.json "$runtime_dir/runtime-manifest.json"
   [[ ! -f "$runtime_dir/.env" ]] || /bin/chmod 600 "$runtime_dir/.env"
   [[ ! -f "$runtime_dir/.godel-voice-queue.json" ]] || /bin/chmod 600 "$runtime_dir/.godel-voice-queue.json"
   /usr/bin/touch "$runtime_logs/server.stdout.log" "$runtime_logs/server.stderr.log"

@@ -1,13 +1,13 @@
 import { encodeWorkflowPlan, validateWorkflowPlan } from "./workflow-plan.mjs";
-import { compileChartOptionsFollowup } from "./chart-options-followup.mjs";
-import { compileEQSFollowup } from "./eqs-followup.mjs";
-import { compileNewsFollowup } from "./news-followup.mjs";
-import { compileHMAPFollowup } from "./hmap-followup.mjs";
-import { compileMOSTFollowup } from "./most-followup.mjs";
-import { compileSECFFollowup } from "./secf-followup.mjs";
-import { compileHMSFollowup } from "./q-hldr-hms-followup.mjs";
-import { compileEMFollowup } from "./em-followup.mjs";
-import { parseTRANResearchAction, parseTRANResearchContinuation } from "./tran-help-change-followup.mjs";
+import { compileChartOptionsFollowup } from "./commands/chart-options-followup.mjs";
+import { compileEQSFollowup } from "./commands/eqs-followup.mjs";
+import { compileNewsFollowup } from "./commands/news-followup.mjs";
+import { compileHMAPFollowup } from "./commands/hmap-followup.mjs";
+import { compileMOSTFollowup } from "./commands/most-followup.mjs";
+import { compileSECFFollowup } from "./commands/secf-followup.mjs";
+import { compileHMSFollowup } from "./commands/q-hldr-hms-followup.mjs";
+import { compileEMFollowup } from "./commands/em-followup.mjs";
+import { parseTRANResearchAction, parseTRANResearchContinuation } from "./commands/tran-help-change-followup.mjs";
 
 const targetCommands = [
   ["earnings matrix", "EM"], ["market heatmap", "HMAP"], ["heatmap", "HMAP"],

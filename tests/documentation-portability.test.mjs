@@ -3,8 +3,8 @@ import fs from "node:fs";
 import test from "node:test";
 
 const read = path => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-const contracts = JSON.parse(read("data/contracts/adapter-contracts-v1.json"));
-const audit = JSON.parse(read("data/contracts/command-coverage.json"));
+const contracts = JSON.parse(read("catalog/contracts/adapter-contracts-v1.json"));
+const audit = JSON.parse(read("catalog/contracts/command-coverage.json"));
 const expectedEnabled = contracts.contracts.flatMap(contract => (contract.actions || [])
   .filter(action => action.binding?.enabled === true)
   .map(action => `${contract.command}.${action.id}`));

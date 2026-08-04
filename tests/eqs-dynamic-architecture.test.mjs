@@ -4,8 +4,8 @@ import test from "node:test";
 import {
   EQS_BOOLEAN_FIELDS, EQS_LIST_FIELDS, EQS_LIVE_LIST_VALUES, EQS_UNBOUND_FEATURES,
   assertEQSUnboundActionDisabled, isEQSLiveDynamicAction, normalizeEQSLiveDynamicAction, normalizeEQSUnboundAction
-} from "../src/eqs-actions.mjs";
-import { compileEQSFollowup } from "../src/eqs-followup.mjs";
+} from "../src/commands/eqs-actions.mjs";
+import { compileEQSFollowup } from "../src/commands/eqs-followup.mjs";
 import { buildWorkflowPlan } from "../src/automation-plan.mjs";
 import { validateIntent } from "../src/compiler.mjs";
 
@@ -143,7 +143,7 @@ test("content executor requires the authenticated native option set and rendered
 
 test("provider JSON schemas describe each structured payload without claiming runtime availability", () => {
   for (const filename of ["intent.schema.json", "workflow.schema.json"]) {
-    const schema = JSON.parse(fs.readFileSync(new URL(`../data/${filename}`, import.meta.url), "utf8"));
+    const schema = JSON.parse(fs.readFileSync(new URL(`../catalog/schemas/${filename}`, import.meta.url), "utf8"));
     const text = JSON.stringify(schema);
     for (const token of ["list_filter", "boolean_filter", "Currency", "Venue", "HQ Country", "Sector", "Sub-Sector", "Private Company"]) {
       assert.match(text, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));

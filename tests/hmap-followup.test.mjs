@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { compileHMAPFollowup, HMAP_ACTION_STATES } from "../src/hmap-followup.mjs";
+import { compileHMAPFollowup, HMAP_ACTION_STATES } from "../src/commands/hmap-followup.mjs";
 import { parseControlFollowup } from "../src/control-followup.mjs";
 
 const focused = { focused_panel: { window_id: "hmap-1", command: "HMAP", security: null } };
@@ -98,7 +98,7 @@ test("tile quick-action handoff requires exact live tile and action options and 
 });
 
 test("dedicated schema enumerates strict exact controls without promoting runtime", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/hmap-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/hmap-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf.length, 11);
   const serialized = JSON.stringify(schema);
   for (const value of ["S&P 500", "DJIA", "Auto", "Manual", "Open", "Closed", "Map", "Table"]) assert.match(serialized, new RegExp(value.replace(/[&]/g, "\\$&")));

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
-import { CF_FEATURES, CF_FILING_TYPES, CF_RENDERERS, CF_SCOPES, normalizeCFAction } from "../src/cf-actions.mjs";
-import { compileCFFollowup } from "../src/cf-followup.mjs";
+import { CF_FEATURES, CF_FILING_TYPES, CF_RENDERERS, CF_SCOPES, normalizeCFAction } from "../src/commands/cf-actions.mjs";
+import { compileCFFollowup } from "../src/commands/cf-followup.mjs";
 import { validateWorkflowPlan } from "../src/workflow-plan.mjs";
 
 const target = { mode: "command", command: "CF", security: null };
@@ -98,7 +98,7 @@ test("workflow recognizes both strict CF shapes but keeps runtime disabled", () 
 });
 
 test("dedicated schema records the strict safety and unsupported-control boundary", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/cf-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/cf-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.deepEqual(schema["x-unsupported"], ["paging", "date filtering", "search", "download", "export"]);
   assert.match(JSON.stringify(schema), /exact filing identity/);

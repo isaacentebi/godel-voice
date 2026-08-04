@@ -4,7 +4,7 @@ import test from "node:test";
 import {
   AUM_TABS, compileAUMVoice, compileBROKVoice, compileAUMBROKVoice,
   normalizeAUMGroundedTotal, normalizeBROKGroundedStatus
-} from "../src/aum-brok-followup.mjs";
+} from "../src/commands/aum-brok-followup.mjs";
 
 const personalTotal = { tab: "Personal", total: 125000.5, currency: "USD", as_of: "2026-08-04T12:00:00-06:00", observed: true, source: "Godel AUM panel" };
 const connection = { id: "conn-1", brokerage: "Interactive Brokers", account_label: "Individual …1234", connected: true, status: "Connected", observed: true };
@@ -134,7 +134,7 @@ test("BROK grounded status rejects secrets and invented rows", () => {
 });
 
 test("schema records disabled runtime and strict privacy policy", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/aum-brok-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/aum-brok-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.match(schema["x-privacy"].credentials, /never/);
   assert.equal(schema.oneOf.length, 3);
@@ -147,6 +147,6 @@ test("dispatcher routes only explicit AUM and BROK contexts", () => {
 });
 
 test("compiler source contains no logging sink", () => {
-  const source = fs.readFileSync(new URL("../src/aum-brok-followup.mjs", import.meta.url), "utf8");
+  const source = fs.readFileSync(new URL("../src/commands/aum-brok-followup.mjs", import.meta.url), "utf8");
   assert.doesNotMatch(source, /console\.|logger\.|\.log\s*\(/);
 });

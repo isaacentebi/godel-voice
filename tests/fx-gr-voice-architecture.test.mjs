@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { compileFXGRVoice, compileFXVoice, compileGRVoice, groundedFXResult, groundedGRResult, GR_ACTION_STATES, GR_PERIODS } from "../src/fx-gr-followup.mjs";
+import { compileFXGRVoice, compileFXVoice, compileGRVoice, groundedFXResult, groundedGRResult, GR_ACTION_STATES, GR_PERIODS } from "../src/commands/fx-gr-followup.mjs";
 import { validateWorkflowPlan } from "../src/workflow-plan.mjs";
 
 const fx = { live_currencies: [
@@ -136,7 +136,7 @@ test("dispatcher is scoped and schema records disabled safety boundaries", () =>
   assert.equal(compileFXGRVoice({ ...fx, command: "FX" }, "convert 1 dollars to yen").command, "FX");
   assert.equal(compileFXGRVoice({ ...gr, command: "GR" }, "Apple versus Microsoft").command, "GR");
   assert.equal(compileFXGRVoice({ command: "G" }, "Apple versus Microsoft"), null);
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/fx-gr-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/fx-gr-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf.length, 6);
   assert.equal(schema["x-runtime-enabled"], false);
   assert.equal(schema["x-existing-gr-runtime-preserved"], true);

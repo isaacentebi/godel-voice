@@ -15,12 +15,13 @@ Godel Voice is a local voice layer for Godel Terminal. It keeps provider credent
 ## Repository map
 
 - `bin/` — setup, diagnostics, background service, and VoiceInk handoff.
-- `data/` — command catalogue, schemas, capability contracts, and evaluation fixtures.
+- `catalog/` — command registry, intent schemas, and verified capability contracts.
 - `extension/` — Arc extension, Godel bridge, panel adapters, layout, and Realtime client.
-- `src/` — parsers, compiler, workflow validation, model routing, service, and speech.
+- `src/commands/` — command-specific intent parsers, normalizers, and safety rules.
+- `src/` — shared compiler, workflow validation, model routing, local service, and speech.
 - `tests/` — offline regression and safety suite.
-- `evals/` — optional benchmark generators.
-- `docs/` — user, architecture, adapter, and evaluation documentation.
+- `evals/` — evaluation datasets and optional benchmark runners.
+- `docs/` — focused user, architecture, adapter, and evaluation documentation.
 
 ## Safety boundary
 

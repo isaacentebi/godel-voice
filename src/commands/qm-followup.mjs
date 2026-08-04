@@ -1,4 +1,4 @@
-import { commonSecurities } from "./security-resolver.mjs";
+import { commonSecurities } from "../security-resolver.mjs";
 import { normalizeQMAction } from "./qm-actions.mjs";
 
 function clean(value) {

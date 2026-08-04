@@ -3,14 +3,14 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { compileHMAPFollowup } from "../src/hmap-followup.mjs";
+import { compileHMAPFollowup } from "../src/commands/hmap-followup.mjs";
 import { parseControlFollowup } from "../src/control-followup.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const readJson = file => JSON.parse(fs.readFileSync(path.join(root, file), "utf8"));
-const truth = readJson("data/contracts/live-runtime-truth-v1.json");
-const contracts = readJson("data/contracts/adapter-contracts-v1.json");
-const inventory = readJson("data/contracts/nested-capability-inventory-v2.json");
+const truth = readJson("catalog/contracts/live-runtime-truth-v1.json");
+const contracts = readJson("catalog/contracts/adapter-contracts-v1.json");
+const inventory = readJson("catalog/contracts/nested-capability-inventory-v2.json");
 const guide = fs.readFileSync(path.join(root, "docs/user-guide.md"), "utf8");
 
 function contracted() {

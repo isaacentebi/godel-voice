@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, "..");
-const registryPath = path.join(projectRoot, "data", "commands.json");
+const registryPath = path.join(projectRoot, "catalog", "commands.json");
 
 export function loadRegistry() {
   return JSON.parse(fs.readFileSync(registryPath, "utf8"));

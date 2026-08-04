@@ -4,7 +4,7 @@ import fs from "node:fs";
 import {
   CALC_FUNCTIONS, compileCALCVoice, compileCalculatorVoice, compileOVMEVoice,
   OVME_OPTION_TYPES, OVME_SOLVES, OVME_TIME_UNITS, validateFiniteCalculationOutput
-} from "../src/calculators-followup.mjs";
+} from "../src/commands/calculators-followup.mjs";
 
 const complete = {
   option_type: "Call", spot: 200, strike: 210, time_to_expiry: { value: 45, unit: "days" },
@@ -112,7 +112,7 @@ test("dispatcher stays command-scoped and both results remain runtime-disabled",
 });
 
 test("dedicated schema is calculation-only, finite-shaped and runtime-disabled", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/calculators-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/calculators-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf.length, 2);
   assert.equal(schema["x-runtime-enabled"], false);
   const source = JSON.stringify(schema);

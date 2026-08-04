@@ -4,7 +4,7 @@ import { commandMaps, loadRegistry } from "./catalog.mjs";
 import { intentSchema, systemPrompt, userPrompt, voiceWorkflowSchema, workflowSystemPrompt } from "./prompt.mjs";
 import { buildWorkflowPlan } from "./automation-plan.mjs";
 import { applyResolvedEntities, rejectUnverifiedModelTicker, resolveCommonSecurities, resolveTranscriptSecurities } from "./security-resolver.mjs";
-import { EQS_UNBOUND_FEATURES, normalizeEQSLiveDynamicAction } from "./eqs-actions.mjs";
+import { EQS_UNBOUND_FEATURES, normalizeEQSLiveDynamicAction } from "./commands/eqs-actions.mjs";
 
 const registry = loadRegistry();
 const maps = commandMaps(registry);

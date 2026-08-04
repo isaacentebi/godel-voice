@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { compileEQSFollowup } from "../src/eqs-followup.mjs";
+import { compileEQSFollowup } from "../src/commands/eqs-followup.mjs";
 
 const values = result => result.actions.map(({ feature, operation, value }) => ({ feature, operation, value }));
 

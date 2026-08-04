@@ -3,10 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { compileChartOptionsFollowup } from "../src/chart-options-followup.mjs";
+import { compileChartOptionsFollowup } from "../src/commands/chart-options-followup.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const inventory = JSON.parse(fs.readFileSync(path.join(root, "data", "contracts", "chart-options-capability-inventory-v2.json"), "utf8"));
+const inventory = JSON.parse(fs.readFileSync(path.join(root, "catalog", "contracts", "chart-options-capability-inventory-v2.json"), "utf8"));
 
 function compact(result) {
   return result.actions.map(({ feature, operation, value }) => ({ feature, operation, value }));

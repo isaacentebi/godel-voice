@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
-import { SI_DISPLAY_FIELDS, SI_FEATURES, normalizeSIAction, normalizeSIGroundedFacts } from "../src/si-actions.mjs";
-import { compileSIFollowup } from "../src/si-followup.mjs";
+import { SI_DISPLAY_FIELDS, SI_FEATURES, normalizeSIAction, normalizeSIGroundedFacts } from "../src/commands/si-actions.mjs";
+import { compileSIFollowup } from "../src/commands/si-followup.mjs";
 import { validateWorkflowPlan } from "../src/workflow-plan.mjs";
 
 const target = { mode:"command", command:"SI", security:null };
@@ -95,7 +95,7 @@ test("workflow recognizes every SI control but enables none", () => {
 });
 
 test("schema records cadence, grounded source, and disabled runtime", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/si-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/si-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.equal(schema["x-data-cadence"], "FINRA twice-monthly");
   assert.match(schema["x-no-invention"], /exact current Godel SI panel facts/);

@@ -9,8 +9,8 @@ import {
   normalizeWorldAction,
   VENUE_STATES,
   WORLD_FEATURES
-} from "../src/wei-glco-actions.mjs";
-import { compileGLCOFollowup, compileWorldFollowup } from "../src/wei-glco-followup.mjs";
+} from "../src/commands/wei-glco-actions.mjs";
+import { compileGLCOFollowup, compileWorldFollowup } from "../src/commands/wei-glco-followup.mjs";
 import { validateWorkflowPlan } from "../src/workflow-plan.mjs";
 
 const worldContext = {
@@ -151,7 +151,7 @@ test("planner recognizes every strict family but enables none", () => {
 });
 
 test("schema records grounding, documented-control, identity, and runtime policy", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/wei-glco-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/wei-glco-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.match(schema["x-world-status-grounding"], /next-open/);
   assert.match(schema["x-filter-sort-policy"], /explicitly documented/);

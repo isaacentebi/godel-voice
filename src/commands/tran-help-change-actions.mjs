@@ -1,4 +1,4 @@
-import { commandMaps, loadRegistry } from "./catalog.mjs";
+import { commandMaps, loadRegistry } from "../catalog.mjs";
 const COMMANDS=new Set(commandMaps(loadRegistry()).canonical.keys());
 export const TRAN_FEATURES=Object.freeze(["period","section","speaker","query","website","research"]);
 export const HELP_FEATURES=Object.freeze(["topic","external_link"]);

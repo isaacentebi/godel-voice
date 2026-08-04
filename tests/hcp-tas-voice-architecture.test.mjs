@@ -7,8 +7,8 @@ import {
   normalizeHCPAction,
   normalizeOHLCVRows,
   normalizeTASAction
-} from "../src/hcp-tas-actions.mjs";
-import { compileHCPFollowup, compileTASFollowup } from "../src/hcp-tas-followup.mjs";
+} from "../src/commands/hcp-tas-actions.mjs";
+import { compileHCPFollowup, compileTASFollowup } from "../src/commands/hcp-tas-followup.mjs";
 import { validateWorkflowPlan } from "../src/workflow-plan.mjs";
 
 const tasContext = {
@@ -120,7 +120,7 @@ test("workflow recognizes HCP and TAS structures but live-enables neither", () =
 });
 
 test("schema records page size, dynamic state policy, and disabled runtime", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/hcp-tas-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/hcp-tas-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.equal(schema["x-hcp-page-size"], 100);
   assert.match(schema["x-tas-state-policy"], /authoritative current configuration/);

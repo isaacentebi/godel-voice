@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
-import { compileSECFFollowup } from "../src/secf-followup.mjs";
-import { isSECFLiveAction, normalizeSECFLiveAction, normalizeSECFUnboundAction, SECF_RESULT_CAPS, SECF_TABS } from "../src/secf-actions.mjs";
+import { compileSECFFollowup } from "../src/commands/secf-followup.mjs";
+import { isSECFLiveAction, normalizeSECFLiveAction, normalizeSECFUnboundAction, SECF_RESULT_CAPS, SECF_TABS } from "../src/commands/secf-actions.mjs";
 import { validateWorkflowPlan } from "../src/workflow-plan.mjs";
 
 const config = overrides => ({
@@ -121,7 +121,7 @@ test("content executor proves exact People schema, native cap, query mutation, a
 
 test("provider JSON schemas expose the complete SECF object without claiming runtime readiness", () => {
   for (const filename of ["intent.schema.json", "workflow.schema.json"]) {
-    const schema = JSON.parse(fs.readFileSync(new URL(`../data/${filename}`, import.meta.url), "utf8"));
+    const schema = JSON.parse(fs.readFileSync(new URL(`../catalog/schemas/${filename}`, import.meta.url), "utf8"));
     const text = JSON.stringify(schema);
     for (const token of ["search", "configure", "hide_no_trade", "Corporate Bonds", "Sovereign Bonds", "People", "250", "500"]) {
       assert.match(text, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));

@@ -8,9 +8,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = relativePath => JSON.parse(fs.readFileSync(path.join(root, relativePath), "utf8"));
 const spec = read("evals/data/jarvis-offline-stress-v3.json");
 const cases = validateCases([...spec.sources.flatMap(read), ...spec.cases]);
-const registry = read("data/commands.json").commands;
-const commandCoverage = read("data/contracts/command-coverage.json");
-const contracts = read("data/contracts/adapter-contracts-v1.json");
+const registry = read("catalog/commands.json").commands;
+const commandCoverage = read("catalog/contracts/command-coverage.json");
+const contracts = read("catalog/contracts/adapter-contracts-v1.json");
 
 function canonicalAction(action) {
   return [

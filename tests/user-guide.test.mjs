@@ -3,7 +3,7 @@ import fs from "node:fs";
 import test from "node:test";
 
 const guide = fs.readFileSync(new URL("../docs/user-guide.md", import.meta.url), "utf8");
-const registry = JSON.parse(fs.readFileSync(new URL("../data/commands.json", import.meta.url), "utf8"));
+const registry = JSON.parse(fs.readFileSync(new URL("../catalog/commands.json", import.meta.url), "utf8"));
 
 test("user guide lists every canonical command exactly once", () => {
   const listed = [...guide.matchAll(/\| `([A-Z]+)` \|/g)].map(match => match[1]);

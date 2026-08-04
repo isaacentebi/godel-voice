@@ -5,8 +5,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const registry = JSON.parse(fs.readFileSync(path.join(root, "data", "commands.json"), "utf8"));
-const matrix = JSON.parse(fs.readFileSync(path.join(root, "data", "contracts", "capability-matrix.json"), "utf8"));
+const registry = JSON.parse(fs.readFileSync(path.join(root, "catalog", "commands.json"), "utf8"));
+const matrix = JSON.parse(fs.readFileSync(path.join(root, "catalog", "contracts", "capability-matrix.json"), "utf8"));
 
 const byCode = new Map(matrix.commands.map(command => [command.code, command]));
 const validWindow = new Set(matrix.enums.window);
@@ -26,7 +26,7 @@ test("matrix joins losslessly to registry scope, aliases and features", () => {
     const adaptation = byCode.get(command.code);
     assert.equal(adaptation.scope, command.scope, `${command.code} scope drift`);
     assert.deepEqual(adaptation.aliases, command.aliases ?? [], `${command.code} alias drift`);
-    assert.equal(adaptation.features_ref, `data/commands.json#${command.code}.features`);
+    assert.equal(adaptation.features_ref, `catalog/commands.json#${command.code}.features`);
     assert(command.features.length > 0, `${command.code} has no UI feature inventory`);
   }
 });

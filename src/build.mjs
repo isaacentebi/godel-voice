@@ -5,7 +5,8 @@ import { buildCompactCatalog, commandMaps, loadRegistry } from "./catalog.mjs";
 import { systemPrompt, workflowSystemPrompt } from "./prompt.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = path.resolve(here, "../data");
+const outputDir = path.resolve(here, "../dist");
+fs.mkdirSync(outputDir, { recursive: true });
 const registry = loadRegistry();
 const catalog = buildCompactCatalog(registry);
 const maps = commandMaps(registry);
@@ -24,9 +25,9 @@ const manifest = {
   workflow_system_prompt_approx_tokens: Math.ceil(workflowSystemPrompt().length / 4)
 };
 
-fs.writeFileSync(path.join(dataDir, "catalog.min.txt"), catalog + "\n");
-fs.writeFileSync(path.join(dataDir, "voiceink-system-prompt.txt"), workflowSystemPrompt() + "\n");
-fs.writeFileSync(path.join(dataDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+fs.writeFileSync(path.join(outputDir, "catalog.min.txt"), catalog + "\n");
+fs.writeFileSync(path.join(outputDir, "voiceink-system-prompt.txt"), workflowSystemPrompt() + "\n");
+fs.writeFileSync(path.join(outputDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
 const sourceLines = [
   "# Godel command sources",
   "",
@@ -41,5 +42,5 @@ const sourceLines = [
     return `| ${command.code} | ${command.status} | ${source} |`;
   })
 ];
-fs.writeFileSync(path.join(dataDir, "sources.md"), sourceLines.join("\n") + "\n");
+fs.writeFileSync(path.join(outputDir, "sources.md"), sourceLines.join("\n") + "\n");
 process.stdout.write(JSON.stringify(manifest, null, 2) + "\n");

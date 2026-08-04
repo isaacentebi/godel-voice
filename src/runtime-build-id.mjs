@@ -5,14 +5,23 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
+function sourceFiles(root, relativeDirectory = "src") {
+  const directory = path.join(root, relativeDirectory);
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    const relative = path.join(relativeDirectory, entry.name);
+    if (entry.isDirectory()) return sourceFiles(root, relative);
+    return entry.isFile() && entry.name.endsWith(".mjs") ? [relative] : [];
+  }).sort();
+}
+
 export function runtimeFiles(root = projectRoot) {
   const manifest = path.join(root, "runtime-manifest.json");
   if (fs.existsSync(manifest)) return JSON.parse(fs.readFileSync(manifest, "utf8"));
   return [
-    ...fs.readdirSync(path.join(root, "src")).filter(file => file.endsWith(".mjs")).sort().map(file => `src/${file}`),
-    "data/commands.json",
-    "data/intent.schema.json",
-    "data/workflow.schema.json"
+    ...sourceFiles(root),
+    "catalog/commands.json",
+    "catalog/schemas/intent.schema.json",
+    "catalog/schemas/workflow.schema.json"
   ];
 }
 

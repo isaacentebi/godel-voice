@@ -8,13 +8,13 @@
     "extension/main-world.js",
     "src/workflow-plan.mjs",
     "src/control-followup.mjs",
-    "data/contracts/adapter-contracts-v1.json",
-    "data/contracts/nested-capability-inventory-v2.json",
+    "catalog/contracts/adapter-contracts-v1.json",
+    "catalog/contracts/nested-capability-inventory-v2.json",
     "docs/user-guide.md",
     "live-ui:2026-08-03"
   ],
   "policies": {
-    "contract_source": "data/contracts/adapter-contracts-v1.json",
+    "contract_source": "catalog/contracts/adapter-contracts-v1.json",
     "enabled_contract_count": 16,
     "disabled_contract_count": 78,
     "fail_closed": "Every disabled contract binding is non-executable. A request containing any unbound nested action must execute none of its sibling actions.",
@@ -24,7 +24,7 @@
   "current_contract_controls": [
     {
       "id": "EQS.range_filter.add", "command": "EQS", "feature": "range_filter", "operation": "add",
-      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/eqs-followup.mjs + src/control-followup.mjs", "adapter":"extension/content.js#executeEQSRangeFilter"},
+      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/commands/eqs-followup.mjs + src/control-followup.mjs", "adapter":"extension/content.js#executeEQSRangeFilter"},
       "postconditions": ["exact live range field", "displayed minimum and maximum match structured bounds", "optional Run separately proves a fresh non-empty result table"],
       "live_proof": {"date":"2026-08-03", "evidence":"live-ui:2026-08-03"},
       "real_post_code_voiceink": {"exists":true, "successful":true, "evidence":"P/E (Fwd) 10–20 plus Run completed in 1,793 ms"},
@@ -32,7 +32,7 @@
     },
     {
       "id": "EQS.list_filter.usd_technology", "command": "EQS", "feature": "list_filter", "operation": "add",
-      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/eqs-followup.mjs + src/control-followup.mjs", "adapter":"extension/content.js#executeEQSListFilter"},
+      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/commands/eqs-followup.mjs + src/control-followup.mjs", "adapter":"extension/content.js#executeEQSListFilter"},
       "postconditions": ["full native option menu is authenticated", "exact US Dollar or Technology chip renders", "optional Run proves matching result column and rows"],
       "live_proof": {"date":"2026-08-03", "evidence":"live-ui:2026-08-03"},
       "real_post_code_voiceink": {"exists":true, "successful":true, "evidence":"USD completed in 1,032 ms and Technology in 2,852 ms"},
@@ -64,7 +64,7 @@
     },
     {
       "id": "MOST.results.select", "command": "MOST", "feature": "results", "operation": "select",
-      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/most-followup.mjs + src/control-followup.mjs", "adapter":"extension/main-world.js#runMOST"},
+      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/commands/most-followup.mjs + src/control-followup.mjs", "adapter":"extension/main-world.js#runMOST"},
       "postconditions": ["native count selector equals 10, 25, 50, or 100", "exposed table has at least one and no more than the requested rows"],
       "live_proof": {"date":"2026-08-03", "evidence":"live-ui:2026-08-03 MOST → 10 results"},
       "real_post_code_voiceink": {"exists":true, "successful":false, "evidence":"2026-08-04 noisy VoiceInk changed 25→10 but correctly failed because the overnight table had zero rows"},
@@ -72,7 +72,7 @@
     },
     {
       "id": "HMAP.universe.select", "command": "HMAP", "feature": "universe", "operation": "select",
-      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/hmap-followup.mjs + src/control-followup.mjs", "adapter":"extension/content.js#executeHMAP"},
+      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/commands/hmap-followup.mjs + src/control-followup.mjs", "adapter":"extension/content.js#executeHMAP"},
       "postconditions": ["member count is 500–505 for S&P 500 or exactly 30 for DJIA", "member count changes from the independently observed pre-state", "tile/table render signature changes when the platform exposes a stable visual signature"],
       "live_proof": {"date":"2026-08-04", "evidence":"live-ui:2026-08-03 HMAP S&P 500 → DJIA"},
       "real_post_code_voiceink": {"exists":true, "successful":true, "evidence":"workflow 6ba44cbc2d2b142eadcdecb996d65332 changed live HMAP from DJIA/30 members to S&P 500/503 members and completed in 983 ms"},
@@ -80,7 +80,7 @@
     },
     {
       "id": "HMAP.view.select", "command": "HMAP", "feature": "view", "operation": "select",
-      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/hmap-followup.mjs + src/control-followup.mjs", "adapter":"extension/content.js#executeHMAP"},
+      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/commands/hmap-followup.mjs + src/control-followup.mjs", "adapter":"extension/content.js#executeHMAP"},
       "postconditions": ["Table has Ticker/Last-or-Price/Change/Volume headers", "Map has a large heatmap visual and no member table"],
       "live_proof": {"date":"2026-08-03", "evidence":"live-ui:2026-08-03 HMAP Map/Table"},
       "real_post_code_voiceink": {"exists":false, "successful":false, "evidence":"live executor proof is recorded as deterministic/direct, not explicit real VoiceInk"},
@@ -96,7 +96,7 @@
     },
     {
       "id": "EM.valuation.read", "command": "EM", "feature": "valuation", "operation": "read",
-      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/em-followup.mjs + src/control-followup.mjs", "adapter":"extension/main-world.js#runEM"},
+      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/commands/em-followup.mjs + src/control-followup.mjs", "adapter":"extension/main-world.js#runEM"},
       "postconditions": ["one exact Multiples table and requested allowlisted row", "Last 4Q and Next 4Q plus at least one FY YYYY heading", "all cells carry row-correct x or percent units"],
       "live_proof": {"date":"2026-08-04", "evidence":"real VoiceInk P/E phrase opened EM and returned the exact labelled row"},
       "real_post_code_voiceink": {"exists":true, "successful":true, "evidence":"the retained real VoiceInk P/E phrase opened EM and read the exact Multiples row"},
@@ -112,7 +112,7 @@
     },
     {
       "id": "N.query.set", "command": "N", "feature": "query", "operation": "set",
-      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/news-followup.mjs + src/control-followup.mjs", "adapter":"extension/main-world.js#runNews"},
+      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/commands/news-followup.mjs + src/control-followup.mjs", "adapter":"extension/main-world.js#runNews"},
       "postconditions": ["exact per-window input equals the query", "local clear affordance renders", "Headline/Date/Time/Ticker/Source table completes; zero rows is valid"],
       "live_proof": {"date":"2026-08-03", "evidence":"live-ui:2026-08-03:news-query"},
       "real_post_code_voiceink": {"exists":true, "successful":true, "evidence":"two authenticated natural-delivery queries completed in 207–208 ms"},
@@ -120,7 +120,7 @@
     },
     {
       "id": "SECF.people_search.configure", "command": "SECF", "feature": "people_search", "operation": "configure",
-      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/secf-followup.mjs + src/control-followup.mjs", "adapter":"extension/content.js#executeSECF"},
+      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/commands/secf-followup.mjs + src/control-followup.mjs", "adapter":"extension/content.js#executeSECF"},
       "postconditions": ["query and Max 50/100/250/500 match", "Name/Company/Position/Email/Phone schema renders without Ticker/Venue", "changed row count is bounded"],
       "live_proof": {"date":"2026-08-03", "evidence":"live-ui:2026-08-03"},
       "real_post_code_voiceink": {"exists":true, "successful":true, "evidence":"Jamie Dimon People/100 completed through real VoiceInk in 768 ms"},
@@ -128,7 +128,7 @@
     },
     {
       "id": "OMON.strike_depth.set", "command": "OMON", "feature": "strike depth", "operation": "set",
-      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/chart-options-followup.mjs + src/control-followup.mjs", "adapter":"extension/main-world.js#runOMON"},
+      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/commands/chart-options-followup.mjs + src/control-followup.mjs", "adapter":"extension/main-world.js#runOMON"},
       "postconditions": ["slider value and independent N Strikes label agree", "option-table signature changes", "value respects live min/max/step"],
       "live_proof": {"date":"2026-08-03", "evidence":"live-ui:2026-08-03:options"},
       "real_post_code_voiceink": {"exists":true, "successful":true, "evidence":"AAPL 10→15 and 15→10 completed through natural VoiceInk in 875/741 ms"},
@@ -136,7 +136,7 @@
     },
     {
       "id": "G.chart.resolution.1h", "command": "G", "feature": "resolution", "operation": "select",
-      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/chart-options-followup.mjs", "adapter":"extension/content.js#executeG"},
+      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/commands/chart-options-followup.mjs", "adapter":"extension/content.js#executeG"},
       "postconditions": ["one authenticated iframe popup reads 1 hour", "same iframe image label ends in , 1 hour"],
       "live_proof": {"date":"2026-08-04", "evidence":"live-ui:2026-08-03"},
       "real_post_code_voiceink": {"exists":false, "successful":false, "evidence":"verified through trusted browser input, not an explicit post-code VoiceInk run"},
@@ -144,7 +144,7 @@
     },
     {
       "id": "HMS.comparison.configure", "command": "HMS", "feature": "comparison", "operation": "configure",
-      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/q-hldr-hms-followup.mjs + src/control-followup.mjs", "adapter":"extension/content.js#executeHMS"},
+      "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/commands/q-hldr-hms-followup.mjs + src/control-followup.mjs", "adapter":"extension/content.js#executeHMS"},
       "postconditions": ["exact legend membership", "timeframe and percent/dollar metric match", "Normalize/Overlay/Side-by-side layout matches"],
       "live_proof": {"date":"2026-08-03", "evidence":"docs/panel-adapters.md and authenticated HMS adapter tests"},
       "real_post_code_voiceink": {"exists":false, "successful":false, "evidence":"no explicit real post-code VoiceInk result is retained"},

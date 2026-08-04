@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
-import { compileEMFollowup } from "../src/em-followup.mjs";
-import { EM_CHART_MODES, EM_DOCUMENTED_METRICS, EM_GROWTH_MODES, EM_SERIES, EM_UNBOUND_FEATURES, EM_VALUATIONS, normalizeEMUnboundAction } from "../src/em-actions.mjs";
+import { compileEMFollowup } from "../src/commands/em-followup.mjs";
+import { EM_CHART_MODES, EM_DOCUMENTED_METRICS, EM_GROWTH_MODES, EM_SERIES, EM_UNBOUND_FEATURES, EM_VALUATIONS, normalizeEMUnboundAction } from "../src/commands/em-actions.mjs";
 import { validateWorkflowPlan } from "../src/workflow-plan.mjs";
 
 const target = { mode: "command", command: "EM", security: null };
@@ -106,7 +106,7 @@ test("workflow keeps metric and exact valuation reads live while visual controls
 });
 
 test("schema marks metric selection and exact valuation reads live", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/em-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/em-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf[0]["x-runtime-enabled"], true);
   assert.equal(schema.oneOf[4]["x-runtime-enabled"], true);
   assert.ok(schema.oneOf.slice(1, 4).every(entry => entry["x-runtime-enabled"] === false));

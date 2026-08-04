@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 import { buildCompactCatalog } from "./catalog.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const schema = JSON.parse(fs.readFileSync(path.resolve(here, "../data/intent.schema.json"), "utf8"));
-const workflowSchema = JSON.parse(fs.readFileSync(path.resolve(here, "../data/workflow.schema.json"), "utf8"));
+const schema = JSON.parse(fs.readFileSync(path.resolve(here, "../catalog/schemas/intent.schema.json"), "utf8"));
+const workflowSchema = JSON.parse(fs.readFileSync(path.resolve(here, "../catalog/schemas/workflow.schema.json"), "utf8"));
 
 export const intentSchema = schema;
 export const voiceWorkflowSchema = workflowSchema;

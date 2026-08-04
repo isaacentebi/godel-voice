@@ -3,11 +3,11 @@ import fs from "node:fs";
 import test from "node:test";
 import { buildWorkflowPlan } from "../src/automation-plan.mjs";
 import { parseControlFollowup } from "../src/control-followup.mjs";
-import { compileMOSTFollowup } from "../src/most-followup.mjs";
+import { compileMOSTFollowup } from "../src/commands/most-followup.mjs";
 import {
   MOST_CAP_UNITS, MOST_RANKINGS, MOST_RESULT_COUNTS, MOST_SECTORS,
   normalizeMOSTUnboundAction, rawMOSTCap
-} from "../src/most-actions.mjs";
+} from "../src/commands/most-actions.mjs";
 import { validateWorkflowPlan } from "../src/workflow-plan.mjs";
 
 const target = { mode: "command", command: "MOST", security: null };
@@ -141,7 +141,7 @@ test("workflow and legacy schemas recognize unbound MOST actions and reject exec
 
 test("provider JSON schemas expose structured MOST market-cap bounds", () => {
   for (const filename of ["intent.schema.json", "workflow.schema.json"]) {
-    const schema = JSON.parse(fs.readFileSync(new URL(`../data/${filename}`, import.meta.url), "utf8"));
+    const schema = JSON.parse(fs.readFileSync(new URL(`../catalog/schemas/${filename}`, import.meta.url), "utf8"));
     const text = JSON.stringify(schema);
     for (const token of ["market_cap", "minimum", "maximum", "mostMarketCapBound", "raw", "K", "M", "B", "T"]) {
       assert.match(text, new RegExp(`\\b${token}\\b`));
