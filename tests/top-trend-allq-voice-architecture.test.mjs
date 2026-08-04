@@ -127,7 +127,7 @@ test("ALLQ compounds are atomic when a selected quote is missing", () => {
 });
 
 test("schema declares strict runtime-disabled safety", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/top-trend-allq-nested.schema.json", import.meta.url)));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/top-trend-allq-nested.schema.json", import.meta.url)));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.equal(schema["x-safety"]["atomic-on-clarification"], true);
   assert.equal(schema.oneOf.length, 5);

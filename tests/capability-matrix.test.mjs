@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const registry = JSON.parse(fs.readFileSync(path.join(root, "data", "commands.json"), "utf8"));
-const matrix = JSON.parse(fs.readFileSync(path.join(root, "data", "capability-matrix.json"), "utf8"));
+const matrix = JSON.parse(fs.readFileSync(path.join(root, "data", "contracts", "capability-matrix.json"), "utf8"));
 
 const byCode = new Map(matrix.commands.map(command => [command.code, command]));
 const validWindow = new Set(matrix.enums.window);

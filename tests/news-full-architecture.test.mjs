@@ -150,7 +150,7 @@ test("compound query plus unbound control is atomic and does not execute query a
 });
 
 test("dedicated schema contains every modeled scope and safety boundary", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/news-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/news-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf.length, 18);
   const source = JSON.stringify(schema);
   for (const value of ["window", "account-draft", "account", "artifact", "Show", "Hide", "Only", "PDF"]) assert.match(source, new RegExp(value));

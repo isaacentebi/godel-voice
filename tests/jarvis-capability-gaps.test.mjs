@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { gradeResult, validateCases } from "../src/model-eval-harness.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const cases = validateCases(JSON.parse(fs.readFileSync(path.join(root, "data/jarvis-capability-gap-cases-v1.json"))));
+const cases = validateCases(JSON.parse(fs.readFileSync(path.join(root, "evals/data/jarvis-capability-gap-cases-v1.json"))));
 
 function actualStep(step) {
   if (step.step_kind === "control") return {

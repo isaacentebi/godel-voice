@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { gradeResult, validateCases } from "../src/model-eval-harness.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const cases = validateCases(JSON.parse(fs.readFileSync(path.join(root, "data/jarvis-adversarial-cases-v1.json"))));
+const cases = validateCases(JSON.parse(fs.readFileSync(path.join(root, "evals/data/jarvis-adversarial-cases-v1.json"))));
 const tags = new Set(cases.flatMap(item => item.tags ?? []));
 
 function actualStep(step) {
@@ -99,8 +99,8 @@ test("the corpus exercises exact ordering, entities, arguments, actions and runt
 });
 
 test("adversarial suite stays separate from frozen and expandable Jarvis IDs", () => {
-  const frozen = JSON.parse(fs.readFileSync(path.join(root, "data/model-eval-cases.json")));
-  const jarvis = JSON.parse(fs.readFileSync(path.join(root, "data/jarvis-eval-cases-v1.json")));
+  const frozen = JSON.parse(fs.readFileSync(path.join(root, "evals/data/model-eval-cases.json")));
+  const jarvis = JSON.parse(fs.readFileSync(path.join(root, "evals/data/jarvis-eval-cases-v1.json")));
   const existing = new Set([...frozen, ...jarvis].map(item => item.id));
   assert.equal(cases.some(item => existing.has(item.id)), false);
   assert.equal(cases.every(item => item.id.startsWith("adv-")), true);

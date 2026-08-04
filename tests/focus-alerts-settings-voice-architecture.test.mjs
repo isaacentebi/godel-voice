@@ -128,7 +128,7 @@ test("PDF corrections remove superseded settings", () => {
 });
 
 test("schema and dispatcher preserve runtime boundary", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/focus-alerts-settings-nested.schema.json", import.meta.url)));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/focus-alerts-settings-nested.schema.json", import.meta.url)));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.equal(schema.oneOf.length, 5);
   assert.equal(compileFocusAlertsSettingsVoice({ command:"FOCUS", security }, "turn off price flashing").command, "FOCUS");

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
-const capability = JSON.parse(fs.readFileSync(new URL("../data/window-control-capability-v1.json", import.meta.url), "utf8"));
+const capability = JSON.parse(fs.readFileSync(new URL("../data/contracts/window-control-capability-v1.json", import.meta.url), "utf8"));
 const bridge = fs.readFileSync(new URL("../extension/main-world.js", import.meta.url), "utf8");
 const executor = fs.readFileSync(new URL("../extension/content.js", import.meta.url), "utf8");
 

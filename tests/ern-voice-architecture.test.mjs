@@ -105,7 +105,7 @@ test("workflow recognizes every ERN display shape but enables none", () => {
 });
 
 test("schema records disabled controls and grounded-only narration", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/ern-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/ern-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.match(schema["x-grounded-narration"], /Forward P\/E only/);
   assert.match(schema["x-no-invention"], /may be synthesized/);

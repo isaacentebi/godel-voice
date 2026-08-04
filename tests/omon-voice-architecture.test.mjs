@@ -131,7 +131,7 @@ test("legacy wrapper keeps strike depth live and atomically blocks mixed actions
 });
 
 test("dedicated schema contains every action but no order operation", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/omon-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/omon-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf.length, 8);
   const source = JSON.stringify(schema);
   for (const feature of Object.keys(OMON_ACTION_STATES)) assert.match(source, new RegExp(feature), feature);

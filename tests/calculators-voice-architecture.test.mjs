@@ -112,7 +112,7 @@ test("dispatcher stays command-scoped and both results remain runtime-disabled",
 });
 
 test("dedicated schema is calculation-only, finite-shaped and runtime-disabled", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/calculators-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/calculators-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf.length, 2);
   assert.equal(schema["x-runtime-enabled"], false);
   const source = JSON.stringify(schema);

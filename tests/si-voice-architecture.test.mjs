@@ -95,7 +95,7 @@ test("workflow recognizes every SI control but enables none", () => {
 });
 
 test("schema records cadence, grounded source, and disabled runtime", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/si-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/si-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.equal(schema["x-data-cadence"], "FINRA twice-monthly");
   assert.match(schema["x-no-invention"], /exact current Godel SI panel facts/);

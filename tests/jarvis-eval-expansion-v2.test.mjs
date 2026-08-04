@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { gradeResult, validateCases } from "../src/model-eval-harness.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const cases = validateCases(JSON.parse(fs.readFileSync(path.join(root, "data/jarvis-eval-expansion-v2.json"))));
+const cases = validateCases(JSON.parse(fs.readFileSync(path.join(root, "evals/data/jarvis-eval-expansion-v2.json"))));
 const catalog = JSON.parse(fs.readFileSync(path.join(root, "data/commands.json")));
 
 function actualStep(step) {

@@ -128,8 +128,8 @@ test("fixture runner is isolated and secret redaction is recursive", async () =>
 
 test("frozen dev and holdout partitions are disjoint and cover the production corpus", () => {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  const cases = JSON.parse(fs.readFileSync(path.join(root, "data/model-eval-cases.json")));
-  const split = JSON.parse(fs.readFileSync(path.join(root, "data/model-eval-split.json")));
+  const cases = JSON.parse(fs.readFileSync(path.join(root, "evals/data/model-eval-cases.json")));
+  const split = JSON.parse(fs.readFileSync(path.join(root, "evals/data/model-eval-split.json")));
   const all = [...split.dev, ...split.holdout];
   assert.equal(new Set(all).size, all.length);
   assert.deepEqual(new Set(all), new Set(cases.map(item => item.id)));
@@ -168,9 +168,9 @@ test("Jarvis v2 scoring grades controls, contextual configuration and runtime ev
 
 test("Jarvis corpus stays independent from the frozen benchmark", () => {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  const legacy = JSON.parse(fs.readFileSync(path.join(root, "data/model-eval-cases.json")));
-  const jarvis = validateCases(JSON.parse(fs.readFileSync(path.join(root, "data/jarvis-eval-cases-v1.json"))));
-  const split = JSON.parse(fs.readFileSync(path.join(root, "data/jarvis-eval-split-v1.json")));
+  const legacy = JSON.parse(fs.readFileSync(path.join(root, "evals/data/model-eval-cases.json")));
+  const jarvis = validateCases(JSON.parse(fs.readFileSync(path.join(root, "evals/data/jarvis-eval-cases-v1.json"))));
+  const split = JSON.parse(fs.readFileSync(path.join(root, "evals/data/jarvis-eval-split-v1.json")));
   assert.ok(jarvis.length >= 20);
   assert.equal(split.frozen, false);
   for (const tag of ["control", "configure", "screen-limit", "data-unavailable", "transcription", "long"]) {

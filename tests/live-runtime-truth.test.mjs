@@ -8,11 +8,10 @@ import { parseControlFollowup } from "../src/control-followup.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const readJson = file => JSON.parse(fs.readFileSync(path.join(root, file), "utf8"));
-const truth = readJson("data/live-runtime-truth-v1.json");
-const contracts = readJson("data/adapter-contracts-v1.json");
-const inventory = readJson("data/nested-capability-inventory-v2.json");
+const truth = readJson("data/contracts/live-runtime-truth-v1.json");
+const contracts = readJson("data/contracts/adapter-contracts-v1.json");
+const inventory = readJson("data/contracts/nested-capability-inventory-v2.json");
 const guide = fs.readFileSync(path.join(root, "docs/user-guide.md"), "utf8");
-const report = fs.readFileSync(path.join(root, "reports/live-runtime-truth-audit-2026-08-04.md"), "utf8");
 
 function contracted() {
   return contracts.contracts.flatMap(contract => (contract.actions ?? []).map(action => ({
@@ -30,7 +29,6 @@ test("truth file, contracts, guide, and capability cross-reference agree on the 
   assert.deepEqual(guideIds, enabled);
   assert.deepEqual(inventory.live_runtime_cross_reference.current_contract_controls, enabled);
   assert.equal(truth.policies.enabled_contract_count, enabled.length);
-  assert.match(report, /Current contract controls: \*\*16\*\*/);
 });
 
 test("every current control names all validator layers, exact postconditions, proof date, limitations, and honest VoiceInk status", () => {
@@ -87,11 +85,10 @@ test("legacy GF HALT and GR stay separate and cannot inflate current contract co
   assert.equal(truth.legacy_runtime_adapters.some(item => item.contract_promoted), false);
   assert.equal(truth.legacy_runtime_adapters.find(item => item.id.startsWith("GR.")).status, "existing-runtime-unverified");
   assert.match(guide, /three legacy runtime adapters not promoted/);
-  assert.match(report, /Legacy runtime, not counted in the 16/);
 });
 
 test("failed CF and News Pause audits remain explicitly disabled", () => {
-  const failures = new Map(truth.known_failed_or_unbound_live_audits.map(item => [item.id, item]));
+  const failures = new Map(truth.known_failed_or_unbound_controls.map(item => [item.id, item]));
   assert.equal(failures.get("CF.feed.configure").enabled, false);
   assert.match(failures.get("CF.feed.configure").reason, /unrelated 144, S-4, and 424B5 rows/);
   assert.equal(failures.get("N.pause.select").enabled, false);

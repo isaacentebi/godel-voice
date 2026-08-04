@@ -112,7 +112,7 @@ test("legacy wrapper preserves G blocker wording and GF HP FA OMON behavior", ()
 });
 
 test("dedicated schema enumerates all modeled G boundaries", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/g-chart-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/g-chart-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf.length, 12);
   const source = JSON.stringify(schema);
   for (const feature of Object.keys(G_ACTION_STATES)) assert.match(source, new RegExp(feature.replace(" ", "\\s")), feature);

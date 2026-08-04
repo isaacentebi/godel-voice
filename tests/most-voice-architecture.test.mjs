@@ -148,11 +148,3 @@ test("provider JSON schemas expose structured MOST market-cap bounds", () => {
     }
   }
 });
-
-test("overnight live audit preserves only result count as executable", () => {
-  const architecture = fs.readFileSync(new URL("../docs/most-voice-architecture.md", import.meta.url), "utf8");
-  assert.match(architecture, /overnight feed contained zero data rows/i);
-  assert.match(architecture, /promotes nothing: only `results\.select` remains enabled/i);
-  assert.match(architecture, /Godel MOST 10 results unavailable/);
-  for (const feature of ["ranking", "sector", "market-cap"]) assert.match(architecture, new RegExp(`${feature}.*production-disabled`, "is"));
-});

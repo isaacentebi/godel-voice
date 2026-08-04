@@ -134,7 +134,7 @@ test("BROK grounded status rejects secrets and invented rows", () => {
 });
 
 test("schema records disabled runtime and strict privacy policy", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/aum-brok-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/aum-brok-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.match(schema["x-privacy"].credentials, /never/);
   assert.equal(schema.oneOf.length, 3);

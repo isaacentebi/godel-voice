@@ -3,7 +3,7 @@ import fs from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 
-const corpus = JSON.parse(fs.readFileSync(new URL("../data/market-news-intent-corpus-v1.json",import.meta.url),"utf8"));
+const corpus = JSON.parse(fs.readFileSync(new URL("../evals/data/market-news-intent-corpus-v1.json",import.meta.url),"utf8"));
 const context = {globalThis:{},module:undefined};
 vm.runInNewContext(fs.readFileSync(new URL("../extension/adapters/market-news.js",import.meta.url),"utf8"),context);
 const api = context.globalThis.GodelVoiceMarketNewsAdapters;

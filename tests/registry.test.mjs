@@ -295,14 +295,14 @@ test("renders each query command in its documented order", () => {
 });
 
 test("eval set covers every major confusion family", () => {
-  const evals = JSON.parse(fs.readFileSync(path.resolve(here, "../data/eval-cases.json"), "utf8"));
+  const evals = JSON.parse(fs.readFileSync(path.resolve(here, "../evals/data/eval-cases.json"), "utf8"));
   const expected = new Set(evals.flatMap(item => item.expected === "clarify" ? item.confusion : [item.expected]));
   for (const code of ["EM","ERN","TRAN","HDS","HLDR","N","NI","TOP","RES","G","HMS","GR","GF","MOST","MOSO","OMON"])
     assert.ok(expected.has(code), `eval gap: ${code}`);
 });
 
 test("noisy speech suite covers every canonical command", () => {
-  const evals = JSON.parse(fs.readFileSync(path.resolve(here, "../data/noisy-eval-cases.json"), "utf8"));
+  const evals = JSON.parse(fs.readFileSync(path.resolve(here, "../evals/data/noisy-eval-cases.json"), "utf8"));
   const covered = new Set(evals.filter(item => item.expected !== "clarify").map(item => item.expected));
   for (const code of maps.canonical.keys()) assert.ok(covered.has(code), `no noisy speech case for ${code}`);
   assert.ok(evals.some(item => item.expected === "clarify"), "no noisy ambiguity case");

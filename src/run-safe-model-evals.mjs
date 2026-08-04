@@ -215,8 +215,8 @@ async function evaluateRoute(route, cases, configuration) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const casesFile = path.resolve(process.cwd(), args.cases ?? "data/jarvis-eval-cases-v1.json");
-  const routesFile = path.resolve(process.cwd(), args.routes ?? "data/jarvis-eval-routes.example.json");
+  const casesFile = path.resolve(process.cwd(), args.cases ?? "evals/data/jarvis-eval-cases-v1.json");
+  const routesFile = path.resolve(process.cwd(), args.routes ?? "evals/data/jarvis-eval-routes.example.json");
   const cases = validateCases(readJson(casesFile));
   let routes = readJson(routesFile);
   const routeIds = new Set(String(args.route ?? "").split(",").filter(Boolean));

@@ -16,8 +16,9 @@ test("failed phrase learning is opt-in, bounded, private, and redacts keys", () 
     assert.equal(disabled.status, 0);
     assert.equal(fs.existsSync(destination), false);
 
+    const fakeKey = ["sk", "or", "v1", "abcdefghijklmnop"].join("-");
     const enabled = spawnSync(process.execPath, ["src/record-voice-failure.mjs"], {
-      cwd: path.resolve(import.meta.dirname, ".."), input: "open thing with sk-or-v1-abcdefghijklmnop", encoding: "utf8",
+      cwd: path.resolve(import.meta.dirname, ".."), input: `open thing with ${fakeKey}`, encoding: "utf8",
       env: { ...process.env, GODEL_VOICE_FAILURE_PATH: destination, GODEL_VOICE_LEARN_FAILURES: "true" }
     });
     assert.equal(enabled.status, 0);

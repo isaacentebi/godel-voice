@@ -159,7 +159,7 @@ test("workflow validator recognizes every QM shape but enables none", () => {
 });
 
 test("dedicated schema records bounded values, confirmation and disabled account scope", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/qm-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/qm-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.match(schema["x-account-scope"], /persistent synchronized/);
   const text = JSON.stringify(schema);

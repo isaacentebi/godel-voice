@@ -106,7 +106,7 @@ test("workflow keeps metric and exact valuation reads live while visual controls
 });
 
 test("schema marks metric selection and exact valuation reads live", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/em-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/em-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf[0]["x-runtime-enabled"], true);
   assert.equal(schema.oneOf[4]["x-runtime-enabled"], true);
   assert.ok(schema.oneOf.slice(1, 4).every(entry => entry["x-runtime-enabled"] === false));

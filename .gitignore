@@ -5,6 +5,11 @@ node_modules/
 .DS_Store
 coverage/
 dist/
+reports/
+data/catalog.min.txt
+data/manifest.json
+data/sources.md
+data/voiceink-system-prompt.txt
 *.log
 *.tgz
 .godel-voice-secret

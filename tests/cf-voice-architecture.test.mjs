@@ -98,7 +98,7 @@ test("workflow recognizes both strict CF shapes but keeps runtime disabled", () 
 });
 
 test("dedicated schema records the strict safety and unsupported-control boundary", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/cf-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/cf-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema["x-runtime-enabled"], false);
   assert.deepEqual(schema["x-unsupported"], ["paging", "date filtering", "search", "download", "export"]);
   assert.match(JSON.stringify(schema), /exact filing identity/);

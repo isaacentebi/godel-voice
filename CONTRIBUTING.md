@@ -22,7 +22,7 @@ Building and testing require no API key. Live model evaluations and live Godel v
 6. Update `docs/user-guide.md` without overstating runtime support.
 7. Run the complete test suite.
 
-See `docs/panel-adapters.md` and `docs/parser-architecture-coverage-audit.md` for the detailed contracts.
+See `docs/architecture.md` and `docs/panel-adapters.md` for the execution model and adapter requirements.
 
 ## Pull requests
 

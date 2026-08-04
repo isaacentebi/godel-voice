@@ -24,8 +24,8 @@ function resolveInput(value, fallback) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const offline = args.offline === true;
-  const casesFile = resolveInput(args.cases, offline ? "data/model-eval-fixture-cases.json" : "data/model-eval-cases.json");
-  const routesFile = resolveInput(args.routes, "data/model-eval-routes.example.json");
+  const casesFile = resolveInput(args.cases, offline ? "evals/data/model-eval-fixture-cases.json" : "evals/data/model-eval-cases.json");
+  const routesFile = resolveInput(args.routes, "evals/data/model-eval-routes.example.json");
   const cases = validateCases(readJson(casesFile));
   let routes = readJson(routesFile);
   const requestedRoutes = new Set(String(args.route ?? "").split(",").filter(Boolean));
@@ -41,7 +41,7 @@ async function main() {
   const ids = new Set(selectedPartitionIds.length ? selectedPartitionIds : String(args.ids ?? "").split(",").filter(Boolean));
   const selectedCases = ids.size ? cases.filter(testCase => ids.has(testCase.id)) : cases;
   if (!selectedCases.length) throw new Error("No evaluation cases selected");
-  const fixtures = offline ? readJson(resolveInput(args.fixtures, "data/model-eval-fixtures.json")) : null;
+  const fixtures = offline ? readJson(resolveInput(args.fixtures, "evals/data/model-eval-fixtures.json")) : null;
   const reports = [];
   for (const routeSource of routes) {
     const route = { ...routeSource, offline };

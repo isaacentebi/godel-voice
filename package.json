@@ -1,15 +1,22 @@
 {
   "name": "godel-voice",
   "version": "0.11.0",
+  "description": "Voice-first Jarvis interface for Godel Terminal",
   "private": true,
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/isaacentebi/godel-voice.git"
+  },
+  "keywords": ["godel-terminal", "voice", "openai-realtime", "arc-extension"],
   "files": [
     ".env.example",
     "README.md",
     "bin/",
     "data/",
     "docs/",
+    "evals/",
     "extension/adapters/",
     "extension/background.js",
     "extension/cdp.js",
@@ -22,7 +29,6 @@
     "extension/manifest.json",
     "extension/panel-insights.js",
     "extension/realtime.js",
-    "reports/",
     "src/",
     "tests/"
   ],
@@ -37,7 +43,7 @@
     "eval:models:offline": "node src/run-model-evals.mjs --offline --route groq-oss-120b --repeat 3 --warmup 1 --concurrency 3 --output reports/model-eval-offline.json",
     "eval:jarvis:offline-stress": "node src/run-jarvis-offline-stress.mjs",
     "eval:jarvis:spoken:emit": "node evals/jarvis-spoken-benchmark-v1.mjs",
-    "eval:jarvis:pinned": "node --env-file-if-exists=.env src/run-model-evals.mjs --cases data/jarvis-eval-cases-v1.json --routes data/jarvis-eval-routes.example.json --route groq-oss-120b-jarvis --split-file data/jarvis-eval-split-v1.json --partition pinned_live --repeat 2 --concurrency 1 --retries 2 --retry-base-ms 1500 --output reports/jarvis-eval-v1-pinned-live.json",
+    "eval:jarvis:pinned": "node --env-file-if-exists=.env src/run-model-evals.mjs --cases evals/data/jarvis-eval-cases-v1.json --routes evals/data/jarvis-eval-routes.example.json --route groq-oss-120b-jarvis --split-file evals/data/jarvis-eval-split-v1.json --partition pinned_live --repeat 2 --concurrency 1 --retries 2 --retry-base-ms 1500 --output reports/jarvis-eval-v1-pinned-live.json",
     "voice:test": "node --env-file-if-exists=.env src/test-completion-voice.mjs",
     "consume": "node src/consume-intent.mjs",
     "marker": "node src/consume-intent.mjs --marker",

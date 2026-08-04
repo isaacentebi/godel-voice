@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const registry = JSON.parse(fs.readFileSync(path.join(root, "data", "commands.json"), "utf8"));
-const contracts = JSON.parse(fs.readFileSync(path.join(root, "data", "adapter-contracts-v1.json"), "utf8"));
-const matrix = JSON.parse(fs.readFileSync(path.join(root, "data", "capability-matrix.json"), "utf8"));
+const contracts = JSON.parse(fs.readFileSync(path.join(root, "data", "contracts", "adapter-contracts-v1.json"), "utf8"));
+const matrix = JSON.parse(fs.readFileSync(path.join(root, "data", "contracts", "capability-matrix.json"), "utf8"));
 
 const registryByCode = new Map(registry.commands.map(command => [command.code, command]));
 const matrixByCode = new Map(matrix.commands.map(command => [command.code, command]));

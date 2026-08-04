@@ -1,6 +1,6 @@
 # Godel Voice: how to use Jarvis
 
-This guide reflects the runtime shipped in this repository on 2026-08-04. It is written around what you can safely accomplish by voice today, not everything visible in Godel's interface.
+This guide describes what you can safely accomplish by voice in the current release, not everything visible in Godel's interface.
 
 ## The short version
 
@@ -53,7 +53,7 @@ This is the exact enabled nested-control list. It is checked against the runtime
 
 There are also three legacy runtime adapters not promoted into that newer contract snapshot. GF is authenticated-live for company/metric/range/estimates/periodicity/layout/currency; HALT is authenticated-live for All/Active/Resumed; and GR retains a partial legacy allowlist for legs, period and statistical controls but is marked `existing-runtime-unverified` by its newer strict compiler. The exact registry list above and this legacy distinction are both important: the first must never overclaim, while the second prevents proven working features from disappearing from the user guide.
 
-The machine-readable reconciliation is `data/live-runtime-truth-v1.json`; the companion evidence summary is `reports/live-runtime-truth-audit-2026-08-04.md`. They record every completion postcondition, proof date, present limitation, and whether an explicit real post-code VoiceInk run is retained for that exact action family.
+The machine-readable capability contracts in `data/` record completion conditions and current limitations for each action family.
 
 ## Best things to try now
 

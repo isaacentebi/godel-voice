@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { compileVoiceRequest } from "./compiler.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const allCases = JSON.parse(fs.readFileSync(path.resolve(here, "../data/noisy-eval-cases.json"), "utf8"));
+const allCases = JSON.parse(fs.readFileSync(path.resolve(here, "../evals/data/noisy-eval-cases.json"), "utf8"));
 const requestedIds = new Set((process.env.EVAL_IDS ?? "").split(",").map(value => value.trim()).filter(Boolean));
 const cases = requestedIds.size ? allCases.filter(item => requestedIds.has(item.id)) : allCases;
 const concurrency = Math.max(1, Number(process.env.EVAL_CONCURRENCY ?? 6));

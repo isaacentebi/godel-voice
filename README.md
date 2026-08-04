@@ -133,9 +133,9 @@ npm run build
 npm test
 ```
 
-The repository includes 834 offline tests. No API key is needed to run them.
+The repository includes more than 800 offline tests. No API key is needed to run them.
 
-[User guide](docs/user-guide.md) · [Adding controls](docs/panel-adapters.md) · [Model evaluation](docs/model-evaluation.md) · [Security](SECURITY.md)
+[Architecture](docs/architecture.md) · [User guide](docs/user-guide.md) · [Adding controls](docs/panel-adapters.md) · [Model evaluation](docs/model-evaluation.md) · [Security](SECURITY.md)
 
 ## License
 

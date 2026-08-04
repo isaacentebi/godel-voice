@@ -98,7 +98,7 @@ test("tile quick-action handoff requires exact live tile and action options and 
 });
 
 test("dedicated schema enumerates strict exact controls without promoting runtime", () => {
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/hmap-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/hmap-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf.length, 11);
   const serialized = JSON.stringify(schema);
   for (const value of ["S&P 500", "DJIA", "Auto", "Manual", "Open", "Closed", "Map", "Table"]) assert.match(serialized, new RegExp(value.replace(/[&]/g, "\\$&")));

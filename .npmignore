@@ -8,5 +8,10 @@ logs/
 extension/config.local.js
 node_modules/
 coverage/
+reports/
+data/catalog.min.txt
+data/manifest.json
+data/sources.md
+data/voiceink-system-prompt.txt
 .DS_Store
 *.tgz

@@ -7,7 +7,7 @@ import { parseControlFollowup } from "../src/control-followup.mjs";
 import { gradeResult, validateCases } from "../src/model-eval-harness.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const cases = validateCases(JSON.parse(fs.readFileSync(path.join(root, "data/jarvis-hds-eqs-current-eval-v1.json"))));
+const cases = validateCases(JSON.parse(fs.readFileSync(path.join(root, "evals/data/jarvis-hds-eqs-current-eval-v1.json"))));
 
 function actualStep(step) {
   if (step.step_kind === "control") return {

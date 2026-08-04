@@ -136,7 +136,7 @@ test("dispatcher is scoped and schema records disabled safety boundaries", () =>
   assert.equal(compileFXGRVoice({ ...fx, command: "FX" }, "convert 1 dollars to yen").command, "FX");
   assert.equal(compileFXGRVoice({ ...gr, command: "GR" }, "Apple versus Microsoft").command, "GR");
   assert.equal(compileFXGRVoice({ command: "G" }, "Apple versus Microsoft"), null);
-  const schema = JSON.parse(fs.readFileSync(new URL("../data/fx-gr-nested.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(fs.readFileSync(new URL("../data/contracts/fx-gr-nested.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.oneOf.length, 6);
   assert.equal(schema["x-runtime-enabled"], false);
   assert.equal(schema["x-existing-gr-runtime-preserved"], true);
