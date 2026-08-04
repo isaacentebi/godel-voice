@@ -40,6 +40,20 @@ function safeAuditText(value, maximum = 2_000) {
   return safeError(String(value ?? "").replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim()).slice(0, maximum);
 }
 
+function realtimeConversationMessage(value) {
+  const normalized = safeAuditText(value, 500).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  if (!normalized) return null;
+  if (/^(?:(?:ok|okay) )?(?:thanks|thank you|cheers|great thanks|perfect thanks)$/.test(normalized)
+      || /^(?:the )?user (?:is )?acknowledg(?:es|ing)(?: with)? thanks(?: no action requested)?$/.test(normalized)) {
+    return "You're welcome. I'm still listening.";
+  }
+  if (/^(?:hey )?(?:jarvis )?(?:are you (?:here|there|listening)|can you hear me|hello|hi)$/.test(normalized)
+      || /^user asked if i am here$/.test(normalized)) {
+    return "Yes, I'm here and listening.";
+  }
+  return null;
+}
+
 function appendPrivateAudit(auditPath, clock, type, fields = {}, maxBytes = 5_000_000) {
   if (!auditPath) return;
   try {
@@ -501,6 +515,7 @@ export function createHandoffServer({
       "# Personality and tone\nBe warm, understated and capable, never theatrical. Introduce yourself only through the activation greeting created by the client. Do not repeat your name every turn.",
       "# Verbosity\nSimple actions: at most twelve spoken words after completion. Research: at most two concise sentences. Clarification: exactly one question.",
       "# Tools\nEvery user turn must call the provided Godel tool exactly once. This is a dedicated Godel voice interface, so even questions, clarifications and unsupported requests go through the tool for a grounded receipt. Call it proactively as soon as intent is clear; do not ask for confirmation for read-only or window-management actions. Never invent commands, panels, prices, metrics, periods, passages or success. Wait for verified tool output before saying an action is complete. Never retry the same failed request automatically.",
+      "# Conversation-only turns\nFor a greeting, thanks, or a check that you are still listening, call the tool once with a faithful original_request, workflow kind unsupported, no steps, and a short conversation-only reason. The local tool will return the conversational reply. Do not describe these turns as failed Godel actions.",
       "# Progress\nDo not speak a preamble for opening, closing, moving, resizing, arranging or configuring ordinary Godel panels; call the tool immediately and speak once after its result. For transcript research or another genuine multi-second factual read, say one brief preamble at the same time as the tool call, such as 'I'm checking that now.' A preamble is not evidence that work started. Never say the terminal is rendering, loading or still working unless a tool result explicitly says so.",
       "# Continuity\nRetain every successful godel_context result. Resolve it, that and this from the most recent successful result, then the focused panel, then the last operated panel. Ask one short question if still ambiguous.",
       "# Results and failures\nOn success, briefly say what changed and where it is. On failure, explain it in plain language without model, route, timeout, selector or API terminology, then wait. If interrupted, stop speaking and listen.",
@@ -596,6 +611,17 @@ export function createHandoffServer({
           const duplicate = session.requests.get(requestKey);
           session.calls.set(callId, duplicate);
           return respond(response, 200, duplicate);
+        }
+        const conversationMessage = realtimeConversationMessage(requestText);
+        if (conversationMessage) {
+          const result = { kind: "conversation", message: conversationMessage };
+          session.calls.set(callId, result);
+          session.requests.set(requestKey, result);
+          audit("tool_compiled", {
+            session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(callId).slice(0, 12),
+            request: safeAuditText(requestText), kind: result.kind, route: "local", duration_ms: 0
+          });
+          return respond(response, 200, result);
         }
         const active = [...session.calls.values()].find(item => item.kind === "execute" && !terminalStates.has(store.status(item.id)?.status));
         if (active) return respond(response, 200, { kind: "busy", message: "I'm still finishing the previous Godel request." });

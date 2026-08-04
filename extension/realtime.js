@@ -193,7 +193,7 @@
       type: "response.create",
       response: {
         tools: [], tool_choice: "none", max_output_tokens: 180,
-        instructions: "Respond only from the verified function output. Be concise. Never say work is still rendering or pending. If status is completed, say what changed and where. If status is failed, say it did not complete and give the plain-language reason."
+        instructions: "Respond only from the verified function output. Be concise. Never say work is still rendering or pending. If status is completed, say what changed and where. If status is conversation, respond naturally from the message without claiming an action failed. If status is failed, say it did not complete and give the plain-language reason."
       }
     });
     render("thinking", "Preparing the grounded response");
@@ -331,7 +331,9 @@
     if (event.code === "KeyJ" && event.ctrlKey && event.shiftKey && !event.metaKey && !event.altKey) {
       event.preventDefault();
       toggle();
-    } else if (event.key === "Escape" && peer) teardown("ready", null, "escape");
+    } else if (event.key === "Escape" && peer && !["connecting", "thinking", "working"].includes(state)) {
+      teardown("ready", null, "escape");
+    }
   }, true);
   window.addEventListener("pagehide", event => {
     if (!event.persisted) teardown("ready", null, "pagehide");

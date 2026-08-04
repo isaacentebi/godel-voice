@@ -131,6 +131,26 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
   })).json();
   assert.equal(semanticReplay.id, queued.id);
 
+  const checkInWorkflow = structuredWorkflow("User asked if I am here.");
+  checkInWorkflow.workflow.kind = "unsupported";
+  checkInWorkflow.workflow.steps = [];
+  checkInWorkflow.workflow.reason = "Conversation only";
+  const checkIn = await (await fetch(`${base}/realtime/request`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, call_id: "call-check-in", workflow: checkInWorkflow })
+  })).json();
+  assert.deepEqual(checkIn, { kind: "conversation", message: "Yes, I'm here and listening." });
+
+  const thanksWorkflow = structuredWorkflow("User is acknowledging with thanks. No action requested.");
+  thanksWorkflow.workflow.kind = "unsupported";
+  thanksWorkflow.workflow.steps = [];
+  thanksWorkflow.workflow.reason = "Conversation only";
+  const thanks = await (await fetch(`${base}/realtime/request`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, call_id: "call-thanks", workflow: thanksWorkflow })
+  })).json();
+  assert.deepEqual(thanks, { kind: "conversation", message: "You're welcome. I'm still listening." });
+
   const leased = await (await fetch(`${base}/next?client=arc-a`, { headers: auth })).json();
   assert.equal(leased.realtime, true);
   await fetch(`${base}/ack`, {
@@ -157,6 +177,8 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /tool_result/);
   assert.match(source, /godel_context/);
   assert.match(source, /track\.enabled = enabled/);
+  assert.match(source, /!\["connecting", "thinking", "working"\]\.includes\(state\)/);
+  assert.match(source, /status is conversation/);
   assert.doesNotMatch(source, /visibilityState === "hidden" && peer\) teardown/);
   assert.ok(manifest.content_scripts[0].js.includes("realtime.js"));
 });
