@@ -1,25 +1,12 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { compileVoiceWorkflow } from "./compiler.mjs";
 import { encodeWorkflowPlan } from "./automation-plan.mjs";
+import { readRecentExecutorContext } from "./executor-context.mjs";
 import { compileWorkflowWithValidatedFallback } from "./model-routing.mjs";
 
 const projectDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-
-function recentExecutorContext(maxAgeMs = 15_000) {
-  const candidates = [path.join(projectDir, ".godel-voice-queue.json")];
-  if (process.platform === "darwin") candidates.unshift(path.join(os.homedir(), "Library", "Application Support", "GodelVoice", ".godel-voice-queue.json"));
-  for (const candidate of candidates) {
-    try {
-      const state = JSON.parse(fs.readFileSync(candidate, "utf8"));
-      const context = state?.context;
-      if (context && Number.isFinite(context.updated_at) && Date.now() - context.updated_at <= maxAgeMs) return context;
-    } catch { /* Try the portable project-local state next. */ }
-  }
-  return null;
-}
 
 async function main() {
   const transcript = fs.readFileSync(0, "utf8").trim();
@@ -27,7 +14,7 @@ async function main() {
 
   const routed = await compileWorkflowWithValidatedFallback(transcript, {
     compile: compileVoiceWorkflow,
-    context: recentExecutorContext(),
+    context: readRecentExecutorContext(),
     fallbackModel: process.env.VOICE_LLM_FALLBACK_MODEL || null,
     fallbackProviderOnly: process.env.VOICE_LLM_FALLBACK_PROVIDER_ONLY || process.env.OPENROUTER_PROVIDER_ONLY || null
   });

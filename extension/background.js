@@ -41,16 +41,22 @@ function assertGodelSender(sender) {
   return tab;
 }
 
-async function sendBatch(tabId, commands) {
+async function withDebugger(tabId, callback) {
   const target = { tabId };
   await chrome.debugger.attach(target, "1.3");
   try {
-    for (const [method, params] of commands) {
-      await chrome.debugger.sendCommand(target, method, params);
-    }
+    return await callback(target);
   } finally {
     await chrome.debugger.detach(target).catch(() => {});
   }
+}
+
+async function sendBatch(tabId, commands) {
+  return withDebugger(tabId, async target => {
+    for (const [method, params] of commands) {
+      await chrome.debugger.sendCommand(target, method, params);
+    }
+  });
 }
 
 async function focusExactEditable(target, selector) {
@@ -87,27 +93,19 @@ async function focusExactEditable(target, selector) {
 }
 
 async function trustedReplaceAndSubmit(tabId, selector, text, submit) {
-  const target = { tabId };
-  await chrome.debugger.attach(target, "1.3");
-  try {
+  return withDebugger(tabId, async target => {
     await focusExactEditable(target, selector);
     for (const [method, params] of GodelVoiceCDP.trustedReplaceAndSubmitCommands(text, submit)) {
       await chrome.debugger.sendCommand(target, method, params);
     }
-  } finally {
-    await chrome.debugger.detach(target).catch(() => {});
-  }
+  });
 }
 
 async function focusAndInsert(tabId, selector, text) {
-  const target = { tabId };
-  await chrome.debugger.attach(target, "1.3");
-  try {
+  return withDebugger(tabId, async target => {
     await focusExactEditable(target, selector);
     await chrome.debugger.sendCommand(target, "Input.insertText", { text: String(text) });
-  } finally {
-    await chrome.debugger.detach(target).catch(() => {});
-  }
+  });
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
