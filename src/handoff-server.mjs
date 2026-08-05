@@ -12,6 +12,7 @@ import {
   realtimeWorkflowToolParameters
 } from "./compile-realtime-workflow.mjs";
 import { estimateRealtimeResponseCost } from "./realtime-cost.mjs";
+import { encodeControlFollowup } from "./control-followup.mjs";
 
 const projectDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const terminalStates = new Set(["completed", "failed", "cancelled"]);
@@ -520,28 +521,41 @@ export function createHandoffServer({
     instructions: [
       "# Role and objective\nYou are Jarvis, Isaac's calm, precise voice copilot for Godel Terminal. Treat this activation as one continuous conversation until Isaac turns you off.",
       "# Personality and tone\nBe warm, understated and capable, never theatrical. The client starts silently, so do not introduce yourself unless Isaac asks who you are. Do not repeat your name every turn.",
+      "# Pacing and variety\nSpeak briskly but never sound rushed. Avoid filler, canned openings and repeated confirmation phrases. Answer the point first. Vary short acknowledgements naturally.",
       "# Reasoning\nFor direct commands, greetings, acknowledgements and short confirmations, respond immediately and do not reason. Use deeper reasoning only when a multi-step request genuinely requires it.",
       "# Verbosity\nSimple actions: at most twelve spoken words after completion. Research: at most two concise sentences. Clarification: exactly one question.",
       "# Tools\nCall the Godel tool exactly once for any request to open, close, move, resize, arrange, configure, search, compare, inspect or answer from Godel. Call it proactively as soon as intent is clear; do not ask for confirmation for read-only or window-management actions. Never invent commands, panels, prices, metrics, periods, passages or success. Wait for verified tool output before saying an action is complete. Never retry the same failed request automatically. For a greeting, thanks, acknowledgement, or a check that you are listening, respond directly without a tool. Never answer a financial or Godel factual question from memory.",
       "# Progress\nDo not speak a preamble for opening, closing, moving, resizing, arranging or configuring ordinary Godel panels; call the tool immediately and speak once after its result. For transcript research or another genuine multi-second factual read, say one brief preamble at the same time as the tool call, such as 'I'm checking that now.' A preamble is not evidence that work started. Never say the terminal is rendering, loading or still working unless a tool result explicitly says so.",
       "# Continuity\nRetain every successful godel_context result. Resolve it, that and this from the most recent successful result, then the focused panel, then the last operated panel. Ask one short question if still ambiguous.",
+      "# Silence and background audio\nIf the latest audio is silence, background noise, media, side conversation, or speech not addressed to you, call wait_for_user and say nothing. If Isaac is clearly addressing you but the request is unclear, ask one short clarification question instead of guessing.",
       "# Results and failures\nOn success, briefly say what changed and where it is. On failure, explain it in plain language without model, route, timeout, selector or API terminology, then wait. If interrupted, stop speaking and listen.",
       realtimeWorkflowInstructions(),
       realtimeStateInstruction(context)
     ].join(" "),
     audio: {
       input: {
-        ...(realtimeAuditEnabled ? { transcription: { model: "gpt-4o-mini-transcribe", language: "en" } } : {}),
-        turn_detection: { type: "semantic_vad", eagerness: "auto", create_response: true, interrupt_response: true }
+        // The client deliberately starts responses after a short continuation
+        // grace period. This prevents a natural mid-sentence pause from
+        // launching a tool call or spoken answer over the user.
+        transcription: { model: "gpt-4o-mini-transcribe", language: "en" },
+        turn_detection: { type: "semantic_vad", eagerness: "auto", create_response: false, interrupt_response: true }
       },
       output: { voice: realtimeVoice }
     },
-    tools: [{
-      type: "function",
-      name: "run_godel_workflow",
-      description: "Plan and execute a complete Godel request. Supply a semantic, allowlisted workflow; local code independently validates every command, security, UI action and layout before execution.",
-      parameters: realtimeWorkflowToolParameters
-    }],
+    tools: [
+      {
+        type: "function",
+        name: "run_godel_workflow",
+        description: "Plan and execute a complete Godel request. Supply a semantic, allowlisted workflow; local code independently validates every command, security, UI action and layout before execution.",
+        parameters: realtimeWorkflowToolParameters
+      },
+      {
+        type: "function",
+        name: "wait_for_user",
+        description: "End this turn silently when the latest audio is background noise, media, side conversation, silence, or speech not addressed to Jarvis.",
+        parameters: { type: "object", properties: {}, required: [], additionalProperties: false }
+      }
+    ],
     tool_choice: "auto",
     parallel_tool_calls: false,
     truncation: { type: "retention_ratio", retention_ratio: 0.8, token_limits: { post_instructions: 8_000 } }
@@ -614,8 +628,9 @@ export function createHandoffServer({
         let requestKey;
         try { requestKey = normalizedRealtimeRequest(requestText); }
         catch { return respond(response, 200, { kind: "failed", message: "I couldn't understand a complete Godel request." }); }
-        if (session.requests.has(requestKey)) {
-          const duplicate = session.requests.get(requestKey);
+        const recentRequest = session.requests.get(requestKey);
+        if (recentRequest && clock() - recentRequest.at <= 1_500) {
+          const duplicate = recentRequest.result;
           session.calls.set(callId, duplicate);
           return respond(response, 200, duplicate);
         }
@@ -623,14 +638,15 @@ export function createHandoffServer({
         if (conversationMessage) {
           const result = { kind: "conversation", message: conversationMessage };
           session.calls.set(callId, result);
-          session.requests.set(requestKey, result);
+          session.requests.set(requestKey, { at: clock(), result });
           audit("tool_compiled", {
             session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(callId).slice(0, 12),
             request: safeAuditText(requestText), kind: result.kind, route: "local", duration_ms: 0
           });
           return respond(response, 200, result);
         }
-        const active = [...session.calls.values()].find(item => item.kind === "execute" && !terminalStates.has(store.status(item.id)?.status));
+        const active = [...session.calls.values(), ...(session.preflights?.values() ?? [])]
+          .find(item => item.kind === "execute" && !terminalStates.has(store.status(item.id)?.status));
         if (active) return respond(response, 200, { kind: "busy", message: "I'm still finishing the previous Godel request." });
         const compileStartedAt = clock();
         let compiled;
@@ -639,7 +655,7 @@ export function createHandoffServer({
         } catch (error) {
           const result = { kind: "failed", message: "I couldn't safely prepare that Godel request." };
           session.calls.set(callId, result);
-          session.requests.set(requestKey, result);
+          session.requests.set(requestKey, { at: clock(), result });
           audit("tool_compile_failed", {
             session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(callId).slice(0, 12),
             request: safeAuditText(requestText), duration_ms: Math.max(0, clock() - compileStartedAt), error: safeError(error.message)
@@ -654,7 +670,7 @@ export function createHandoffServer({
         if (compiled.kind !== "execute") {
           const result = { kind: compiled.kind, message: sanitizeCompletionMessage(compiled.message) };
           session.calls.set(callId, result);
-          session.requests.set(requestKey, result);
+          session.requests.set(requestKey, { at: clock(), result });
           return respond(response, 200, result);
         }
         const requestId = `rt-${markerDigest(`${sessionId}:${callId}`).slice(0, 32)}`;
@@ -663,8 +679,53 @@ export function createHandoffServer({
         store.persist();
         const result = { kind: "execute", id: queued.entry.id, route: compiled.route };
         session.calls.set(callId, result);
-        session.requests.set(requestKey, result);
+        session.requests.set(requestKey, { at: clock(), result });
         store.event("realtime_request_queued", { id: queued.entry.id, route: compiled.route });
+        return respond(response, 202, result);
+      }
+      if (request.method === "POST" && url.pathname === "/realtime/preflight") {
+        if (request.headers.origin !== realtimeOrigin) return respond(response, 403, { error: "invalid Realtime origin" });
+        pruneRealtimeSessions();
+        const value = JSON.parse(await readBody(request, 8_000));
+        if (!value || Object.keys(value).some(key => !["session_id", "turn_id", "transcript"].includes(key))) {
+          return respond(response, 400, { error: "invalid Realtime preflight request" });
+        }
+        const sessionId = safeOpaqueId(value.session_id, "");
+        const turnId = safeOpaqueId(value.turn_id, "");
+        const session = realtimeSessions.get(sessionId);
+        if (!session || !turnId) return respond(response, 404, { error: "Realtime session not found" });
+        session.preflights ??= new Map();
+        if (session.preflights.has(turnId)) return respond(response, 200, session.preflights.get(turnId));
+        let requestText;
+        try { requestText = safeAuditText(value.transcript, 1_000); normalizedRealtimeRequest(requestText); }
+        catch { return respond(response, 200, { kind: "model" }); }
+
+        // Only the deterministic parser runs here. Ambiguous and research
+        // requests still go to the conversational Realtime model, but common
+        // opens, controls and exact follow-ups no longer pay a reasoning/tool
+        // generation round trip.
+        let marker = null;
+        try { marker = encodeControlFollowup(requestText, currentRealtimeContext()); }
+        catch {}
+        const active = [...session.calls.values(), ...session.preflights.values()]
+          .find(item => item.kind === "execute" && !terminalStates.has(store.status(item.id)?.status));
+        if (!marker || active) {
+          const result = { kind: "model" };
+          session.preflights.set(turnId, result);
+          return respond(response, 200, result);
+        }
+        const requestId = `rt-${markerDigest(`${sessionId}:preflight:${turnId}`).slice(0, 32)}`;
+        const queued = store.enqueue(marker, requestId);
+        queued.entry.realtime = true;
+        store.persist();
+        const result = { kind: "execute", id: queued.entry.id, route: "local_preflight" };
+        session.preflights.set(turnId, result);
+        session.requests.set(normalizedRealtimeRequest(requestText), { at: clock(), result });
+        audit("tool_compiled", {
+          session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
+          request: requestText, kind: result.kind, route: result.route, duration_ms: 0
+        });
+        store.event("realtime_request_queued", { id: queued.entry.id, route: result.route });
         return respond(response, 202, result);
       }
       if (request.method === "POST" && url.pathname === "/realtime/usage") {

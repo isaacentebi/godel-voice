@@ -192,6 +192,36 @@
     }, `GF ${title} ${desired}`, 5000);
   }
 
+  async function setGFRange(root, desired) {
+    const allowed = ["1Y", "3Y", "5Y", "10Y", "Max"];
+    if (!allowed.includes(desired)) throw new Error("Unsupported GF range");
+    const stableRootId = typeof root.id === "string" && /^[A-Za-z0-9_-]{1,140}$/.test(root.id) ? root.id : null;
+    const currentRoot = () => (stableRootId ? document.getElementById(stableRootId) : null) ?? root;
+    const groupFor = () => currentRoot().querySelector('[title="Range"]');
+    if (!groupFor()) throw new Error("Godel Range control missing");
+    const buttonFor = () => [...(groupFor()?.querySelectorAll("button") ?? [])].find(element =>
+      String(element.textContent ?? "").replace(/\s+/g, " ").trim().toLowerCase() === desired.toLowerCase());
+    const active = button => String(button?.className ?? "").includes("bg-[#222222]")
+      && String(button?.className ?? "").includes("text-[#eaeaea]");
+    const deadline = Date.now() + 6000;
+    let stableSince = 0;
+    while (Date.now() < deadline) {
+      const button = buttonFor();
+      if (!button) throw new Error(`Godel GF Range does not offer ${desired}`);
+      if (active(button)) {
+        stableSince ||= Date.now();
+        if (Date.now() - stableSince >= 900) return;
+      } else {
+        stableSince = 0;
+        const props = reactPropsFor(button);
+        if (typeof props?.onClick !== "function") throw new Error(`Godel GF Range ${desired} callback unavailable`);
+        props.onClick();
+      }
+      await new Promise(resolve => setTimeout(resolve, 120));
+    }
+    throw new Error(`GF verified Range ${desired} unavailable`);
+  }
+
   async function setGFDisplayCurrency(root, rawValue) {
     const value = String(rawValue ?? "").trim().toUpperCase();
     if (!/^[A-Z]{3}$/.test(value)) throw new Error("Unsupported GF display currency");
@@ -295,37 +325,49 @@
   }
 
   async function runGF(root, action, payload) {
-    root = scopedGFRoot(root, payload.security);
+    const panelRoot = root;
+    const stablePanelRootId = typeof panelRoot.id === "string" && /^[A-Za-z0-9_-]{1,140}$/.test(panelRoot.id)
+      ? panelRoot.id : null;
+    const livePanelRoot = () => (stablePanelRootId ? document.getElementById(stablePanelRootId) : null) ?? panelRoot;
+    const liveScopedRoot = () => scopedGFRoot(livePanelRoot(), payload.security);
+    root = liveScopedRoot();
     if (action === "addCompany") {
       const symbol = String(payload.symbol ?? "").toUpperCase();
       if (!/^[A-Z0-9./-]{1,16}$/.test(symbol)) throw new Error("Invalid company symbol");
       const rail = railFor(root);
-      if (rail.props.series.some(item => item.securityId === symbol)) return;
-      rail.props.onAddCompany(await resolveCompany(root, symbol));
-      await waitForElement(
-        () => railFor(root).props.series.some(item => item.securityId === symbol),
-        `${symbol} company series`,
-        8000
-      );
-      return;
+      const company = rail.props.series.some(item => item.securityId === symbol)
+        ? null : await resolveCompany(root, symbol);
+      const deadline = Date.now() + 8000;
+      let stableSince = 0;
+      let lastAddAt = 0;
+      while (Date.now() < deadline) {
+        const currentRail = railFor(liveScopedRoot());
+        const loaded = currentRail.props.series.some(item => item.securityId === symbol);
+        if (loaded) {
+          stableSince ||= Date.now();
+          if (Date.now() - stableSince >= 900) return;
+        } else {
+          stableSince = 0;
+          if (company && Date.now() - lastAddAt >= 600) {
+            currentRail.props.onAddCompany(company);
+            lastAddAt = Date.now();
+          }
+        }
+        await new Promise(resolve => setTimeout(resolve, 120));
+      }
+      throw new Error(`${symbol} company series did not stabilize`);
     }
     if (action === "setRange") {
       const value = String(payload.value ?? "").toUpperCase();
       if (!["1Y", "3Y", "5Y", "10Y", "MAX"].includes(value)) throw new Error("Unsupported GF range");
-      await setGFChoice(root, "Range", ["1Y", "3Y", "5Y", "10Y", "Max"], value === "MAX" ? "Max" : value);
+      await setGFRange(panelRoot, value === "MAX" ? "Max" : value);
       return;
     }
     if (action === "verifyRange") {
       const value = String(payload.value ?? "").toUpperCase();
       if (!["1Y", "3Y", "5Y", "10Y", "MAX"].includes(value)) throw new Error("Unsupported GF range");
       const canonical = value === "MAX" ? "Max" : value;
-      await waitForElement(() => {
-        try {
-          return controlFor(root, "Range", candidate =>
-            candidate.title === "Range" && Array.isArray(candidate.options)
-            && String(candidate.value).toLowerCase() === canonical.toLowerCase());
-        } catch { return false; }
-      }, `GF verified Range ${canonical}`, 5000);
+      await setGFRange(panelRoot, canonical);
       return;
     }
     if (action === "setPeriodicity") {
@@ -368,47 +410,95 @@
         pb: "P/B",
         pcf: "P/CF"
       };
+      const directMetricKeys = {
+        revenue: "revenue",
+        operating_margin: "operatingProfitMargin"
+      };
       if (!metricLabels[metricKey]) throw new Error("Unsupported GF metric");
       const metricLabel = metricLabels[metricKey];
-      const removeControl = label => [...root.querySelectorAll("button")].find(element => {
+      const removeControl = label => [...liveScopedRoot().querySelectorAll("button")].find(element => {
         const description = [element.getAttribute("aria-label"), element.getAttribute("title")]
           .filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
         return description.toLowerCase().startsWith(`remove ${symbol} us ${label}`.toLowerCase());
       });
-      const metricRendered = label => Boolean(removeControl(label)) || [...root.querySelectorAll("*")].some(element =>
-        visibleElement(element) && element.children.length === 0
-        && compactElementText(element).toLowerCase() === label.toLowerCase());
+      // Metric labels repeat across companies. Only an exact, symbol-scoped
+      // remove control proves that the requested series exists.
+      const metricRendered = label => Boolean(removeControl(label));
       const removeDefaultRevenue = async () => {
-        if (metricKey === "revenue") return;
+        if (metricKey === "revenue" || payload.keepDefaultRevenue === true) return;
         const revenueRemove = removeControl("Revenue");
         if (!revenueRemove) return;
         revenueRemove.click();
         await waitForElement(() => !removeControl("Revenue"), `${symbol} default Revenue removed`);
       };
-      const rail = railFor(root);
+      const rail = railFor(liveScopedRoot());
       const base = rail.props.series.find(item => item.securityId === symbol);
       if (!base) throw new Error(`Godel company ${symbol} is not loaded`);
-      const existingMetric = rail.props.series.find(item =>
-        item.seriesId === base.seriesId && item.metricKey === metricKey);
-      if (existingMetric || metricRendered(metricLabel)) {
+      if (metricRendered(metricLabel)) {
         await removeDefaultRevenue();
         return;
       }
-      const addMetric = [...root.querySelectorAll("button")].find(element =>
+      const addMetric = [...liveScopedRoot().querySelectorAll("button")].find(element =>
         element.getAttribute("aria-label") === `Add metric for ${symbol}`);
       if (!addMetric) throw new Error(`Godel add-metric control for ${symbol} unavailable`);
-      addMetric.click();
+      const expectedIds = new Set(rail.props.series.map(item => item.id));
+      let builder = null;
+      const builderDeadline = Date.now() + 6000;
+      while (Date.now() < builderDeadline) {
+        const currentButton = [...liveScopedRoot().querySelectorAll("button")].find(element =>
+          element.getAttribute("aria-label") === `Add metric for ${symbol}`);
+        if (!currentButton) throw new Error(`Godel add-metric control for ${symbol} unavailable`);
+        currentButton.click();
+        const candidate = await waitForBuilder(livePanelRoot());
+        const candidateIds = new Set(candidate.series.map(item => item.id));
+        if ([...expectedIds].every(id => candidateIds.has(id))) {
+          builder = candidate;
+          break;
+        }
+        candidate.onClose();
+        await new Promise(resolve => setTimeout(resolve, 180));
+      }
+      if (!builder) throw new Error(`Godel ${symbol} metric builder did not synchronize`);
+
+      // The builder's own onAdd callback is the most reliable mutation seam:
+      // it deduplicates, assigns native colors, persists the layout, and keeps
+      // every series from the synchronized snapshot. Use it for the two most
+      // common comparison metrics whose exact internal keys are live-proven.
+      const directMetricKey = directMetricKeys[metricKey];
+      if (directMetricKey) {
+        const directBase = builder.series.find(item => item.securityId === symbol);
+        if (!directBase) {
+          builder.onClose();
+          throw new Error(`Godel company ${symbol} is not loaded in the metric builder`);
+        }
+        let nextSeries = builder.series;
+        if (metricKey !== "revenue" && payload.keepDefaultRevenue !== true) {
+          nextSeries = nextSeries.filter(item =>
+            !(item.securityId === symbol && item.metricKey === "revenue"));
+        }
+        const directSeries = {
+          ...directBase,
+          id: `${directBase.seriesId}:${directMetricKey}`,
+          metricKey: directMetricKey,
+          color: null
+        };
+        builder.onAdd([...nextSeries, directSeries]);
+        builder.onClose();
+        await waitForElement(() => metricRendered(metricLabel), `${symbol} ${metricLabel} series`, 5000);
+        await removeDefaultRevenue();
+        return;
+      }
       let metric;
       try {
         metric = await waitForElement(() => {
-          try { return semanticMetricControl(root, metricLabel); } catch { return null; }
+          try { return semanticMetricControl(livePanelRoot(), metricLabel); } catch { return null; }
         }, `${metricLabel} metric`);
       } catch (error) {
         [...document.querySelectorAll("button,[role='button']")]
           .find(element => element.textContent.trim() === "Cancel" && metricDialogFor(element))?.click();
         throw error;
       }
-      const dialog = metricDialogFor(metric) ?? root;
+      const dialog = metricDialogFor(metric) ?? livePanelRoot();
       if (metric.disabled || metric.getAttribute("aria-disabled") === "true") {
         [...dialog.querySelectorAll("button")].find(element => element.textContent.trim() === "Cancel")?.click();
         throw new Error(`Godel ${metricLabels[metricKey]} has no data for ${symbol}`);
@@ -417,7 +507,7 @@
       const addSeries = await waitForElement(() => [...dialog.querySelectorAll("button")].find(element =>
         element.textContent.trim() === "Add series" && !element.disabled && element.getAttribute("aria-disabled") !== "true"), "Add series control");
       addSeries.click();
-      await waitForElement(() => metricRendered(metricLabel), `${symbol} ${metricLabel} series`);
+      await waitForElement(() => metricRendered(metricLabel), `${symbol} ${metricLabel} series`, 5000);
       await removeDefaultRevenue();
       return;
     }

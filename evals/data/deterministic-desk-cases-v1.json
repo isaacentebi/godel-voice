@@ -1,0 +1,10 @@
+[
+  {"id":"desk-earnings-amazon","utterance":"build an Amazon earnings desk","expected_commands":["EM","ERN","TRAN","CF"],"expected_layout":"research"},
+  {"id":"desk-research-meta","utterance":"open a research desk for Meta","expected_commands":["DES","EM","TRAN","CF"],"expected_layout":"research"},
+  {"id":"desk-options-nvidia-depth","utterance":"open an Nvidia options desk with fifteen strikes","expected_commands":["G","OMON","OVME"],"expected_layout":"options"},
+  {"id":"desk-market-amazon-fundamentals","utterance":"open a heatmap on the left side and an Amazon chart on the right side with operating margins and revenues","expected_commands":["HMAP","GF"],"expected_layout":"market"},
+  {"id":"desk-price-comparison","utterance":"compare Amazon Meta and Microsoft over five years side by side","expected_commands":["HMS"],"expected_layout":"comparison"},
+  {"id":"desk-fundamental-gf","utterance":"compare Amazon and Microsoft revenue","expected_commands":["GF"],"expected_layout":"comparison"},
+  {"id":"desk-block-unverified-options-expiry","utterance":"open an Nvidia options desk for the next monthly expiry","expected_kind":"decline"},
+  {"id":"desk-block-missing-security","utterance":"open an earnings research desk","expected_kind":"decline"}
+]

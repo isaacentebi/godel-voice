@@ -40,6 +40,16 @@ test("content executor acknowledges leased work and checks cancellation between 
   assert.match(content, /\/context`/);
 });
 
+test("Jarvis replaces only its own stale safe windows before an ordinary new request", () => {
+  assert.match(content, /godel-voice-managed-window-ids-v1/);
+  assert.match(content, /if \(opensNewPanels && plan\.layout\.preserve_existing === false\)/);
+  assert.match(content, /await closeStaleManagedPanels\(\)/);
+  assert.match(content, /rememberManagedPanel\(panel\)/);
+  assert.match(content, /CHAT\|NOTE\|ACCOUNT\|BROK\|ORDER\|TRADE\|MESSAGE\|ALERT/);
+  assert.match(content, /automatic housekeeping into a destructive or blocking failure/);
+  assert.doesNotMatch(content, /localStorage\.clear|sessionStorage\.clear/);
+});
+
 test("contextual controls target last, focused, or remembered command windows", () => {
   assert.match(content, /target\.mode === "last"/);
   assert.match(content, /target\.mode === "focused"/);

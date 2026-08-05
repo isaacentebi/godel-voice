@@ -118,7 +118,7 @@ function normalizeLayout(layout, label, { step = false } = {}) {
   const direction = value.direction ?? "row";
   const gap = value.gap_px ?? 12;
   const preset = value.preset ?? "grid";
-  const preserveExisting = value.preserve_existing ?? true;
+  const preserveExisting = value.preserve_existing ?? false;
   const newScreen = value.new_screen ?? false;
   if (!LAYOUT_MODES.has(mode)) throw new Error(`Invalid ${label}.mode`);
   if (!LAYOUT_DIRECTIONS.has(direction)) throw new Error(`Invalid ${label}.direction`);
@@ -430,7 +430,7 @@ export function validateWorkflowPlan(plan) {
     failure_policy: failurePolicy,
     layout: normalizeLayout(value.layout, "workflow plan.layout") ?? {
       mode: "preserve", direction: "row", gap_px: 12,
-      preset: "grid", preserve_existing: true, new_screen: false
+      preset: "grid", preserve_existing: false, new_screen: false
     },
     steps
   };

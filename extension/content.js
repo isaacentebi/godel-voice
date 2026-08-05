@@ -71,6 +71,13 @@
   const commandPanels = new Map();
   const panelMetadata = new WeakMap();
   const panelCommandTimings = new WeakMap();
+  const managedWindowStorageKey = "godel-voice-managed-window-ids-v1";
+  const managedWindowIds = new Set((() => {
+    try {
+      const value = JSON.parse(sessionStorage.getItem(managedWindowStorageKey) ?? "[]");
+      return Array.isArray(value) ? value.filter(id => /^\d+$/.test(String(id))).slice(-32).map(String) : [];
+    } catch { return []; }
+  })());
   let lastContextDigest = "";
   let lastContextPublishAt = 0;
   let startSpeechTimer = null;
@@ -109,6 +116,51 @@
   }
 
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  function persistManagedWindowIds() {
+    sessionStorage.setItem(managedWindowStorageKey, JSON.stringify([...managedWindowIds].slice(-32)));
+  }
+
+  function managedWindowId(panel) {
+    const root = nativeWindowRoot(panel);
+    const id = root ? windowId(root) : null;
+    const type = String(root?.getAttribute("data-cy-command-type") ?? "").toUpperCase();
+    if (!id || !type || /CHAT|NOTE|ACCOUNT|BROK|ORDER|TRADE|MESSAGE|ALERT/.test(type)) return null;
+    return String(id);
+  }
+
+  function rememberManagedPanel(panel) {
+    const id = managedWindowId(panel);
+    if (!id) return;
+    managedWindowIds.add(id);
+    persistManagedWindowIds();
+  }
+
+  function forgetManagedPanel(panel) {
+    const root = nativeWindowRoot(panel);
+    const id = root ? String(windowId(root) ?? "") : "";
+    if (!id || !managedWindowIds.delete(id)) return;
+    persistManagedWindowIds();
+  }
+
+  async function closeStaleManagedPanels() {
+    const ids = [...managedWindowIds];
+    for (const id of ids) {
+      const panel = panelById(id);
+      if (!panel?.isConnected) {
+        managedWindowIds.delete(id);
+        continue;
+      }
+      try {
+        await panelInternalAction(panel, "LAYOUT", "close");
+        managedWindowIds.delete(id);
+      } catch {
+        // A changed or consequential Godel window must remain open. Never turn
+        // automatic housekeeping into a destructive or blocking failure.
+      }
+    }
+    persistManagedWindowIds();
+  }
 
   function visible(element) {
     if (!(element instanceof HTMLElement)) return false;
@@ -673,6 +725,9 @@
       };
       const metricKey = metricKeys[value.toUpperCase()];
       if (!metricKey) throw new Error(`Direct GF metric ${value} is not supported`);
+      const keepDefaultRevenue = plan.actions.some(item =>
+        ["add metric", "ratio metric", "margin metric"].includes(item.feature)
+        && String(item.value).toUpperCase() === "REVENUE");
       const loadedCompanies = [...panel.querySelectorAll("button,[role='button']")]
         .map(element => compactText(element.getAttribute("aria-label")))
         .map(label => /^Add metric for ([A-Z0-9./-]{1,16})$/.exec(label)?.[1] ?? null)
@@ -691,11 +746,21 @@
         let added = false;
         for (let attempt = 0; attempt < 24; attempt += 1) {
           try {
-            await panelInternalAction(panel, "GF", "addMetric", { symbol, metricKey, ...securityPayload });
+            await panelInternalAction(panel, "GF", "addMetric", {
+              symbol, metricKey, keepDefaultRevenue, ...securityPayload
+            });
             added = true;
             break;
           } catch (error) {
             if (!/company .* is not loaded/i.test(String(error.message)) || attempt === 23) throw error;
+            // A delayed GF render can restore the primary-series snapshot
+            // after a peer was visibly added. Re-add only peers explicitly
+            // named in this authenticated plan, then resume the exact metric.
+            if (explicitCompanies.includes(symbol)) {
+              await panelInternalAction(panel, "GF", "addCompany", {
+                symbol, ...securityPayload
+              });
+            }
             await pause(250);
           }
         }
@@ -711,12 +776,7 @@
     if (feature === "range") {
       const canonical = value.toUpperCase() === "MAX" ? "Max" : value.toUpperCase();
       if (!["1Y", "3Y", "5Y", "10Y", "Max"].includes(canonical)) throw new Error("Unsupported GF range");
-      const group = panel.querySelector('[title="Range"]');
-      if (!(group instanceof HTMLElement)) throw new Error("Godel GF Range control missing");
-      const control = exactText(group, canonical, "button,[role='button']");
-      if (!control) throw new Error(`Godel GF Range ${canonical} option missing`);
-      await click(control);
-      await panelInternalAction(panel, "GF", "verifyRange", { value: canonical, ...securityPayload });
+      await panelInternalAction(panel, "GF", "setRange", { value: canonical, ...securityPayload });
       return;
     }
     if (feature === "periodicity") {
@@ -732,6 +792,19 @@
       return;
     }
     return clickExact(panel, value);
+  }
+
+  function orderedGFActions(actions = []) {
+    const metrics = actions.filter(action =>
+      ["add metric", "ratio metric", "margin metric"].includes(action.feature));
+    const companies = actions.filter(action => action.feature === "add company");
+    if (!metrics.length || !companies.length) return actions;
+    const controls = actions.filter(action => !metrics.includes(action) && !companies.includes(action));
+    // Godel's metric builder commits the series snapshot it opened with. Set
+    // the primary company's metrics first, add peers, then replay the metrics
+    // so only the newly-added peer series need mutation. This prevents a stale
+    // primary-company modal from erasing peers that were just added.
+    return [...controls, ...metrics, ...companies, ...metrics];
   }
 
   async function executeHMS(panel, action) {
@@ -1954,7 +2027,8 @@
     rememberPanel(panel, plan.command, terminalSecurity(terminalCommand));
 
     phaseStartedAt = performance.now();
-    for (const action of plan.actions ?? []) {
+    const actions = plan.command === "GF" ? orderedGFActions(plan.actions) : (plan.actions ?? []);
+    for (const action of actions) {
       if (plan.command === "GF") await executeGF(panel, action, plan, terminalCommand);
       else if (plan.command === "HMS") await executeHMS(panel, action);
       else if (plan.command === "GR") await executeGR(panel, action);
@@ -1979,6 +2053,7 @@
     }
     phases.total_ms = Math.max(0, Math.round(performance.now() - commandStartedAt));
     panelCommandTimings.set(panel, phases);
+    rememberManagedPanel(panel);
     if (announce) toast(`Godel Voice: ${plan.command} ${plan.actions.length ? "configured" : "opened"}`);
     return panel;
   }
@@ -2192,6 +2267,7 @@
     } else {
       const actions = { maximize: "maximize", restore: "restore", focus: "focus", close: "close", export: "openExport" };
       await panelInternalAction(panel, "LAYOUT", actions[step.operation]);
+      if (step.operation === "close") forgetManagedPanel(panel);
     }
     if (step.operation !== "close") rememberPanel(panel, step.target.command, step.target.security);
     else if (lastPanelElement && (panel === lastPanelElement || panel.contains(lastPanelElement) || lastPanelElement.contains(panel))) {
@@ -2218,7 +2294,8 @@
     }
     const terminalCommand = `${step.target.security ?? "CONTEXT"} US EQ ${step.target.command}`;
     const adapterPlan = { command: step.target.command, actions: step.actions };
-    for (const action of step.actions) {
+    const actions = step.target.command === "GF" ? orderedGFActions(step.actions) : step.actions;
+    for (const action of actions) {
       if (step.target.command === "GF") await executeGF(panel, action, adapterPlan, terminalCommand);
       else if (step.target.command === "HMS") await executeHMS(panel, action);
       else if (step.target.command === "GR") await executeGR(panel, action);
@@ -2259,6 +2336,10 @@
     const grounded = [];
     const failures = [];
     const timings = [];
+    const opensNewPanels = plan.steps.some(step => step.kind === "command");
+    if (opensNewPanels && plan.layout.preserve_existing === false) {
+      await closeStaleManagedPanels();
+    }
     if (plan.layout.new_screen) {
       await ensureNotCancelled(requestId);
       await workspaceInternalAction("createScreen", { name: "Voice" });

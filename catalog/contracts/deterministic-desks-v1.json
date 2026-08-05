@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-04",
+  "policy": "A desk is executable only when every step is a native CLI open or an already verified nested action. Unsupported nested controls invalidate the entire desk.",
+  "workflows": [
+    {
+      "id": "earnings-research-desk",
+      "status": "deterministic",
+      "layout": "research",
+      "commands": ["EM", "ERN", "TRAN", "CF"],
+      "execution_shape": "pure-cli",
+      "examples": ["build an Amazon earnings desk", "open a Meta earnings research workspace"]
+    },
+    {
+      "id": "company-research-desk",
+      "status": "deterministic",
+      "layout": "research",
+      "commands": ["DES", "EM", "TRAN", "CF"],
+      "execution_shape": "pure-cli",
+      "examples": ["open a research desk for Meta"]
+    },
+    {
+      "id": "options-desk",
+      "status": "deterministic-partial-nested",
+      "layout": "options",
+      "commands": ["G", "OMON", "OVME"],
+      "execution_shape": "pure-cli+verified-nested",
+      "enabled_nested_actions": ["OMON.strike_depth.set"],
+      "blocked_nested_actions": ["OMON.mode.select", "OMON.expiration.select", "OMON.columns.configure", "OMON.contract.open", "OVME.inputs.configure"],
+      "examples": ["open an Nvidia options desk with fifteen strikes"]
+    },
+    {
+      "id": "market-fundamentals-desk",
+      "status": "deterministic-partial-nested",
+      "layout": "market",
+      "commands": ["HMAP", "GF"],
+      "execution_shape": "pure-cli+authenticated-legacy-live",
+      "enabled_nested_actions": ["GF.metric.add", "GF.range.select", "GF.periodicity.select", "GF.estimates.select", "GF.layout.select", "GF.currency.select"],
+      "blocked_nested_actions": ["GF.export"],
+      "examples": ["open a heatmap left and an Amazon chart right with operating margin and revenue"]
+    },
+    {
+      "id": "price-comparison-desk",
+      "status": "deterministic-verified-nested",
+      "layout": "comparison",
+      "commands": ["HMS"],
+      "execution_shape": "pure-cli+verified-nested",
+      "enabled_nested_actions": ["HMS.comparison.configure"],
+      "blocked_semantics": ["fundamental comparison", "valuation comparison", "regression"],
+      "examples": ["compare Amazon Meta and Microsoft over five years side by side"]
+    },
+    {
+      "id": "fundamentals-comparison-desk",
+      "status": "deterministic-verified-nested",
+      "layout": "comparison",
+      "commands": ["GF"],
+      "execution_shape": "pure-cli+verified-nested",
+      "enabled_nested_actions": ["GF.company.add", "GF.metric.add", "GF.range.select", "GF.periodicity.select", "GF.estimates.select", "GF.layout.select", "GF.currency.select"],
+      "blocked_semantics": ["forward versus trailing P/E", "unsupported metrics such as NOPAT or operating income"],
+      "examples": ["compare Amazon and Meta operating margin and revenue over five years"]
+    }
+  ]
+}

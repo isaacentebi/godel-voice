@@ -232,9 +232,14 @@ test("close and resize followups address each market/news panel family exactly",
   }
 });
 
-test("fast path declines ordinary research requests", () => {
+test("fast path declines ungrounded research and compiles exact GF comparison", () => {
   assert.equal(parseControlFollowup("open Meta earnings and download ten years of financials"), null);
-  assert.equal(parseControlFollowup("compare Amazon and Microsoft revenue"), null);
+  const plan = parseControlFollowup("compare Amazon and Microsoft revenue");
+  assert.equal(plan.steps[0].command, "GF");
+  assert.deepEqual(plan.steps[0].actions, [
+    { feature: "add company", operation: "add", value: "MSFT" },
+    { feature: "add metric", operation: "add", value: "Revenue" }
+  ]);
 });
 
 test("control followup round trips through canonical GV2", () => {
@@ -339,9 +344,9 @@ test("compiles compound GF followups locally in dependency order", () => {
   const plan = parseControlFollowup("on the fundamentals graph add Microsoft show five years operating margin with estimates");
   assert.equal(plan.steps[0].target.command, "GF");
   assert.deepEqual(plan.steps[0].actions, [
-    { feature: "add company", operation: "add", value: "MSFT" },
     { feature: "range", operation: "select", value: "5Y" },
     { feature: "include consensus estimates", operation: "select", value: "on" },
+    { feature: "add company", operation: "add", value: "MSFT" },
     { feature: "margin metric", operation: "add", value: "Operating Margin" }
   ]);
 });

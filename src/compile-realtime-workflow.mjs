@@ -44,7 +44,7 @@ For every Godel action or read, call run_godel_workflow once. Put the complete r
 - For an action such as open, show, or pull up a company's bare earnings, default to EM so the request executes in one turn. Earnings matrix means EM; analyst expectations/estimates/beat-miss means ERN; calls/transcripts/Q&A means TRAN. Ask which view only when the user is asking about the distinction rather than requesting an action.
 - For a fundamental comparison, the first company is the GF primary security. Additional companies use feature=add company, operation=add. Revenue uses feature=add metric, operation=add, value=Revenue. Operating margin uses feature=margin metric, operation=add, value=Operating Margin.
 - Example: “open a heatmap on the left and an Amazon chart on the right with operating margins and revenues” is HMAP placement=left plus AMZN GF placement=right with Operating Margin and Revenue actions, preset=market.
-- placement is null unless spoken. preserve_existing=true unless the user asks to rearrange the whole screen. new_screen=true only when requested.
+- placement is null unless spoken. preserve_existing=false for ordinary new requests; true only when the user explicitly asks to keep existing panels or open alongside them. new_screen=true only when requested.
 - For pronouns, use the latest successful tool result, then focused panel, then last panel. If no exact live target exists, clarify.
 - Never claim success before the tool result. Never retry an identical failed call automatically.
 

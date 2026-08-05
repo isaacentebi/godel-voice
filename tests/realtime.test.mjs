@@ -113,6 +113,9 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
   assert.match(upstreamSession, /\"effort\":\"low\"/);
   assert.match(upstreamSession, /\"tool_choice\":\"auto\"/);
   assert.match(upstreamSession, /\"eagerness\":\"auto\"/);
+  assert.match(upstreamSession, /\"create_response\":false/);
+  assert.match(upstreamSession, /\"gpt-4o-mini-transcribe\"/);
+  assert.match(upstreamSession, /\"wait_for_user\"/);
 
   const tool = await fetch(`${base}/realtime/request`, {
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
@@ -162,6 +165,58 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
   assert.deepEqual(speakerCalls, []);
 });
 
+test("Realtime deterministic preflight executes common commands without a model turn", async t => {
+  let now = 1_800_000_000_000;
+  const clock = () => now;
+  const store = new HandoffStore({ clock });
+  const server = createHandoffServer({
+    secret, store, port: 0, realtimeEnabled: true, openaiApiKey: "private-openai-key",
+    realtimeAuditEnabled: false, clock,
+    realtimeFetch: async () => new Response(answer, { status: 200, headers: { "Content-Type": "application/sdp" } })
+  });
+  const address = await server.listen();
+  t.after(() => server.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const sessionResponse = await fetch(`${base}/realtime/session`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/sdp" }, body: offer
+  });
+  const sessionId = sessionResponse.headers.get("x-godel-realtime-session");
+  const request = { session_id: sessionId, turn_id: "turn-1", transcript: "open the market heatmap" };
+  const first = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" }, body: JSON.stringify(request)
+  })).json();
+  assert.equal(first.kind, "execute");
+  assert.equal(first.route, "local_preflight");
+  assert.match(first.id, /^rt-/);
+  const replay = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" }, body: JSON.stringify(request)
+  })).json();
+  assert.deepEqual(replay, first);
+  const leased = await (await fetch(`${base}/next?client=arc-preflight`, { headers: auth })).json();
+  assert.equal(leased.id, first.id);
+  assert.equal(leased.realtime, true);
+  await fetch(`${base}/ack`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ id: leased.id, client_id: "arc-preflight", status: "completed", message: "Heatmap opened." })
+  });
+
+  // A repeated spoken command later in the same conversation is a new user
+  // intent, not a permanent semantic replay of the first turn.
+  now += 2_000;
+  const repeated = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ ...request, turn_id: "turn-repeat" })
+  })).json();
+  assert.equal(repeated.kind, "execute");
+  assert.notEqual(repeated.id, first.id);
+
+  const ambiguous = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, turn_id: "turn-2", transcript: "what should I look at next?" })
+  })).json();
+  assert.deepEqual(ambiguous, { kind: "model" });
+});
+
 test("Realtime browser surface contains no provider credential and has bounded teardown", () => {
   const source = fs.readFileSync(new URL("../extension/realtime.js", import.meta.url), "utf8");
   const manifest = JSON.parse(fs.readFileSync(new URL("../extension/manifest.json", import.meta.url), "utf8"));
@@ -179,8 +234,15 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /tool_result/);
   assert.match(source, /godel_context/);
   assert.match(source, /track\.enabled = enabled/);
+  assert.match(source, /\/realtime\/preflight/);
+  assert.match(source, /TURN_GRACE_MS = 325/);
+  assert.match(source, /wait_for_user/);
   assert.match(source, /!\["connecting", "thinking", "working"\]\.includes\(state\)/);
   assert.match(source, /status is conversation/);
+  assert.match(source, /MAX_RECONNECT_ATTEMPTS = 3/);
+  assert.match(source, /scheduleReconnect/);
+  assert.match(source, /preserveMicrophone: true/);
+  assert.match(source, /preserveIntent: true/);
   assert.doesNotMatch(source, /visibilityState === "hidden" && peer\) teardown/);
   assert.ok(manifest.content_scripts[0].js.includes("realtime.js"));
 });

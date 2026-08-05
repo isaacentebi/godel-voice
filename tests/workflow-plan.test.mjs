@@ -72,6 +72,15 @@ test("round trips canonical GV2 markers", () => {
   assert.equal(canonicalStringify({ z: 1, a: { y: 2, x: 3 } }), '{"a":{"x":3,"y":2},"z":1}');
 });
 
+test("ordinary workflows replace stale Jarvis panels unless preservation is explicit", () => {
+  const ordinary = buildWorkflowPlan(intent("AAPL", "DES"));
+  assert.equal(ordinary.layout.preserve_existing, false);
+  const alongside = buildWorkflowPlan(intent("AAPL", "DES"), {
+    layout: { preserve_existing: true }
+  });
+  assert.equal(alongside.layout.preserve_existing, true);
+});
+
 test("compiles ordered close-and-replace workflows with security targeting", () => {
   const plan = buildWorkflowPlan([
     { kind: "control", operation: "close", target: { mode: "command", command: "EM", security: "META" } },

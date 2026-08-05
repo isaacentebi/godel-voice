@@ -221,7 +221,7 @@
       failure_policy: plan.failure_policy,
       layout: {
         preset,
-        preserve_existing: layout.preserve_existing !== false,
+        preserve_existing: layout.preserve_existing === true,
         new_screen: layout.new_screen === true,
         gap_px: Number.isInteger(layout.gap_px) ? layout.gap_px : 12
       },

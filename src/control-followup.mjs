@@ -8,6 +8,7 @@ import { compileSECFFollowup } from "./commands/secf-followup.mjs";
 import { compileHMSFollowup } from "./commands/q-hldr-hms-followup.mjs";
 import { compileEMFollowup } from "./commands/em-followup.mjs";
 import { parseTRANResearchAction, parseTRANResearchContinuation } from "./commands/tran-help-change-followup.mjs";
+import { compileDeterministicDesk } from "./deterministic-desks.mjs";
 
 const targetCommands = [
   ["earnings matrix", "EM"], ["market heatmap", "HMAP"], ["heatmap", "HMAP"],
@@ -71,7 +72,7 @@ function commandStep(command, security = null, id = "command-1") {
 }
 
 function workflowLayout(preset = "grid") {
-  return { mode: "tile", direction: "row", gap_px: 12, preset, preserve_existing: true, new_screen: false };
+  return { mode: "tile", direction: "row", gap_px: 12, preset, preserve_existing: false, new_screen: false };
 }
 
 function exactTerminalStep(command, terminalCommand, id, placement = null) {
@@ -111,17 +112,31 @@ export function parseControlFollowup(transcript, context = null) {
       panel?.connected !== false && typeof panel?.command === "string"
       && !unsafe.has(String(panel.command).toUpperCase())).slice(0, 12) : [];
     if (!panels.length) return null;
+    const continuation = /\b(?:and\s+then|then)\b[\s,:-]*(.+)$/.exec(text)?.[1]?.trim() ?? "";
+    const nextPlan = continuation && /\b(?:open|show|pull|bring|build|create|compare)\b/.test(continuation)
+      ? parseControlFollowup(continuation, context) : null;
+    if (continuation && !nextPlan) return null;
+    const cleanupSteps = panels.map((panel, index) => ({
+      id: `cleanup-${index + 1}`, kind: "control", operation: "close",
+      target: { mode: "command", command: String(panel.command).toUpperCase(), security: panel.security ? String(panel.security).toUpperCase() : null },
+      value: null, required: false
+    }));
+    if (nextPlan) {
+      return validateWorkflowPlan({
+        version: 2, failure_policy: nextPlan.failure_policy, layout: nextPlan.layout,
+        steps: [...cleanupSteps, ...nextPlan.steps]
+      });
+    }
     return validateWorkflowPlan({
       version: 2, failure_policy: "stop_on_required", layout: null,
-      steps: panels.map((panel, index) => ({
-        id: `control-${index + 1}`, kind: "control", operation: "close",
-        target: { mode: "command", command: String(panel.command).toUpperCase(), security: panel.security ? String(panel.security).toUpperCase() : null },
-        value: null, required: false
-      }))
+      steps: cleanupSteps
     });
   }
 
   const security = commonSecurities.find(([name]) => new RegExp(`\\b${name}\\b`).test(text))?.[1] ?? null;
+
+  const deterministicDesk = compileDeterministicDesk({ transcript, text, security, explicitlyOpening });
+  if (deterministicDesk) return validateWorkflowPlan(deterministicDesk);
 
   // Multi-quarter transcript research is a bounded, evidence-only TRAN
   // action. Keep the company in the native command identity and the research

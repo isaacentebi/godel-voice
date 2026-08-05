@@ -519,11 +519,11 @@ export function compileStructuredWorkflow(workflowInput, transcript, options = {
       plan = buildWorkflowPlan(requests, {
         failure_policy: "stop_on_required",
         layout: {
-          mode: requestedLayout.preserve_existing === false ? "tile" : "preserve",
+          mode: requestedLayout.preserve_existing === true ? "preserve" : "tile",
           direction: "row",
           gap_px: 12,
           preset: requestedLayout.preset ?? "grid",
-          preserve_existing: requestedLayout.preserve_existing !== false,
+          preserve_existing: requestedLayout.preserve_existing === true,
           new_screen: requestedLayout.new_screen === true
         }
       });

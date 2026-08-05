@@ -44,9 +44,9 @@ test("compiles source-backed GF range, estimate, company and metric followups", 
   const result = compileChartOptionsFollowup({ command: "GF", target: { mode: "command", command: "GF", security: "AMZN" } },
     "add Microsoft and show five years of operating margin with estimates");
   assert.deepEqual(compact(result), [
-    { feature: "add company", operation: "add", value: "MSFT" },
     { feature: "range", operation: "select", value: "5Y" },
     { feature: "include consensus estimates", operation: "select", value: "on" },
+    { feature: "add company", operation: "add", value: "MSFT" },
     { feature: "margin metric", operation: "add", value: "Operating Margin" }
   ]);
   assert.equal(result.ready_for_live_executor, true);

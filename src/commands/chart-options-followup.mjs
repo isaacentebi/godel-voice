@@ -46,7 +46,12 @@ const GF_METRICS = [
 const OMON_GREEKS = ["Delta", "Gamma", "Vega", "Theta", "Rho", "Lambda", "Epsilon"];
 
 function clean(value) {
-  return String(value ?? "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9%./ -]+/g, " ").replace(/\s+/g, " ").trim();
+  return String(value ?? "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9%./ -]+/g, " ")
+    .replace(/\boperating margins\b/g, "operating margin")
+    .replace(/\bgross margins\b/g, "gross margin")
+    .replace(/\bnet margins\b/g, "net margin")
+    .replace(/\brevenues\b/g, "revenue")
+    .replace(/\s+/g, " ").trim();
 }
 
 function canonicalCommand(context) {
@@ -115,14 +120,21 @@ function parseGF(text, actions, blockers) {
   if (/\b(?:hide|exclude|turn off|without) (?:consensus )?estimates?\b/.test(text)) {
     actions.push(action("include consensus estimates", "select", "off", "source-verified", "extension/main-world.js#setEstimates"));
   }
+  // A GF request may explicitly name several series (for example, operating
+  // margin and revenue). Compile every exact metric instead of silently
+  // keeping the first. Revenue used only as the denominator in R&D/SG&A
+  // phrases must not create an extra Revenue series.
+  const metricTextWithoutDenominators = text
+    .replace(/\br and d as percent of revenue\b|\br d as percent of revenue\b/g, "")
+    .replace(/\bs g and a as percent of revenue\b/g, "");
   for (const [phrase, value, feature] of GF_METRICS) {
+    if (value === "Revenue" && !/\brevenue\b/.test(metricTextWithoutDenominators)) continue;
     if (new RegExp(`\\b${phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(text)) {
       if (value === "P/E" && /\bforward\b|\bfwd\b|\btrailing\b|\bttm\b/.test(text)) {
         blockers.push("GF exposes P/E without a verified forward-versus-trailing label; use EM or ERN for forward P/E.");
       } else {
         actions.push(action(feature, "add", value, "source-verified-data-dependent", "extension/main-world.js#addMetric"));
       }
-      break;
     }
   }
   if (/\badd\b/.test(text)) {
@@ -204,9 +216,9 @@ export function compileChartOptionsFollowup(context, utterance) {
   else if (command === "OMON") parseOMON(text, actions, blockers, context, utterance);
   let resultActions = uniqueActions(actions);
   if (command === "GF") {
-    const priority = item => item.feature === "add company" ? 0
+    const priority = item => item.feature === "add company" ? 1
       : ["add metric", "margin metric", "ratio metric"].includes(item.feature) ? 2
-        : item.feature === "export" ? 3 : 1;
+        : item.feature === "export" ? 3 : 0;
     resultActions = resultActions
       .map((item, index) => ({ item, index }))
       .sort((left, right) => priority(left.item) - priority(right.item) || left.index - right.index)
