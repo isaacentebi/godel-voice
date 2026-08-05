@@ -8,11 +8,11 @@ import { loadRegistry } from "./catalog.mjs";
 import { runtimeBuildId } from "./runtime-build-id.mjs";
 import { summarizeGroundedTranscriptEvidence } from "./grounded-transcript-summary.mjs";
 import {
-  compileRealtimeWorkflow, normalizedRealtimeRequest, realtimeWorkflowInstructions,
-  realtimeWorkflowToolParameters
+  compileRealtimeWorkflow, normalizedRealtimeRequest
 } from "./compile-realtime-workflow.mjs";
 import { estimateRealtimeResponseCost } from "./realtime-cost.mjs";
 import { encodeControlFollowup } from "./control-followup.mjs";
+import { compileNaturalRequest } from "./compile-natural-request.mjs";
 
 const projectDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const terminalStates = new Set(["completed", "failed", "cancelled"]);
@@ -481,10 +481,11 @@ export function createHandoffServer({
   buildId = runtimeBuildId(), clock = Date.now,
   transcriptSummarizer = summarizeGroundedTranscriptEvidence,
   realtimeWorkflowCompiler = compileRealtimeWorkflow,
+  realtimeNaturalCompiler = compileNaturalRequest,
   realtimeFetch = fetch,
   openaiApiKey = process.env.OPENAI_API_KEY || null,
   realtimeEnabled = String(process.env.GODEL_VOICE_REALTIME_ENABLED ?? "false").toLowerCase() === "true",
-  realtimeModel = process.env.GODEL_VOICE_REALTIME_MODEL || "gpt-realtime-2.1",
+  realtimeModel = process.env.GODEL_VOICE_REALTIME_MODEL || "gpt-realtime-2.1-mini",
   realtimeReasoningEffort = process.env.GODEL_VOICE_REALTIME_REASONING_EFFORT || "low",
   realtimeVoice = process.env.GODEL_VOICE_REALTIME_VOICE || "cedar",
   realtimeTranscriptionModel = process.env.GODEL_VOICE_REALTIME_TRANSCRIPTION_MODEL || "gpt-4o-transcribe",
@@ -537,12 +538,11 @@ export function createHandoffServer({
       "# Pacing and variety\nSpeak briskly but never sound rushed. Avoid filler, canned openings and repeated confirmation phrases. Answer the point first. Vary short acknowledgements naturally.",
       "# Reasoning\nFor direct commands, greetings, acknowledgements and short confirmations, respond immediately and do not reason. Use deeper reasoning only when a multi-step request genuinely requires it.",
       "# Verbosity\nSimple actions: at most twelve spoken words after completion. Research: at most two concise sentences. Clarification: exactly one question.",
-      "# Tools\nCall the Godel tool exactly once for any request to open, close, move, resize, arrange, configure, search, compare, inspect or answer from Godel. Call it proactively as soon as intent is clear; do not ask for confirmation for read-only or window-management actions. Never invent commands, panels, prices, metrics, periods, passages or success. Wait for verified tool output before saying an action is complete. Never retry the same failed request automatically. For a greeting, thanks, acknowledgement, or a check that you are listening, respond directly without a tool. Never answer a financial or Godel factual question from memory.",
-      "# Progress\nDo not speak a preamble for opening, closing, moving, resizing, arranging or configuring ordinary Godel panels; call the tool immediately and speak once after its result. For transcript research or another genuine multi-second factual read, say one brief preamble at the same time as the tool call, such as 'I'm checking that now.' A preamble is not evidence that work started. Never say the terminal is rendering, loading or still working unless a tool result explicitly says so.",
+      "# Actions\nYou are the low-latency audio layer, not the Godel planner. Local validated code handles every Godel action before asking you to speak. Never plan, claim, retry or improvise a Godel action. Never answer a financial or Godel factual question from memory. Speak only when the client supplies a verified result or an exact conversational response.",
+      "# Progress\nDo not speak a preamble for opening, closing, moving, resizing, arranging or configuring ordinary Godel panels; speak once after the client supplies the verified result. For transcript research or another genuine multi-second factual read, the client may supply a brief progress sentence such as 'I'm checking that now.' Never invent progress or say the terminal is rendering, loading or still working.",
       "# Continuity\nRetain every successful godel_context result. Resolve it, that and this from the most recent successful result, then the focused panel, then the last operated panel. Ask one short question if still ambiguous.",
-      "# Silence and background audio\nIf the latest audio is silence, background noise, media, side conversation, or speech not addressed to you, call wait_for_user and say nothing. If Isaac is clearly addressing you but the request is unclear, ask one short clarification question instead of guessing.",
+      "# Silence and background audio\nThe client filters silence, background noise, media and side conversation. Never respond unless the client explicitly asks you to speak.",
       "# Results and failures\nOn success, briefly say what changed and where it is. On failure, explain it in plain language without model, route, timeout, selector or API terminology, then wait. If interrupted, stop speaking and listen.",
-      realtimeWorkflowInstructions(),
       realtimeStateInstruction(context)
     ].join(" "),
     audio: {
@@ -556,21 +556,8 @@ export function createHandoffServer({
       },
       output: { voice: realtimeVoice }
     },
-    tools: [
-      {
-        type: "function",
-        name: "run_godel_workflow",
-        description: "Plan and execute a complete Godel request. Supply a semantic, allowlisted workflow; local code independently validates every command, security, UI action and layout before execution.",
-        parameters: realtimeWorkflowToolParameters
-      },
-      {
-        type: "function",
-        name: "wait_for_user",
-        description: "End this turn silently when the latest audio is background noise, media, side conversation, silence, or speech not addressed to Jarvis.",
-        parameters: { type: "object", properties: {}, required: [], additionalProperties: false }
-      }
-    ],
-    tool_choice: "auto",
+    tools: [],
+    tool_choice: "none",
     parallel_tool_calls: false,
     truncation: { type: "retention_ratio", retention_ratio: 0.8, token_limits: { post_instructions: 8_000 } }
   });
@@ -725,10 +712,10 @@ export function createHandoffServer({
           return respond(response, 200, result);
         }
 
-        // Only the deterministic parser runs here. Ambiguous and research
-        // requests still go to the conversational Realtime model, but common
-        // opens, controls and exact follow-ups no longer pay a reasoning/tool
-        // generation round trip.
+        // The deterministic parser is the zero-latency first pass. When it
+        // declines a genuine Godel request, the separately configured text
+        // planner gets one bounded chance. Realtime is audio transport only;
+        // it never improvises executable workflows.
         let marker = null;
         try { marker = encodeControlFollowup(requestText, currentRealtimeContext()); }
         catch {}
@@ -743,16 +730,45 @@ export function createHandoffServer({
           });
           return respond(response, 200, result);
         }
-        if (!marker || active) {
-          const result = { kind: "model" };
+        if (active) {
+          const result = { kind: "busy", message: "I'm still finishing the previous Godel request." };
           session.preflights.set(turnId, result);
           return respond(response, 200, result);
+        }
+        let compiled = null;
+        if (!marker) {
+          const compileStartedAt = clock();
+          try {
+            compiled = await realtimeNaturalCompiler(requestText, { context: currentRealtimeContext() });
+          } catch (error) {
+            const result = { kind: "failed", message: "I couldn't prepare that Godel request quickly enough." };
+            session.preflights.set(turnId, result);
+            audit("tool_compile_failed", {
+              session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
+              request: requestText, duration_ms: Math.max(0, clock() - compileStartedAt), error: safeError(error.message)
+            });
+            return respond(response, 200, result);
+          }
+          if (compiled.kind !== "execute") {
+            const result = {
+              kind: compiled.kind,
+              message: sanitizeCompletionMessage(compiled.message || "That request is not safely available in Godel yet.")
+            };
+            session.preflights.set(turnId, result);
+            audit("tool_compiled", {
+              session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
+              request: requestText, kind: result.kind, route: compiled.route ?? "text_planner",
+              duration_ms: Math.max(0, clock() - compileStartedAt)
+            });
+            return respond(response, 200, result);
+          }
+          marker = compiled.marker;
         }
         const requestId = `rt-${markerDigest(`${sessionId}:preflight:${turnId}`).slice(0, 32)}`;
         const queued = store.enqueue(marker, requestId);
         queued.entry.realtime = true;
         store.persist();
-        const result = { kind: "execute", id: queued.entry.id, route: "local_preflight" };
+        const result = { kind: "execute", id: queued.entry.id, route: compiled?.route ?? "local_preflight" };
         session.preflights.set(turnId, result);
         session.requests.set(normalizedRealtimeRequest(requestText), { at: clock(), result });
         audit("tool_compiled", {

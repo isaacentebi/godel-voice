@@ -1076,8 +1076,19 @@
         return;
       }
       if (action === "close") {
+        // Prove the workspace provider is available before the root detaches,
+        // then reacquire it from the live document on every poll. React props
+        // expose an immutable layout snapshot; polling that captured object
+        // waits forever and lets a delayed close overwrite a newly opened panel.
+        workspaceContextFor(windowRoot);
         nativeClose(windowRoot);
-        await waitForElement(() => !windowRoot.isConnected, `${id} closed window`, 3000);
+        await waitForElement(() => {
+          const disconnected = !windowRoot.isConnected;
+          const layout = assertLayoutShape(workspaceContextFor(document.documentElement).layout);
+          const absentFromLayout = layout.screenIds.every(screenId =>
+            !layout.screens[screenId].windowIds.some(windowId => String(windowId) === String(id)));
+          return disconnected && absentFromLayout;
+        }, `${id} closed window and layout settled`, 3000);
         return;
       }
       nativePanelExport(windowRoot);
@@ -1131,6 +1142,140 @@
       const active = screen.activeWindowId == null ? [] : [String(screen.activeWindowId)];
       return [...active, ...screen.windowIds.map(id => String(id)).filter(id => !active.includes(id))];
     }
+    if (action === "moveWindowToScreen") {
+      const rawId = String(payload.id ?? "");
+      const rawTargetId = String(payload.target_screen_id ?? "");
+      if (!/^[A-Za-z0-9_-]{1,120}$/.test(rawId) || !/^\d+$/.test(rawTargetId)) {
+        throw new Error("Invalid Godel window transfer target");
+      }
+      const targetScreenId = Number(rawTargetId);
+      const target = current.screens[targetScreenId];
+      if (!target) throw new Error("Godel target screen is unavailable");
+      const sources = current.screenIds.map(id => current.screens[id])
+        .filter(screen => screen.windowIds.some(id => String(id) === rawId));
+      if (sources.length !== 1) throw new Error(`Expected one Godel screen for window ${rawId}, found ${sources.length}`);
+      const source = sources[0];
+      if (String(source.id) === rawTargetId) {
+        return { moved: false, id: rawId, target_screen_id: rawTargetId };
+      }
+      const nativeRoot = document.getElementById(`${rawId}-window`);
+      if (!(nativeRoot instanceof HTMLElement)) throw new Error("Godel transfer window is unavailable");
+      if (/CHAT|NOTE|ACCOUNT|BROK|ORDER|TRADE|MESSAGE|ALERT/.test(commandTypeFor(nativeRoot))) {
+        throw new Error("This Godel window cannot be temporarily moved by voice");
+      }
+      const nativeId = /^\d+$/.test(rawId) ? Number(rawId) : rawId;
+      const manager = positionManager();
+      const position = currentPosition(manager, nativeId);
+      if (!position || ["x", "y", "width", "height"].some(key => !Number.isFinite(Number(position[key])))) {
+        throw new Error("Godel transfer window position is unavailable");
+      }
+      if (position.previous != null) throw new Error("Restore the maximized Godel window before temporarily moving it");
+      const receipt = {
+        moved: true,
+        id: rawId,
+        source_screen_id: String(source.id),
+        source_index: source.windowIds.findIndex(id => String(id) === rawId),
+        source_active_window_id: source.activeWindowId == null ? null : String(source.activeWindowId),
+        target_screen_id: rawTargetId,
+        position: Object.fromEntries(["x", "y", "width", "height"].map(key => [key, Number(position[key])]))
+      };
+      let rejected = null;
+      context.setLayout(layoutValue => {
+        let layout;
+        try { layout = assertLayoutShape(layoutValue); }
+        catch (error) { rejected = error; return layoutValue; }
+        const liveSource = layout.screens[source.id];
+        const liveTarget = layout.screens[targetScreenId];
+        if (!liveSource?.windowIds.some(id => String(id) === rawId) || !liveTarget) {
+          rejected = new Error("Godel window transfer state changed");
+          return layoutValue;
+        }
+        const sourceIds = liveSource.windowIds.filter(id => String(id) !== rawId);
+        const targetIds = [...liveTarget.windowIds.filter(id => String(id) !== rawId), nativeId];
+        return {
+          ...layout,
+          activeScreenId: targetScreenId,
+          screens: {
+            ...layout.screens,
+            [source.id]: {
+              ...liveSource,
+              windowIds: sourceIds,
+              activeWindowId: String(liveSource.activeWindowId) === rawId ? (sourceIds.at(-1) ?? null) : liveSource.activeWindowId
+            },
+            [targetScreenId]: { ...liveTarget, windowIds: targetIds, activeWindowId: nativeId }
+          }
+        };
+      });
+      await waitForElement(() => {
+        if (rejected) throw rejected;
+        const layout = assertLayoutShape(workspaceContextFor(document.documentElement).layout);
+        return String(layout.activeScreenId) === rawTargetId
+          && layout.screens[targetScreenId]?.windowIds.some(id => String(id) === rawId)
+          && !layout.screens[source.id]?.windowIds.some(id => String(id) === rawId);
+      }, `${rawId} moved to Jarvis screen`, 3000);
+      return receipt;
+    }
+    if (action === "restoreWindowLocation") {
+      const rawId = String(payload.id ?? "");
+      const rawSourceId = String(payload.source_screen_id ?? "");
+      const rawTargetId = String(payload.target_screen_id ?? "");
+      if (!/^[A-Za-z0-9_-]{1,120}$/.test(rawId) || !/^\d+$/.test(rawSourceId) || !/^\d+$/.test(rawTargetId)) {
+        throw new Error("Invalid Godel window restoration receipt");
+      }
+      const sourceScreenId = Number(rawSourceId);
+      const targetScreenId = Number(rawTargetId);
+      const source = current.screens[sourceScreenId];
+      const target = current.screens[targetScreenId];
+      if (!source || !target?.windowIds.some(id => String(id) === rawId)) {
+        throw new Error("Godel borrowed window is no longer on the Jarvis screen");
+      }
+      const nativeId = /^\d+$/.test(rawId) ? Number(rawId) : rawId;
+      const sourceIndex = Math.max(0, Math.min(source.windowIds.length, Number(payload.source_index) || 0));
+      const restoredSourceIds = [...source.windowIds];
+      restoredSourceIds.splice(sourceIndex, 0, nativeId);
+      const targetIds = target.windowIds.filter(id => String(id) !== rawId);
+      const requestedSourceActive = payload.source_active_window_id == null ? null : String(payload.source_active_window_id);
+      const sourceActive = requestedSourceActive && restoredSourceIds.some(id => String(id) === requestedSourceActive)
+        ? (/^\d+$/.test(requestedSourceActive) ? Number(requestedSourceActive) : requestedSourceActive)
+        : nativeId;
+      let rejected = null;
+      context.setLayout(layoutValue => {
+        let layout;
+        try { layout = assertLayoutShape(layoutValue); }
+        catch (error) { rejected = error; return layoutValue; }
+        const liveSource = layout.screens[sourceScreenId];
+        const liveTarget = layout.screens[targetScreenId];
+        if (!liveSource || !liveTarget?.windowIds.some(id => String(id) === rawId)) {
+          rejected = new Error("Godel borrowed window state changed");
+          return layoutValue;
+        }
+        return {
+          ...layout,
+          screens: {
+            ...layout.screens,
+            [sourceScreenId]: { ...liveSource, windowIds: restoredSourceIds, activeWindowId: sourceActive },
+            [targetScreenId]: {
+              ...liveTarget,
+              windowIds: targetIds,
+              activeWindowId: String(liveTarget.activeWindowId) === rawId ? (targetIds.at(-1) ?? null) : liveTarget.activeWindowId
+            }
+          }
+        };
+      });
+      await waitForElement(() => {
+        if (rejected) throw rejected;
+        const layout = assertLayoutShape(workspaceContextFor(document.documentElement).layout);
+        return layout.screens[sourceScreenId]?.windowIds.some(id => String(id) === rawId)
+          && !layout.screens[targetScreenId]?.windowIds.some(id => String(id) === rawId);
+      }, `${rawId} restored to its original screen`, 3000);
+      const rect = Object.fromEntries(["x", "y", "width", "height"].map(key => [key, Number(payload.position?.[key])]))
+      if (Object.values(rect).every(Number.isFinite)) {
+        const manager = positionManager();
+        const existing = currentPosition(manager, nativeId) ?? {};
+        manager.updateWindowPosition(nativeId, { ...existing, ...rect });
+      }
+      return { restored: true, id: rawId };
+    }
     if (action === "nameActiveScreen") {
       const title = validateScreenName(payload.name ?? "Voice");
       const screenId = current.activeScreenId;
@@ -1162,7 +1307,8 @@
       if (!/^[A-Za-z0-9_-]{1,120}$/.test(rawId)) throw new Error("Invalid Godel workspace window id");
       const screen = current.screens[current.activeScreenId];
       if (!screen || !screen.windowIds.some(id => String(id) === rawId)) {
-        throw new Error("Godel workspace window is not on the active screen");
+        const activeIds = screen?.windowIds?.map(String).join(",") || "none";
+        throw new Error(`Godel workspace window ${rawId} is not on active screen ${current.activeScreenId} (${activeIds})`);
       }
       const rect = Object.fromEntries(["x", "y", "width", "height"].map(key => [key, Number(payload.rect?.[key])]));
       if (Object.values(rect).some(value => !Number.isFinite(value))) throw new Error("Invalid Godel window geometry");

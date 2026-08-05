@@ -64,10 +64,45 @@ test("Jarvis replaces safe windows only inside its dedicated Voice screen", () =
 test("manual Jarvis shutdown cleans only its Voice-screen windows and aborts across a new session", () => {
   const realtime = fs.readFileSync(new URL("../extension/realtime.js", import.meta.url), "utf8");
   assert.match(realtime, /godel-voice:session-started/);
-  assert.match(realtime, /reason === "manual_toggle"[\s\S]{0,180}godel-voice:cleanup-request/);
-  assert.match(content, /const requestedEpoch = jarvisSessionEpoch/);
+  assert.match(realtime, /!preserveIntent && reason !== "pagehide"/);
+  assert.match(realtime, /godel-voice:cleanup-request/);
+  assert.match(content, /queueVoiceCleanup\(jarvisSessionEpoch\)/);
   assert.match(content, /requestedEpoch !== jarvisSessionEpoch \|\| running/);
+  assert.match(content, /await lifecycleCleanup/);
   assert.match(content, /await closeVoiceScreenPanels\(\)/);
+});
+
+test("failed workflows roll back only newly opened safe Voice windows", () => {
+  assert.match(content, /const transactionWindowIds = new Set\(\)/);
+  assert.match(content, /beforeRenderedIds = new Set/);
+  assert.match(content, /transactionWindowIds\.add/);
+  assert.match(content, /closeVoiceScreenPanels\(\{ onlyIds: transactionWindowIds \}\)/);
+  assert.match(content, /if \(plan\.layout\.preserve_existing === false\) await closeVoiceScreenPanels\(\)/);
+  assert.match(content, /const allowedIds = onlyIds \? new Set/);
+});
+
+test("singleton panels borrowed from another screen are restored instead of closed", () => {
+  assert.match(bridge, /action === "moveWindowToScreen"/);
+  assert.match(bridge, /sources\.length !== 1/);
+  assert.match(bridge, /position\.previous != null/);
+  assert.match(bridge, /activeScreenId: targetScreenId/);
+  assert.match(bridge, /action === "restoreWindowLocation"/);
+  assert.match(bridge, /restoredSourceIds\.splice\(sourceIndex, 0, nativeId\)/);
+  assert.match(bridge, /manager\.updateWindowPosition\(nativeId, \{ \.\.\.existing, \.\.\.rect \}\)/);
+  assert.match(content, /const transactionBorrowedIds = new Set\(\)/);
+  assert.match(content, /borrowedWindowReceipts\.set\(nativeId, receipt\)/);
+  assert.match(content, /transactionBorrowedIds\.add\(nativeId\)/);
+  assert.match(content, /await restoreBorrowedWindows\(\{ onlyIds: transactionBorrowedIds \}\)/);
+});
+
+test("compound commands wait for Godel's bounded layout commit before opening another panel", () => {
+  assert.match(content, /element\.textContent\.trim\(\)\.toUpperCase\(\) === "COMMANDS"/);
+  assert.match(content, /if \(commandMenuOpen\(\)\)/);
+  assert.match(content, /await waitUntil\(\(\) => !commandMenuOpen\(\), "closed Godel command bar", 1000\)/);
+  assert.match(content, /await waitUntil\(commandMenuOpen, "open Godel command menu", 3000\)/);
+  assert.match(content, /plan\.steps\[index \+ 1\]\?\.kind === "command"/);
+  assert.match(content, /await pause\(250\)/);
+  assert.match(content, /did not settle before the next command/);
 });
 
 test("Q authenticates the strict quote signature across changing Godel header component boundaries", () => {

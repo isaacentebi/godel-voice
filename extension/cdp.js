@@ -34,8 +34,16 @@
   function keyCommands(name) {
     const key = KEYS[name];
     if (!key) throw new Error(`Unsupported CDP key: ${name}`);
+    const down = { ...key };
+    if (name === "Backquote") {
+      // Backquote controls Godel's global command palette. Supplying printable
+      // text makes Chromium edit the focused input instead of reliably
+      // delivering the shortcut, so dispatch it as a non-text raw key.
+      delete down.text;
+      delete down.unmodifiedText;
+    }
     return [
-      ["Input.dispatchKeyEvent", { type: "keyDown", ...key }],
+      ["Input.dispatchKeyEvent", { type: name === "Backquote" ? "rawKeyDown" : "keyDown", ...down }],
       ["Input.dispatchKeyEvent", { type: "keyUp", key: key.key, code: key.code, windowsVirtualKeyCode: key.windowsVirtualKeyCode }]
     ];
   }

@@ -32,9 +32,9 @@ You do not need to click Godel's command field. Keep the Godel tab visible and s
 
 | Option | What it does | Recommended choice |
 |---|---|---|
-| OpenAI Realtime | Microphone, transcription, understanding, continuous conversation, tool calls, and Jarvis voice | `gpt-realtime-2.1` |
-| OpenAI Realtime Mini | Cheaper Realtime option; less reliable for complex requests | `gpt-realtime-2.1-mini` |
-| VoiceInk + intent model | VoiceInk transcribes; an OpenAI-compatible model understands the request | GPT-OSS-120B through Cerebras |
+| OpenAI Realtime Mini | Low-latency microphone and Jarvis voice; validated local code performs every Godel action | `gpt-realtime-2.1-mini` |
+| OpenAI Realtime | Higher-quality audio option; unnecessary for most Godel commands because it does not plan actions | `gpt-realtime-2.1` |
+| Intent model | Converts requests outside the instant local phrase library into validated Godel plans | GPT-OSS-120B through Cerebras |
 | Accuracy fallback | Handles requests rejected by the fast model | Gemini 3.6 Flash |
 | ElevenLabs | Optional spoken completion voice for VoiceInk mode | `eleven_flash_v2_5` |
 
@@ -42,7 +42,7 @@ VoiceInk can use any transcription model. Parakeet V2 is the tested recommendati
 
 The intent model can run through OpenRouter, Cerebras, Groq, or another OpenAI-compatible `/chat/completions` API.
 
-OpenAI Realtime is the recommended setup. It does not need VoiceInk or ElevenLabs.
+OpenAI Realtime Mini is the recommended voice setup. It does not need VoiceInk or ElevenLabs. Command accuracy comes from the same validated intent compiler in either voice mode, not from the audio model.
 
 ## Install
 
@@ -63,7 +63,7 @@ Recommended Realtime setup in `.env`:
 ```sh
 GODEL_VOICE_REALTIME_ENABLED=true
 OPENAI_API_KEY=your_openai_api_key
-GODEL_VOICE_REALTIME_MODEL=gpt-realtime-2.1
+GODEL_VOICE_REALTIME_MODEL=gpt-realtime-2.1-mini
 GODEL_VOICE_REALTIME_REASONING_EFFORT=low
 GODEL_VOICE_REALTIME_VOICE=cedar
 GODEL_VOICE_REALTIME_VAD_EAGERNESS=low

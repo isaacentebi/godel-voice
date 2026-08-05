@@ -103,7 +103,7 @@ Examples:
 
 Supported placements are left, right, top, bottom, all four corners, and full screen. Presets are research, market, comparison, options, grid, and focus. The preset arranges windows created by that request; existing windows are preserved. Rearranging every pre-existing window in one instruction is not yet implemented.
 
-When a new screen is requested, Jarvis reuses an empty Voice/Blank screen before creating another and can apply the requested name. Godel's eight-screen limit is respected. Closing an entire screen, duplicating a panel, and moving an existing panel across screens are not voice operations. The safe cross-screen fallback is to create or focus the destination screen and recreate the requested panel there.
+When a new screen is requested, Jarvis reuses an empty Voice/Blank screen before creating another and can apply the requested name. Godel's eight-screen limit is respected. Some Godel panels are singletons: when one already exists on another screen, Jarvis can temporarily borrow that exact panel for a Voice workflow and then restore its original screen, order, focus, and geometry. Arbitrary user-directed transfers such as “move this chart to the Macro screen,” closing an entire screen, and duplicating a panel are not voice operations.
 
 ## Follow-up commands
 

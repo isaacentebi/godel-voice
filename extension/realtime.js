@@ -12,8 +12,6 @@
   let generation = 0;
   let state = "ready";
   let sessionCost = 0;
-  let toolWatchdog = null;
-  let toolTurn = 0;
   let responseTimer = null;
   let speechActive = false;
   let speechStartedAt = 0;
@@ -24,7 +22,6 @@
   let wantsActive = false;
   let reconnectTimer = null;
   let reconnectAttempts = 0;
-  const handledCalls = new Set();
   const recentAssistantAudits = new Map();
   const TURN_GRACE_MS = 325;
   const MAX_RECONNECT_ATTEMPTS = 3;
@@ -64,23 +61,6 @@
     speaking: ["Jarvis", "Speaking · interrupt anytime"],
     error: ["Jarvis unavailable", "Click to try again"]
   };
-
-  async function readGodelContext(timeoutMs = 250) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const response = await api("/context", { signal: controller.signal });
-      const value = await response.json();
-      const context = value?.context;
-      if (!context || typeof context !== "object") return null;
-      return {
-        focused_panel: context.focused_panel ?? null,
-        last_panel: context.last_panel ?? null,
-        panels: Array.isArray(context.panels) ? context.panels.slice(0, 12) : []
-      };
-    } catch { return null; }
-    finally { clearTimeout(timer); }
-  }
 
   function render(next, message = null) {
     state = next;
@@ -156,11 +136,6 @@
     });
   }
 
-  function clearToolWatchdog() {
-    if (toolWatchdog) clearTimeout(toolWatchdog);
-    toolWatchdog = null;
-  }
-
   function clearResponseTimer() {
     if (responseTimer) clearTimeout(responseTimer);
     responseTimer = null;
@@ -169,112 +144,6 @@
   function clearReconnectTimer() {
     if (reconnectTimer) clearTimeout(reconnectTimer);
     reconnectTimer = null;
-  }
-
-  function armToolWatchdog(runGeneration) {
-    clearToolWatchdog();
-    const turn = ++toolTurn;
-    toolWatchdog = setTimeout(() => {
-      if (runGeneration !== generation || turn !== toolTurn || channel?.readyState !== "open") return;
-      toolWatchdog = null;
-      try { send({ type: "response.cancel" }); } catch {}
-      try {
-        send({
-          type: "response.create",
-          response: {
-            instructions: "Say exactly: I couldn't start that Godel request. Please say it again.",
-            tools: [], tool_choice: "none", max_output_tokens: 40
-          }
-        });
-      } catch {}
-      audit("client_error", `tool-watchdog-${turn}`, { text: "No Godel tool call was emitted within 12 seconds" });
-      render("error", "No Godel action started · say it again");
-    }, 12_000);
-  }
-
-  async function runTool(item, runGeneration) {
-    if (handledCalls.has(item.call_id)) return;
-    handledCalls.add(item.call_id);
-    clearToolWatchdog();
-    let output;
-    try {
-      const args = JSON.parse(item.arguments);
-      if (!args || typeof args !== "object" || typeof args.original_request !== "string"
-          || !args.original_request.trim() || args.original_request.length > 1_000) {
-        throw new Error("Jarvis supplied an invalid Godel workflow");
-      }
-      render("working");
-      const response = await api("/realtime/request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, call_id: item.call_id, workflow: args })
-      });
-      const request = await response.json();
-      if (runGeneration !== generation) return;
-      if (request.kind === "execute") {
-        const completed = await waitForWorkflow(request.id);
-        // Context is useful for follow-up pronouns, but it must never hold up
-        // the verified completion response. The executor publishes the same
-        // context asynchronously after every successful workflow.
-        const godelContext = await readGodelContext(250);
-        output = {
-          status: completed.status,
-          message: String(completed.message ?? "").slice(0, 600),
-          duration_ms: Math.max(0, Number(completed.durationMs) || 0),
-          ...(godelContext ? { godel_context: godelContext } : {})
-        };
-        audit("tool_result", `${item.call_id}-result`, {
-          status: output.status, text: output.message, duration_ms: output.duration_ms
-        });
-      } else {
-        output = { status: request.kind, message: String(request.message ?? "").slice(0, 600) };
-        audit("tool_result", `${item.call_id}-result`, { status: output.status, text: output.message });
-      }
-    } catch (error) {
-      output = { status: "failed", message: String(error?.message ?? "Godel request failed").slice(0, 300) };
-      audit("tool_result", `${item.call_id}-result`, { status: output.status, text: output.message });
-    }
-    if (runGeneration !== generation || channel?.readyState !== "open") return;
-    send({
-      type: "conversation.item.create",
-      item: { type: "function_call_output", call_id: item.call_id, output: JSON.stringify(output) }
-    });
-    // If Isaac has already started a correction or follow-up, do not speak a
-    // stale completion over him. The verified output remains in conversation
-    // state and the new turn can use it immediately.
-    if (speechActive) {
-      render("listening", "I hear you");
-      return;
-    }
-    send({
-      type: "response.create",
-      response: {
-        tools: [], tool_choice: "none", max_output_tokens: 64,
-        instructions: "Respond only from the verified function output. Speak immediately and use at most twelve words. Never say work is rendering or pending. On completion, say what changed. If status is conversation, respond naturally. On failure, give only the plain-language reason."
-      }
-    });
-    render("thinking", "Preparing the grounded response");
-  }
-
-  function dispatchTool(item, runGeneration) {
-    if (!item?.call_id || handledCalls.has(item.call_id)) return;
-    const workflow = runTool(item, runGeneration);
-    activeWorkflow = workflow;
-    workflow.finally(() => {
-      if (activeWorkflow === workflow) activeWorkflow = null;
-    });
-  }
-
-  function handleSilentTurn(item, runGeneration) {
-    if (!item?.call_id || handledCalls.has(item.call_id)) return;
-    handledCalls.add(item.call_id);
-    clearToolWatchdog();
-    if (runGeneration !== generation || channel?.readyState !== "open") return;
-    send({
-      type: "conversation.item.create",
-      item: { type: "function_call_output", call_id: item.call_id, output: JSON.stringify({ status: "waiting" }) }
-    });
-    render("listening", "Ready when you are");
   }
 
   function createGroundedResponse(output) {
@@ -328,13 +197,6 @@
     }
   }
 
-  function requestModelResponse(runGeneration) {
-    if (runGeneration !== generation || channel?.readyState !== "open") return;
-    send({ type: "response.create" });
-    render("thinking", "Understanding your request");
-    armToolWatchdog(runGeneration);
-  }
-
   async function routeTranscript(transcript, turnId, runGeneration) {
     if (activeWorkflow) await activeWorkflow.catch(() => {});
     if (runGeneration !== generation || channel?.readyState !== "open") return;
@@ -357,7 +219,7 @@
         finally { activeWorkflow = null; }
         return;
       }
-      if (request.kind === "conversation") {
+      if (["conversation", "clarify", "unsupported", "failed", "busy"].includes(request.kind)) {
         createConversationResponse(request.message);
         return;
       }
@@ -368,7 +230,7 @@
     } catch (error) {
       audit("client_error", `${turnId}-preflight-error`, { text: String(error?.message ?? error).slice(0, 240) });
     }
-    requestModelResponse(runGeneration);
+    createConversationResponse("I couldn't reach the local Godel planner. Please try that once more.");
   }
 
   function scheduleTranscript(transcript, turnId, runGeneration) {
@@ -418,7 +280,6 @@
       render("thinking");
     }
     else if (event.type === "output_audio_buffer.started") {
-      clearToolWatchdog();
       if (transcriptCompletedAt) audit("turn_timing", `${event.event_id ?? `audio-${Date.now()}`}-response`, {
         status: "response_audio_after_transcript", duration_ms: Date.now() - transcriptCompletedAt
       });
@@ -444,15 +305,7 @@
       audit("client_error", event.event_id ?? `${event.item_id}-transcription-failed`, { text: "Input transcription failed" });
       pendingTranscript = [];
       clearResponseTimer();
-      requestModelResponse(runGeneration);
-    }
-    if (event.type === "response.output_item.done") {
-      const item = event.item;
-      if (item?.type === "function_call" && item.name === "run_godel_workflow" && item.status === "completed") {
-        dispatchTool(item, runGeneration);
-      } else if (item?.type === "function_call" && item.name === "wait_for_user" && item.status === "completed") {
-        handleSilentTurn(item, runGeneration);
-      }
+      render("error", "I couldn't transcribe that · please say it again");
     }
     if (event.type === "response.done") {
       recordUsage(event);
@@ -461,11 +314,6 @@
           .map(part => part?.transcript ?? part?.text ?? "").join(" ").trim();
         if (groundedTranscript) {
           auditAssistantTranscript(`${event.response?.id ?? item.id}-assistant`, groundedTranscript);
-        }
-        if (item?.type === "function_call" && item.name === "run_godel_workflow" && item.status === "completed") {
-          dispatchTool(item, runGeneration);
-        } else if (item?.type === "function_call" && item.name === "wait_for_user" && item.status === "completed") {
-          handleSilentTurn(item, runGeneration);
         }
       }
     }
@@ -551,7 +399,6 @@
     const preserveMicrophone = options.preserveMicrophone === true;
     const preserveIntent = options.preserveIntent === true;
     generation += 1;
-    clearToolWatchdog();
     clearResponseTimer();
     if (!preserveIntent) clearReconnectTimer();
     speechActive = false;
@@ -573,11 +420,10 @@
     peer = null;
     if (audio) { audio.srcObject = null; audio.remove(); }
     audio = null;
-    handledCalls.clear();
     if (closingSession) api("/realtime/close", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: closingSession, reason })
     }).catch(() => {});
-    if (reason === "manual_toggle" && !preserveIntent) {
+    if (!preserveIntent && reason !== "pagehide") {
       window.dispatchEvent(new CustomEvent("godel-voice:cleanup-request"));
     }
     render(nextState, message);

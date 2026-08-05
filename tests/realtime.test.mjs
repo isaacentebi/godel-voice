@@ -123,16 +123,18 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
   assert.match(upstream.options.headers["OpenAI-Safety-Identifier"], /^[a-f0-9]{64}$/);
   assert.equal(JSON.stringify([...upstream.options.body]).includes("private-openai-key"), false);
   const upstreamSession = String([...upstream.options.body].find(([key]) => key === "session")?.[1]);
-  assert.match(upstreamSession, /run_godel_workflow/);
+  assert.match(upstreamSession, /low-latency audio layer/);
   assert.match(upstreamSession, /Jarvis/);
-  assert.match(upstreamSession, /\"effort\":\"low\"/);
-  assert.match(upstreamSession, /\"tool_choice\":\"auto\"/);
+  assert.match(upstreamSession, /\"model\":\"gpt-realtime-2\.1-mini\"/);
+  assert.doesNotMatch(upstreamSession, /\"reasoning\"/);
+  assert.match(upstreamSession, /\"tools\":\[\]/);
+  assert.match(upstreamSession, /\"tool_choice\":\"none\"/);
   assert.match(upstreamSession, /\"eagerness\":\"low\"/);
   assert.match(upstreamSession, /\"item\.input_audio_transcription\.logprobs\"/);
   assert.match(upstreamSession, /\"noise_reduction\":\{\"type\":\"far_field\"\}/);
   assert.match(upstreamSession, /\"create_response\":false/);
   assert.match(upstreamSession, /\"gpt-4o-transcribe\"/);
-  assert.match(upstreamSession, /\"wait_for_user\"/);
+  assert.doesNotMatch(upstreamSession, /run_godel_workflow|wait_for_user/);
 
   const tool = await fetch(`${base}/realtime/request`, {
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
@@ -189,7 +191,10 @@ test("Realtime deterministic preflight executes common commands without a model 
   const server = createHandoffServer({
     secret, store, port: 0, realtimeEnabled: true, openaiApiKey: "private-openai-key",
     realtimeAuditEnabled: false, clock,
-    realtimeFetch: async () => new Response(answer, { status: 200, headers: { "Content-Type": "application/sdp" } })
+    realtimeFetch: async () => new Response(answer, { status: 200, headers: { "Content-Type": "application/sdp" } }),
+    realtimeNaturalCompiler: async requestText => requestText.includes("what should")
+      ? { kind: "clarify", message: "Do you want a market, company, or research view?" }
+      : { kind: "unsupported", message: "That is not a Godel request." }
   });
   const address = await server.listen();
   t.after(() => server.close());
@@ -226,6 +231,11 @@ test("Realtime deterministic preflight executes common commands without a model 
   })).json();
   assert.equal(repeated.kind, "execute");
   assert.notEqual(repeated.id, first.id);
+  const repeatedLease = await (await fetch(`${base}/next?client=arc-preflight`, { headers: auth })).json();
+  await fetch(`${base}/ack`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ id: repeatedLease.id, client_id: "arc-preflight", status: "completed", message: "Heatmap opened." })
+  });
 
   const checkIn = await (await fetch(`${base}/realtime/preflight`, {
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
@@ -237,7 +247,7 @@ test("Realtime deterministic preflight executes common commands without a model 
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
     body: JSON.stringify({ session_id: sessionId, turn_id: "turn-2", transcript: "what should I look at next?" })
   })).json();
-  assert.deepEqual(ambiguous, { kind: "model" });
+  assert.deepEqual(ambiguous, { kind: "clarify", message: "Do you want a market, company, or research view?" });
 
   const ambient = await (await fetch(`${base}/realtime/preflight`, {
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
@@ -249,7 +259,7 @@ test("Realtime deterministic preflight executes common commands without a model 
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
     body: JSON.stringify({ session_id: sessionId, turn_id: "turn-addressed", transcript: "Jarvis, society is falling" })
   })).json();
-  assert.deepEqual(addressed, { kind: "model" });
+  assert.deepEqual(addressed, { kind: "unsupported", message: "That is not a Godel request." });
 });
 
 test("Realtime browser surface contains no provider credential and has bounded teardown", () => {
@@ -259,27 +269,25 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.equal(source.includes("sk-proj-"), false);
   assert.match(source, /getUserMedia/);
   assert.match(source, /track\.stop\(\)/);
-  assert.match(source, /run_godel_workflow/);
+  assert.doesNotMatch(source, /run_godel_workflow/);
   assert.doesNotMatch(source, /Jarvis online/);
   assert.match(source, /Ready when you are/);
   assert.match(source, /transcriptionConfidence/);
   assert.match(source, /request\.kind === "ignore"/);
   assert.match(source, /response_audio_after_transcript/);
   assert.match(source, /transcription_after_stop/);
-  assert.match(source, /function_call_output/);
   assert.match(source, /tool_choice: "none"/);
-  assert.match(source, /12_000/);
+  assert.doesNotMatch(source, /toolWatchdog|armToolWatchdog/);
   assert.match(source, /user_transcript/);
   assert.match(source, /tool_result/);
-  assert.match(source, /godel_context/);
   assert.match(source, /track\.enabled = enabled/);
   assert.match(source, /\/realtime\/preflight/);
   assert.match(source, /TURN_GRACE_MS = 325/);
-  assert.match(source, /wait_for_user/);
+  assert.doesNotMatch(source, /wait_for_user/);
   assert.match(source, /auditAssistantTranscript/);
   assert.match(source, /createConversationResponse/);
   assert.doesNotMatch(source, /event\.key === "Escape"/);
-  assert.match(source, /status is conversation/);
+  assert.match(source, /"clarify", "unsupported", "failed", "busy"/);
   assert.match(source, /MAX_RECONNECT_ATTEMPTS = 3/);
   assert.match(source, /scheduleReconnect/);
   assert.match(source, /preserveMicrophone: true/);

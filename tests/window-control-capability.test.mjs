@@ -37,6 +37,9 @@ test("maximize, restore, focus, and close prove native postconditions", () => {
   assert.match(bridge, /workspace\.setActiveWindowId\(id\)/);
   assert.match(bridge, /String\(screen\?\.activeWindowId\) === String\(id\)/);
   assert.match(bridge, /!windowRoot\.isConnected/);
+  assert.match(bridge, /absentFromLayout/);
+  assert.match(bridge, /closed window and layout settled/);
+  assert.match(bridge, /workspaceContextFor\(document\.documentElement\)\.layout/);
 });
 
 test("close is exact, panel-scoped, and rejects consequential families", () => {
@@ -47,8 +50,18 @@ test("close is exact, panel-scoped, and rejects consequential families", () => {
   assert.doesNotMatch(executor, /window\.close\s*\(/);
 });
 
-test("cross-screen transfer and screen close remain explicitly unsupported", () => {
+test("arbitrary cross-screen commands stay unsupported while internal singleton borrowing is transactional", () => {
   assert.equal(capability.controls.find(control => control.id === "window.move_between_screens").status, "unsupported");
   assert.equal(capability.controls.find(control => control.id === "screen.close").status, "unsupported");
-  assert.doesNotMatch(bridge, /moveWindowToScreen/);
+  assert.match(bridge, /action === "moveWindowToScreen"/);
+  assert.match(bridge, /action === "restoreWindowLocation"/);
+  assert.match(bridge, /source_screen_id: String\(source\.id\)/);
+  assert.match(bridge, /source_index: source\.windowIds\.findIndex/);
+  assert.match(bridge, /source_active_window_id:/);
+  assert.match(bridge, /position: Object\.fromEntries/);
+  assert.match(bridge, /This Godel window cannot be temporarily moved by voice/);
+  assert.match(bridge, /Godel borrowed window state changed/);
+  assert.match(executor, /godel-voice-borrowed-windows-v1/);
+  assert.match(executor, /restoreBorrowedWindows/);
+  assert.match(executor, /if \(borrowedWindowReceipts\.has\(id\)\) continue/);
 });
