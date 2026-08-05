@@ -116,7 +116,23 @@ test("manual Jarvis shutdown empties the owned Voice workspace and preserves ses
   assert.match(content, /while \(running\) await pause\(100\)/);
   assert.match(content, /createdBefore: event\.detail\?\.stopped_at/);
   assert.match(content, /requestId: event\.detail\?\.workflow_id/);
-  assert.match(content, /await executeDurableWorkspaceReset\(\{ requestId, createdBefore \}\)/);
+  assert.match(content, /await executeDurableWorkspaceReset\(\{ requestId, createdBefore, recoveryAdoptionAuthorized \}\)/);
+});
+
+test("startup cleanup adopts only the dedicated Voice screen when explicitly configured", () => {
+  const example = fs.readFileSync(new URL("../extension/config.local.example.js", import.meta.url), "utf8");
+  const setup = fs.readFileSync(new URL("../bin/setup-local", import.meta.url), "utf8");
+  assert.match(example, /cleanupVoiceOnStart: true/);
+  assert.match(setup, /cleanupVoiceOnStart: true/);
+  assert.match(content, /config\.cleanupVoiceOnStart === true/);
+  assert.match(content, /recoveryAdoptionAuthorized: true/);
+  assert.match(content, /requestId: `startup-\$\{documentGeneration\}`/);
+  assert.match(content, /await executeDurableWorkspaceReset\(\{ requestId, createdBefore, recoveryAdoptionAuthorized \}\)/);
+  assert.match(content, /waitForWorkspaceReady: true/);
+  assert.match(content, /await waitFor\(\(\) => topCommandInput\(\), "Godel startup command bar", 15_000\)/);
+  assert.match(content, /options\.recoveryAdoptionAuthorized === true && options\.freshSweep !== false/);
+  assert.match(content, /freshSweep: false/);
+  assert.doesNotMatch(content, /Godel Voice startup (cleanup armed|workspace ready|reset running|reset complete)/);
 });
 
 test("manual shutdown keeps exact same-document receipts for layout-store orphan panels", () => {
@@ -206,7 +222,10 @@ test("Voice workspace cleanup atomically prunes stale Jarvis layout records", ()
   assert.match(bridge, /consequentialWindowType/);
   assert.match(content, /workspaceInternalAction\("clearVoiceScreen"/);
   assert.match(content, /preserve_ids: \[\.\.\.borrowedWindowReceipts\.keys\(\)\]/);
+  assert.match(content, /const verifiedSnapshotIds = snapshotIds \? windowRoots\(\)\.flatMap/);
+  assert.match(content, /!panelMatchesCommand\(panel, command\)/);
   assert.match(content, /only_ids: \[\.\.\.\(snapshotIds \?\? ownedIds\)\]/);
+  assert.match(bridge, /catch \{ if \(!verifiedSafeIds\.has\(rawId\)\) blockedIds\.add\(rawId\); \}/);
   assert.match(content, /function pendingCleanupReceipts\(requestId = null, createdBefore = null\)/);
   assert.match(content, /attempt < 5/);
   assert.match(content, /await pause\(100 \* \(2 \*\* attempt\)\)/);
@@ -238,7 +257,7 @@ test("workspace reset is a crash-safe write-ahead transaction", () => {
   assert.ok(execute.indexOf("beginPendingWorkspaceReset(options)")
     < execute.indexOf('workspaceInternalAction("focusScreen"'),
   "write-ahead setup must precede Godel focus mutation");
-  assert.match(content, /if \(pendingWorkspaceReset\) queueVoiceCleanup\(jarvisSessionEpoch, \{ closeAll: true \}\)/);
+  assert.match(content, /if \(pendingWorkspaceReset\) queueVoiceCleanup\(jarvisSessionEpoch, \{[\s\S]{0,120}closeAll: true,[\s\S]{0,120}recoveryAdoptionAuthorized: config\.cleanupVoiceOnStart === true,[\s\S]{0,120}waitForWorkspaceReady: true/);
 });
 
 test("pending reset clears only after exact authoritative inventory verification", () => {
@@ -263,20 +282,20 @@ test("workspace reset preserves explicitly blocked user windows without becoming
   assert.doesNotMatch(verify, /target_window_ids\.every\(id => !remainingOnScreen/);
 });
 
-test("an explicit reset drains an inherited snapshot before capturing current Voice state", () => {
-  assert.match(content, /const inheritedSnapshot = pendingWorkspaceReset\?\.version === 2/);
-  assert.match(content, /options\.recoveryAdoptionAuthorized === true && inheritedSnapshot/);
-  assert.match(content, /await executeDurableWorkspaceReset\(\{ \.\.\.options, recoveryAdoptionAuthorized: true \}\)/);
+test("an authorized reset performs one bounded fresh sweep of current Voice state", () => {
+  assert.match(content, /options\.recoveryAdoptionAuthorized === true && options\.freshSweep !== false/);
+  assert.match(content, /freshSweep: false/);
+  assert.match(content, /const current = await executeDurableWorkspaceReset/);
 });
 
-test("automatic recovery never adopts a nonempty unowned Voice screen", () => {
+test("automatic recovery adopts a nonempty Voice screen only under the explicit local cleanup policy", () => {
   assert.match(content, /Owned Voice workspace is unavailable; cleanup was not verified/);
   assert.match(content, /if \(!reset\.recovery_adoption_authorized\) \{\s*throw new Error\("Automatic Voice recovery cannot adopt an unowned screen"\)/);
   assert.match(content, /An unowned nonempty Voice screen already exists; refusing to create a duplicate/);
   assert.match(content, /existingVoice\.window_ids\.length === 0/);
   assert.match(content, /reset_workspace[\s\S]{0,180}recoveryAdoptionAuthorized: true/);
-  assert.match(content, /executeDurableWorkspaceReset\(\{ requestId, createdBefore \}\)/);
-  assert.doesNotMatch(content, /executeDurableWorkspaceReset\(\{ requestId, createdBefore, recoveryAdoptionAuthorized: true/);
+  assert.match(content, /executeDurableWorkspaceReset\(\{ requestId, createdBefore, recoveryAdoptionAuthorized \}\)/);
+  assert.match(content, /else if \(config\.cleanupVoiceOnStart === true\)[\s\S]{0,300}recoveryAdoptionAuthorized: true/);
 });
 
 test("ordinary workflow recovery never abandons managed panels when Voice was renamed or removed", () => {

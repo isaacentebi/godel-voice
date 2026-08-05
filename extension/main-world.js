@@ -1217,7 +1217,7 @@
         const nativeRoot = document.getElementById(`${rawId}-window`);
         if (nativeRoot instanceof HTMLElement) {
           try { if (consequentialWindowType(commandTypeFor(nativeRoot))) blockedIds.add(rawId); }
-          catch { blockedIds.add(rawId); }
+          catch { if (!verifiedSafeIds.has(rawId)) blockedIds.add(rawId); }
         } else if (!verifiedSafeIds.has(rawId)) blockedIds.add(rawId);
       }
       const removeIds = new Set(voice.windowIds.map(String).filter(id =>

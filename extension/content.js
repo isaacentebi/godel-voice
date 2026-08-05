@@ -380,8 +380,6 @@
   }
 
   async function executeDurableWorkspaceReset(options = {}) {
-    const inheritedSnapshot = pendingWorkspaceReset?.version === 2
-      && Array.isArray(pendingWorkspaceReset.target_window_ids);
     const reset = await beginPendingWorkspaceReset(options);
     if (!reset) return { skipped: true, verified: true };
     const inventory = await workspaceInternalAction("workspaceInventory");
@@ -414,11 +412,18 @@
     }
     pendingWorkspaceReset = null;
     persistPendingWorkspaceReset();
-    if (options.recoveryAdoptionAuthorized === true && inheritedSnapshot) {
-      // Finishing a crash-safe transaction proves only its original mutation
-      // boundary. A later explicit “close everything” authorizes a fresh
-      // snapshot too, so drain the WAL first and then reset current Voice state.
-      const current = await executeDurableWorkspaceReset({ ...options, recoveryAdoptionAuthorized: true });
+    if (options.recoveryAdoptionAuthorized === true && options.freshSweep !== false) {
+      // A recovery transaction proves only the mutation boundary captured at
+      // its start. Restoring a borrowed singleton can change current Voice
+      // membership while that boundary is being drained, so perform exactly
+      // one new authoritative snapshot before reporting the workspace clean.
+      // The guard keeps this bounded; a second pass over an already-clean
+      // screen is harmless and still preserves consequential user windows.
+      const current = await executeDurableWorkspaceReset({
+        ...options,
+        recoveryAdoptionAuthorized: true,
+        freshSweep: false
+      });
       return {
         ...current,
         removed_ids: [...new Set([...(cleanup?.removed_ids ?? []), ...(current?.removed_ids ?? [])])],
@@ -830,10 +835,19 @@
     // This prevents unbounded buildup without treating screen membership as
     // permission to delete an ordinary Godel window.
     const cleanupSnapshot = await ensureVoiceScreen();
-    const verifiedSafeIds = [...managedWindowReceipts]
+    const verifiedSnapshotIds = snapshotIds ? windowRoots().flatMap(panel => {
+      const id = String(windowId(panel) ?? "");
+      if (!snapshotIds.has(id)) return [];
+      const command = contextPanel(panel)?.command ?? null;
+      if (!command || !Object.prototype.hasOwnProperty.call(PANEL_TITLES, command)
+          || /CHAT|NOTE|ACCOUNT|BROK|ORDER|TRADE|MESSAGE|ALERT/.test(command)
+          || !panelMatchesCommand(panel, command)) return [];
+      return [id];
+    }) : [];
+    const verifiedSafeIds = [...new Set([...managedWindowReceipts]
       .filter(([id, receipt]) => !rejectedNativeIds.has(String(id)) && receipt?.command
         && !/CHAT|NOTE|ACCOUNT|BROK|ORDER|TRADE|MESSAGE|ALERT/.test(receipt.command))
-      .map(([id]) => String(id));
+      .map(([id]) => String(id)).concat(verifiedSnapshotIds))];
     const cleanup = await workspaceInternalAction("clearVoiceScreen", {
       screen_id: cleanupSnapshot.receipt.screen_id,
       expected_window_ids: cleanupSnapshot.screen.window_ids.map(String),
@@ -4209,8 +4223,14 @@
       || (requested && (receipt.request_id === requested || receipt.request_id?.startsWith(`${requested}.`)));
     return [...managedWindowReceipts.values(), ...managedDomReceipts.values()].some(matches);
   }
-  function queueVoiceCleanup(requestedEpoch, { closeAll = false, requestId = null, createdBefore = null } = {}) {
+  function queueVoiceCleanup(requestedEpoch, { closeAll = false, requestId = null, createdBefore = null,
+    recoveryAdoptionAuthorized = false, waitForWorkspaceReady = false } = {}) {
     lifecycleCleanup = lifecycleCleanup.then(async () => {
+      if (waitForWorkspaceReady) {
+        await executorIdentityReady;
+        await mainWorldReady;
+        await waitFor(() => topCommandInput(), "Godel startup command bar", 15_000);
+      }
       // Keep one unresolved barrier while the accepted workflow finishes.
       // The executor poll awaits this promise, so no new workflow can lease in
       // the gap between Stop and cleanup.
@@ -4220,7 +4240,7 @@
         let lastCleanupError = null;
         for (let attempt = 0; attempt < 5; attempt += 1) {
           try {
-            await executeDurableWorkspaceReset({ requestId, createdBefore });
+            await executeDurableWorkspaceReset({ requestId, createdBefore, recoveryAdoptionAuthorized });
             lastCleanupError = null;
           } catch (error) { lastCleanupError = error; }
           if (!pendingWorkspaceReset && !pendingCleanupReceipts(requestId, createdBefore)
@@ -4285,9 +4305,24 @@
     abortNextRequest();
   }, { once: true });
   // A content-script reload must resume an interrupted reset before /next can
-  // lease new work. The persisted record carries the exact screen boundary;
-  // this path never authorizes adoption of a merely title-matching screen.
-  if (pendingWorkspaceReset) queueVoiceCleanup(jarvisSessionEpoch, { closeAll: true });
+  // lease new work. With the explicit local cleanup policy enabled, startup
+  // also adopts the one dedicated Voice screen and removes every safe panel
+  // left by a crashed/reloaded session. Consequential user windows remain
+  // protected by closeVoiceScreenPanels' classifier.
+  if (pendingWorkspaceReset) queueVoiceCleanup(jarvisSessionEpoch, {
+    closeAll: true,
+    recoveryAdoptionAuthorized: config.cleanupVoiceOnStart === true,
+    waitForWorkspaceReady: true
+  });
+  else if (config.cleanupVoiceOnStart === true) {
+    queueVoiceCleanup(jarvisSessionEpoch, {
+      closeAll: true,
+      requestId: `startup-${documentGeneration}`,
+      createdBefore: Date.now(),
+      recoveryAdoptionAuthorized: true,
+      waitForWorkspaceReady: true
+    });
+  }
   runNextLoop();
   publishExecutorContext().catch(() => {});
 })();

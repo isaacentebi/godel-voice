@@ -17,7 +17,8 @@ fi
   'globalThis.GodelVoiceConfig = {' \
   '  handoffUrl: "http://127.0.0.1:17841",' \
   "  secret: \"$secret\"," \
-  '  spokenFeedback: true' \
+  '  spokenFeedback: true,' \
+  '  cleanupVoiceOnStart: true' \
   '};' > "$config_file"
 /bin/chmod 600 "$secret_file" "$config_file"
 [[ ! -f "$project_dir/.env" ]] || /bin/chmod 600 "$project_dir/.env"
