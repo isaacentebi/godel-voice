@@ -52,9 +52,11 @@
     error: ["Jarvis unavailable", "Click to try again"]
   };
 
-  async function readGodelContext() {
+  async function readGodelContext(timeoutMs = 250) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await api("/context");
+      const response = await api("/context", { signal: controller.signal });
       const value = await response.json();
       const context = value?.context;
       if (!context || typeof context !== "object") return null;
@@ -64,6 +66,7 @@
         panels: Array.isArray(context.panels) ? context.panels.slice(0, 12) : []
       };
     } catch { return null; }
+    finally { clearTimeout(timer); }
   }
 
   function render(next, message = null) {
@@ -166,7 +169,10 @@
       if (runGeneration !== generation) return;
       if (request.kind === "execute") {
         const completed = await waitForWorkflow(request.id);
-        const godelContext = await readGodelContext();
+        // Context is useful for follow-up pronouns, but it must never hold up
+        // the verified completion response. The executor publishes the same
+        // context asynchronously after every successful workflow.
+        const godelContext = await readGodelContext(250);
         output = {
           status: completed.status,
           message: String(completed.message ?? "").slice(0, 600),
@@ -192,8 +198,8 @@
     send({
       type: "response.create",
       response: {
-        tools: [], tool_choice: "none", max_output_tokens: 180,
-        instructions: "Respond only from the verified function output. Be concise. Never say work is still rendering or pending. If status is completed, say what changed and where. If status is conversation, respond naturally from the message without claiming an action failed. If status is failed, say it did not complete and give the plain-language reason."
+        tools: [], tool_choice: "none", max_output_tokens: 64,
+        instructions: "Respond only from the verified function output. Speak immediately and use at most twelve words. Never say work is rendering or pending. On completion, say what changed. If status is conversation, respond naturally. On failure, give only the plain-language reason."
       }
     });
     render("thinking", "Preparing the grounded response");

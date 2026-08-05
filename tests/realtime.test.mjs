@@ -112,7 +112,7 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
   assert.match(upstreamSession, /Jarvis/);
   assert.match(upstreamSession, /\"effort\":\"low\"/);
   assert.match(upstreamSession, /\"tool_choice\":\"auto\"/);
-  assert.match(upstreamSession, /\"eagerness\":\"low\"/);
+  assert.match(upstreamSession, /\"eagerness\":\"auto\"/);
 
   const tool = await fetch(`${base}/realtime/request`, {
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },

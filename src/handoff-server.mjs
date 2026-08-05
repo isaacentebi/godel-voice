@@ -406,6 +406,7 @@ function sanitizeExecutorContext(value, updatedAt = Date.now(), previousResearch
 }
 
 function sanitizeStepTimings(value) {
+  const phaseNames = ["command_bar_ms", "security_resolution_ms", "command_submit_ms", "panel_detection_ms", "nested_actions_ms", "total_ms"];
   if (!Array.isArray(value)) return [];
   return value.slice(0, 16).map((item, index) => {
     const kind = ["command", "control", "configure"].includes(item?.kind) ? item.kind : "command";
@@ -419,6 +420,12 @@ function sanitizeStepTimings(value) {
     };
     if (kind === "command" || kind === "configure") safe.command = String(item?.command ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
     if (kind === "control" || kind === "configure") safe.operation = String(item?.operation ?? "").toLowerCase().replace(/[^a-z]/g, "").slice(0, 16);
+    if (item?.phases && typeof item.phases === "object") {
+      safe.phases = Object.fromEntries(phaseNames
+        .filter(name => Number.isFinite(item.phases[name]))
+        .map(name => [name, Math.max(0, Math.round(item.phases[name]))]));
+      if (!Object.keys(safe.phases).length) delete safe.phases;
+    }
     if (status !== "completed") safe.error = safeError(item?.error);
     return safe;
   });
@@ -525,7 +532,7 @@ export function createHandoffServer({
     audio: {
       input: {
         ...(realtimeAuditEnabled ? { transcription: { model: "gpt-4o-mini-transcribe", language: "en" } } : {}),
-        turn_detection: { type: "semantic_vad", eagerness: "low", create_response: true, interrupt_response: true }
+        turn_detection: { type: "semantic_vad", eagerness: "auto", create_response: true, interrupt_response: true }
       },
       output: { voice: realtimeVoice }
     },

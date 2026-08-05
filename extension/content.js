@@ -70,6 +70,7 @@
   const commandWindows = new Map();
   const commandPanels = new Map();
   const panelMetadata = new WeakMap();
+  const panelCommandTimings = new WeakMap();
   let lastContextDigest = "";
   let lastContextPublishAt = 0;
   let startSpeechTimer = null;
@@ -1857,6 +1858,11 @@
   }
 
   async function executeCommandPlan(plan, { capturePanel = false, announce = true } = {}) {
+    const commandStartedAt = performance.now();
+    const phases = {};
+    const markPhase = (name, startedAt) => {
+      phases[name] = Math.max(0, Math.round(performance.now() - startedAt));
+    };
     if (plan.command === "EQS" && (plan.actions ?? []).length) {
       const existingEQS = [...new Set([
         ...windowRoots().filter(root => panelMatchesCommand(root, "EQS")),
@@ -1880,18 +1886,25 @@
     const hadCommandPanel = Boolean(windowForCommand(plan.command) ?? topPanelForCommand(plan.command));
     if (announce) toast(`Godel Voice: opening ${plan.command}`);
 
+    let phaseStartedAt = performance.now();
     const input = await openCommandBar();
+    markPhase("command_bar_ms", phaseStartedAt);
     let terminalCommand = plan.terminal_command;
     if (!terminalCommand) {
+      phaseStartedAt = performance.now();
       const securityPrefix = await resolveSecurityInGodel(input, plan.security_query);
       terminalCommand = [securityPrefix, plan.command, ...plan.arguments].filter(Boolean).join(" ");
+      markPhase("security_resolution_ms", phaseStartedAt);
     }
+    phaseStartedAt = performance.now();
     const currentInput = await waitFor(topCommandInput, "resolved Godel command bar", 2000);
     await replaceText(currentInput, terminalCommand);
     await waitUntil(() => String(currentInput.value ?? "").trim() === terminalCommand,
       `Godel command bar value ${terminalCommand}`, 1000);
     await press("Enter");
+    markPhase("command_submit_ms", phaseStartedAt);
 
+    phaseStartedAt = performance.now();
     let panel = await waitFor(() => {
       const newWindow = windowRoots().find(root => !existingWindows.has(windowId(root))
         && panelMatchesCommand(root, plan.command));
@@ -1925,6 +1938,7 @@
       // would bind facts and geometry to the wrong window.
       return hadCommandPanel ? null : (activeWindowForCommand(plan.command) ?? windowForCommand(plan.command) ?? topPanelForCommand(plan.command));
     }, `new ${plan.command} panel`, 9000);
+    markPhase("panel_detection_ms", phaseStartedAt);
     if (plan.command === "GF") {
       panel = await waitUntil(() => expandedGFPanel(panel), "complete GF panel", 6000);
     }
@@ -1939,6 +1953,7 @@
     }
     rememberPanel(panel, plan.command, terminalSecurity(terminalCommand));
 
+    phaseStartedAt = performance.now();
     for (const action of plan.actions ?? []) {
       if (plan.command === "GF") await executeGF(panel, action, plan, terminalCommand);
       else if (plan.command === "HMS") await executeHMS(panel, action);
@@ -1955,12 +1970,15 @@
       else if (plan.command === "TRAN") await executeTRAN(panel, action, plan);
       else if (plan.command === "N") await executeNews(panel, action);
     }
+    markPhase("nested_actions_ms", phaseStartedAt);
     // The chart shell appears before its live quote header. Wait only until
     // Godel exposes the authenticated price/change shape so conversational
     // quote requests can narrate the value instead of racing the data render.
     if (plan.command === "G") {
       await waitUntil(() => panelInsights.extractChartQuote(panel.innerText), "G live quote header", 1500).catch(() => null);
     }
+    phases.total_ms = Math.max(0, Math.round(performance.now() - commandStartedAt));
+    panelCommandTimings.set(panel, phases);
     if (announce) toast(`Godel Voice: ${plan.command} ${plan.actions.length ? "configured" : "opened"}`);
     return panel;
   }
@@ -2265,7 +2283,9 @@
         }
         timings.push({
           step_id: step.id, kind: step.kind, command: step.command ?? step.target?.command, operation: step.operation ?? (step.kind === "configure" ? "configure" : null),
-          status: "completed", duration_ms: Date.now() - stepStartedAt
+          status: "completed", duration_ms: Date.now() - stepStartedAt,
+          ...(step.kind === "command" && opened.at(-1)?.step === step && panelCommandTimings.get(opened.at(-1).panel)
+            ? { phases: panelCommandTimings.get(opened.at(-1).panel) } : {})
         });
       } catch (error) {
         failures.push({ step, error });
@@ -2448,7 +2468,14 @@
   }
 
   async function eligibleExecutor() {
+    // A focused top-level Godel document is necessarily the active tab in the
+    // focused browser window. Avoid waking the MV3 service worker on every
+    // 100 ms queue poll; that round trip was often slower than the command
+    // compiler itself and created visible start jitter.
     if (document.visibilityState !== "visible") return false;
+    if (document.hasFocus()) return true;
+    // Visibility without document focus is unusual, but retain the stricter
+    // browser-level check as a safe compatibility fallback.
     const response = await runtimeMessage({ type: "godel-voice:executor-eligibility" });
     return response?.ok === true && response.eligible === true;
   }
@@ -2527,12 +2554,24 @@
         if (leaseLost) throw leaseLost;
         let acknowledged = true;
         let acknowledgement = null;
+        // Realtime is already waiting in this page. Release its verified
+        // completion immediately; server acknowledgement is bookkeeping and
+        // must not add network latency before Jarvis can answer.
+        if (payload.realtime === true) {
+          emitCompletion({
+            id: payload.id, status: "completed", message: result.message,
+            durationMs: Date.now() - startedAt, acknowledged: true, premiumVoice: true
+          });
+          publishExecutorContext().catch(() => {});
+        }
         try { acknowledgement = await acknowledge(payload.id, "completed", startedAt, null, result.message, result.steps, payload.realtime === true); }
         catch { acknowledged = false; toast("Godel Voice completed, but status sync failed", true); }
-        emitCompletion({
-          id: payload.id, status: "completed", message: result.message, durationMs: Date.now() - startedAt, acknowledged,
-          premiumVoice: payload.realtime === true || acknowledgement?.spoken_feedback_queued === true
-        });
+        if (payload.realtime !== true) {
+          emitCompletion({
+            id: payload.id, status: "completed", message: result.message, durationMs: Date.now() - startedAt, acknowledged,
+            premiumVoice: acknowledgement?.spoken_feedback_queued === true
+          });
+        }
       } catch (error) {
         if (error instanceof ExtensionReloadError) {
           clearStartAcknowledgement(true);
@@ -2555,7 +2594,9 @@
   }
 
   setInterval(poll, 100);
-  setInterval(() => publishExecutorContext().catch(() => {}), 1_000);
+  // Context is also published immediately after Realtime work. A slower idle
+  // cadence avoids repeatedly scanning Godel's large dashboard DOM.
+  setInterval(() => publishExecutorContext().catch(() => {}), 2_500);
   poll();
   publishExecutorContext().catch(() => {});
 })();
