@@ -295,3 +295,11 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.doesNotMatch(source, /visibilityState === "hidden" && peer\) teardown/);
   assert.ok(manifest.content_scripts[0].js.includes("realtime.js"));
 });
+
+test("verified successes are spoken exactly and first-audio latency is audited separately", () => {
+  const source = fs.readFileSync(new URL("../extension/realtime.js", import.meta.url), "utf8");
+  assert.match(source, /String\(output\?\.status \?\? ""\) === "completed"/);
+  assert.match(source, /createConversationResponse\(exact, "grounded_result"\)/);
+  assert.match(source, /responseRequestKind \?\? "response"/);
+  assert.match(source, /Date\.now\(\) - responseRequestedAt/);
+});
