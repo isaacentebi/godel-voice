@@ -15,7 +15,7 @@
       "targets": ["last", "focused", "command", "command plus security"],
       "values": ["full", "left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right"],
       "native_binding": "positionManager.updateWindowPosition(windowId, rect)",
-      "completion": "The exact native panel's rendered width and height are within four pixels of the planned rectangle.",
+      "completion": "The exact native position-manager record matches the planned rectangle; Godel may finish its visual animation afterward.",
       "limits": ["Movement is within the active Godel screen only.", "Moving an existing native window to another Godel screen is unsupported."],
       "evidence": ["extension/main-world.js:632", "extension/content.js:863", "live-ui:2026-08-03"]
     },
@@ -25,7 +25,7 @@
       "voice_examples": ["make that panel bigger", "shrink the focused chart"],
       "values": ["larger", "smaller"],
       "native_binding": "positionManager.updateWindowPosition(windowId, rect)",
-      "completion": "The exact panel is scaled by 1.2 or 0.8, clamped to the workspace and minimum 280 by 190 pixels, then rendered geometry is verified.",
+      "completion": "The exact panel is scaled by 1.2 or 0.8, clamped to the workspace and minimum 280 by 190 pixels, then its native position-manager record is verified.",
       "limits": ["Bigger and smaller are proportional, not absolute pixel dimensions.", "Repeated requests become no-ops at workspace or minimum bounds."],
       "evidence": ["extension/content.js:872", "extension/main-world.js:632"]
     },
@@ -67,22 +67,33 @@
       "evidence": ["src/control-followup.mjs", "extension/main-world.js:575", "extension/content.js:857"]
     },
     {
+      "id": "window.open_another",
+      "status": "source-verified",
+      "voice_examples": ["open another one", "open another Meta chart"],
+      "targets": ["focused or last connected panel", "explicit command plus security"],
+      "values": ["EM", "QM", "MOST", "N", "G"],
+      "native_binding": "a second validated CLI command with preserve_existing=true",
+      "completion": "A newly receipted multi-instance panel opens while the contextual panel remains present.",
+      "limits": ["Only command families catalogued as multi-instance are eligible.", "EM and G require an exact security from speech or connected context.", "Live proof is still required for each command family."],
+      "evidence": ["catalog/contracts/capability-matrix.json", "src/control-followup.mjs", "extension/content.js"]
+    },
+    {
       "id": "workflow.layout",
       "status": "live-verified",
       "voice_examples": ["on a fresh screen put the heatmap left and active halts right", "open a research workspace for Meta"],
       "values": ["research", "market", "comparison", "options", "grid", "focus"],
       "native_binding": "pure layout planner followed by exact native setGeometry actions",
       "completion": "Every new panel receives an in-bounds rectangle; insufficient space returns explicit overflow.",
-      "limits": ["The current executor preserves existing panels.", "Overflow recommends a new screen but does not silently rearrange unrelated panels."],
+      "limits": ["Panels outside the reserved Voice screen are preserved. Ordinary new requests replace prior safe Voice-screen panels unless the user explicitly asks to keep them.", "Overflow recommends a new screen but does not silently rearrange unrelated panels."],
       "evidence": ["src/layout-engine.mjs", "extension/layout.js", "extension/content.js:785", "live-ui:2026-08-03"]
     },
     {
       "id": "screen.create_or_reuse",
       "status": "live-verified",
-      "voice_examples": ["do this on a fresh screen", "create a screen called Morning Markets"],
+      "voice_examples": ["do this on a fresh screen", "open this on a new screen"],
       "native_binding": "workspace provider layout state plus screen-tab onSelect and onEdit callbacks",
-      "completion": "The requested exact screen title exists and its screen id is active.",
-      "limits": ["Godel allows at most eight screens.", "An empty Voice or Blank screen is reused before creating another."],
+      "completion": "The reserved Voice screen exists and its exact screen id is active.",
+      "limits": ["Godel allows at most eight screens.", "An empty Voice or Blank screen is reused before creating another.", "Arbitrary spoken screen names are not applied."],
       "evidence": ["extension/main-world.js:650", "live-ui:2026-08-03"]
     },
     {

@@ -189,7 +189,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     if (message.type === "godel-voice:download-status") {
       await downloadReceiptsReady;
-      return { ok: true, receipt: downloadReceipts.get(message.receipt_id) };
+      const receipt = downloadReceipts.get(message.receipt_id);
+      return {
+        ok: true,
+        receipt,
+        spoken_message: GodelVoiceDownloads.verifiedDownloadMessage(receipt)
+      };
     }
     if (message.type !== "godel-voice:cdp") throw new Error("Unsupported Godel Voice message");
     if (message.operation === "trustedReplaceAndSubmit") {

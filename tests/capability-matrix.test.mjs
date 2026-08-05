@@ -61,9 +61,9 @@ test("current nested coverage is not overstated", () => {
   assert.equal(byCode.get("MOST").method, "native-callback");
 });
 
-test("verified exports retain control, interaction, adapter and natural-language audit", () => {
+test("documented export controls retain metadata without implying voice activation", () => {
   const expected = ["ANR", "EQS", "FA", "G", "HDS", "HP", "IPO", "N"];
-  const actual = matrix.commands.filter(command => command.export.status === "verified").map(command => command.code).sort();
+  const actual = matrix.commands.filter(command => command.export.status === "documented-control").map(command => command.code).sort();
   assert.deepEqual(actual, expected.sort());
   for (const code of actual) {
     const output = byCode.get(code).export;

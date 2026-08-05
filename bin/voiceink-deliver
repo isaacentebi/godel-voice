@@ -1,5 +1,6 @@
 #!/bin/zsh
 set -euo pipefail
+zmodload zsh/datetime
 
 project_dir="${0:A:h:h}"
 secret_file="$project_dir/.godel-voice-secret"
@@ -8,6 +9,20 @@ protocol_version="4"
 lsof_bin="$(command -v lsof || true)"
 voice_input="$(</dev/stdin)"
 request_id="$(/usr/bin/openssl rand -hex 16)"
+typeset -i compile_started_at
+compile_started_at=$(( EPOCHREALTIME * 1000 ))
+
+record_voiceink_compile() {
+  local route="$1" diagnostics_path
+  local -i finished_at compile_ms
+  finished_at=$(( EPOCHREALTIME * 1000 ))
+  compile_ms=$((finished_at - compile_started_at))
+  diagnostics_path="$project_dir/logs/voiceink-routing.jsonl"
+  /bin/mkdir -p "$project_dir/logs"
+  /usr/bin/printf '{"at":"%s","event":"voiceink_compile","request_id":"%s","transcript_received":true,"route":"%s","compile_ms":%d}\n' \
+    "$(/bin/date -u '+%Y-%m-%dT%H:%M:%SZ')" "$request_id" "$route" "$compile_ms" >> "$diagnostics_path"
+  /bin/chmod 600 "$diagnostics_path"
+}
 
 same_checkout_server() {
   local pid="${1:-}" command_line process_cwd
@@ -27,14 +42,15 @@ if [[ ! -f "$secret_file" || ! -f "$project_dir/extension/config.local.js" ]]; t
 fi
 
 if marker="$(/usr/bin/printf '%s' "$voice_input" | /usr/bin/env node "$project_dir/src/compile-fast-followup.mjs" 2>/dev/null)"; then
-  :
+  record_voiceink_compile "local_followup"
 elif marker="$(/usr/bin/printf '%s' "$voice_input" | /usr/bin/env node "$project_dir/src/consume-intent.mjs" --marker 2>/dev/null)"; then
-  :
+  record_voiceink_compile "enhanced_intent"
 else
   compiler_error="$(/usr/bin/mktemp "${TMPDIR:-/tmp}/godel-voice-compile.XXXXXX")"
   if ! marker="$(/usr/bin/printf '%s' "$voice_input" | /usr/bin/env \
       GODEL_VOICE_REQUEST_ID="$request_id" \
-      GODEL_VOICE_DIAGNOSTICS_PATH="$project_dir/logs/model-inference.jsonl" \
+      GODEL_VOICE_COMPILE_STARTED_AT="$compile_started_at" \
+      GODEL_VOICE_DIAGNOSTICS_PATH="$project_dir/logs/voiceink-routing.jsonl" \
       node --env-file-if-exists="$project_dir/.env" "$project_dir/src/compile-marker.mjs" 2>"$compiler_error")"; then
     /usr/bin/printf '%s' "$voice_input" | /usr/bin/env node --env-file-if-exists="$project_dir/.env" \
       "$project_dir/src/record-voice-failure.mjs" 2>/dev/null || true

@@ -16,6 +16,7 @@ const assetClassAliases = new Map([
   ["STOCKS", "EQ"]
 ]);
 const multiSecurityPrimaryCommands = new Set(["HMS", "GR", "GF"]);
+const openRouterJsonObjectProviders = new Set(["groq", "cerebras"]);
 
 function normalizeToken(value) {
   return value == null ? null : String(value).trim().toUpperCase();
@@ -96,10 +97,12 @@ export function applyDeterministicVoiceRepairs(intent, transcript) {
     if (/\btable(?: view)?\b/.test(normalized)) add("view", "Table");
     else if (/\bmap view\b|\bas (?:a )?map\b|\bmap not (?:the )?table\b/.test(normalized)) add("view", "Map");
   }
-  if (/\bearnings? estimates?\b/.test(normalized) && !/\bearnings? matrix\b/.test(normalized) && normalizeToken(intent.command) === "EM") {
+  const mentionsEarningsMatrix = /\b(?:earnings? )?matrix\b/.test(normalized);
+  const mentionsEarningsEstimates = /\b(?:analyst |earnings? )?estimates?\b/.test(normalized);
+  if (mentionsEarningsEstimates && !mentionsEarningsMatrix && normalizeToken(intent.command) === "EM") {
     intent.command = "ERN";
   }
-  if (/\bearnings? matrix\b/.test(normalized) && normalizeToken(intent.command) === "ERN") {
+  if (mentionsEarningsMatrix && !mentionsEarningsEstimates && normalizeToken(intent.command) === "ERN") {
     intent.command = "EM";
   }
   if (intent.kind === "execute" && genericEarningsRequest(normalized) && ["EM", "ERN", "TRAN"].includes(normalizeToken(intent.command))) {
@@ -165,7 +168,15 @@ export function applyDeterministicVoiceRepairs(intent, transcript) {
 export function applyDeterministicWorkflowRepairs(workflow, transcript, context = null) {
   if (!workflow) return workflow;
   const normalized = normalizedTranscript(transcript);
-  if (/\b(?:clear|reset) (?:those|the) filters\b/.test(normalized)
+  const conflictingSinglePanelPlacement = /\b(?:chart|graph|window|panel)\b.*\b(?:on|to) (?:the )?left\b.*\b(?:on|to) (?:the )?right\b.*\b(?:do not|don t|dont|without) duplicate\b/.test(normalized)
+    || /\b(?:do not|don t|dont|without) duplicate\b.*\b(?:on|to) (?:the )?left\b.*\b(?:on|to) (?:the )?right\b/.test(normalized);
+  if (conflictingSinglePanelPlacement) {
+    Object.assign(workflow, {
+      kind: "clarify", steps: [],
+      clarification: "Should the single panel go on the left or the right?",
+      reason: "One panel cannot occupy two placements without being duplicated."
+    });
+  } else if (/\b(?:clear|reset) (?:those|the) filters\b/.test(normalized)
       && !context?.focused_panel?.command && !context?.last_panel?.command) {
     Object.assign(workflow, {
       kind: "clarify", steps: [],
@@ -187,6 +198,35 @@ export function applyDeterministicWorkflowRepairs(workflow, transcript, context 
         clarification: "Do you mean the earnings matrix, analyst estimates, or earnings-call transcript?",
         reason: "The word earnings alone does not identify one Godel surface."
       });
+    }
+  }
+  if (workflow.kind === "execute" && Array.isArray(workflow.steps)) {
+    // “Most active stocks” is the native MOST surface itself. Some models add
+    // a redundant ranking action because “active” sounds like a selector;
+    // that selector is not live-bound and would make an otherwise exact open
+    // fail local validation.
+    if (/\bmost active (?:stocks?|equities|shares)\b/.test(normalized)
+        && !/\b(?:rank|ranking|sort|by volume|by value|dollar volume|gainers?|losers?)\b/.test(normalized)) {
+      for (const step of workflow.steps) {
+        if (normalizeToken(step.command) !== "MOST" || !Array.isArray(step.post_open_actions)) continue;
+        step.post_open_actions = step.post_open_actions.filter(action => {
+          const feature = String(action?.feature ?? "").trim().toLowerCase().replace(/[ .-]+/g, "_");
+          const value = String(action?.value ?? "").trim().toLowerCase();
+          return !(feature === "ranking" && value === "active");
+        });
+      }
+    }
+
+    // In a named research sequence, “matrix estimates” means EM followed by
+    // ERN. Repair only a duplicate EM produced for those adjacent concepts;
+    // never rewrite a single intentional matrix request.
+    if (/\b(?:earnings )?matrix\b.*\b(?:analyst |earnings )?estimates?\b/.test(normalized)) {
+      const emIndexes = workflow.steps
+        .map((step, index) => normalizeToken(step.command) === "EM" ? index : -1)
+        .filter(index => index >= 0);
+      if (emIndexes.length >= 2 && !workflow.steps.some(step => normalizeToken(step.command) === "ERN")) {
+        workflow.steps[emIndexes[1]].command = "ERN";
+      }
     }
   }
   return workflow;
@@ -353,6 +393,22 @@ function parseBoolean(value, fallback) {
   throw new Error(`Invalid boolean value: ${value}`);
 }
 
+export function resolveProviderResponseMode({ baseUrl = "", requestedMode = "json_schema", providerOnly = "" } = {}) {
+  const requested = requestedMode === "json_object" ? "json_object" : "json_schema";
+  const pinnedProviders = String(providerOnly ?? "")
+    .split(",")
+    .map(value => value.trim().toLowerCase())
+    .filter(Boolean);
+  const incompatible = String(baseUrl).includes("openrouter.ai")
+    && requested === "json_schema"
+    && pinnedProviders.some(provider => openRouterJsonObjectProviders.has(provider));
+  return {
+    requested,
+    effective: incompatible ? "json_object" : requested,
+    compatibilityFallback: incompatible
+  };
+}
+
 function openRouterOptions(options) {
   const only = options.providerOnly ?? process.env.OPENROUTER_PROVIDER_ONLY;
   const sort = options.providerSort ?? process.env.OPENROUTER_PROVIDER_SORT;
@@ -375,7 +431,11 @@ export async function compileVoiceRequest(transcript, options = {}) {
   const baseUrl = (options.baseUrl ?? process.env.VOICE_LLM_BASE_URL ?? "").replace(/\/$/, "");
   const apiKey = options.apiKey ?? process.env.VOICE_LLM_API_KEY;
   const model = options.model ?? process.env.VOICE_LLM_MODEL;
-  const responseMode = options.responseMode ?? process.env.VOICE_LLM_RESPONSE_FORMAT ?? "json_schema";
+  const responseSelection = resolveProviderResponseMode({
+    baseUrl,
+    requestedMode: options.responseMode ?? process.env.VOICE_LLM_RESPONSE_FORMAT ?? "json_schema",
+    providerOnly: options.providerOnly ?? process.env.OPENROUTER_PROVIDER_ONLY ?? ""
+  });
   const maxTokens = Number(options.maxTokens ?? process.env.VOICE_LLM_MAX_TOKENS ?? 500);
   const configuredTemperature = options.temperature ?? process.env.VOICE_LLM_TEMPERATURE ?? 0;
   const temperature = options.temperature === null || configuredTemperature === "omit" ? null : Number(configuredTemperature);
@@ -396,7 +456,7 @@ export async function compileVoiceRequest(transcript, options = {}) {
       { role: "system", content: systemPrompt() },
       { role: "user", content: userPrompt(transcript, resolvedEntities, options.context ?? null) }
     ],
-    response_format: responseMode === "json_object"
+    response_format: responseSelection.effective === "json_object"
       ? { type: "json_object" }
       : {
           type: "json_schema",
@@ -441,7 +501,10 @@ export async function compileVoiceRequest(transcript, options = {}) {
       provider_latency_ms: request.providerLatencyMs,
       attempt_latencies_ms: request.attemptLatenciesMs,
       timeout_ms: timeoutMs,
-      max_attempts: Math.max(0, retries) + 1
+      max_attempts: Math.max(0, retries) + 1,
+      requested_response_format: responseSelection.requested,
+      response_format: responseSelection.effective,
+      schema_compatibility_fallback: responseSelection.compatibilityFallback
     }
   };
 }
@@ -554,7 +617,11 @@ export async function compileVoiceWorkflow(transcript, options = {}) {
   const baseUrl = (options.baseUrl ?? process.env.VOICE_LLM_BASE_URL ?? "").replace(/\/$/, "");
   const apiKey = options.apiKey ?? process.env.VOICE_LLM_API_KEY;
   const model = options.model ?? process.env.VOICE_LLM_MODEL;
-  const responseMode = options.responseMode ?? process.env.VOICE_LLM_RESPONSE_FORMAT ?? "json_schema";
+  const responseSelection = resolveProviderResponseMode({
+    baseUrl,
+    requestedMode: options.responseMode ?? process.env.VOICE_LLM_RESPONSE_FORMAT ?? "json_schema",
+    providerOnly: options.providerOnly ?? process.env.OPENROUTER_PROVIDER_ONLY ?? ""
+  });
   const maxTokens = Number(options.maxTokens ?? process.env.VOICE_LLM_MAX_TOKENS ?? 1800);
   const configuredTemperature = options.temperature ?? process.env.VOICE_LLM_TEMPERATURE ?? 0;
   const temperature = options.temperature === null || configuredTemperature === "omit" ? null : Number(configuredTemperature);
@@ -575,7 +642,7 @@ export async function compileVoiceWorkflow(transcript, options = {}) {
       { role: "system", content: workflowSystemPrompt() },
       { role: "user", content: userPrompt(transcript, resolvedEntities, options.context ?? null) }
     ],
-    response_format: responseMode === "json_object"
+    response_format: responseSelection.effective === "json_object"
       ? { type: "json_object" }
       : {
           type: "json_schema",
@@ -614,7 +681,10 @@ export async function compileVoiceWorkflow(transcript, options = {}) {
       provider_latency_ms: request.providerLatencyMs,
       attempt_latencies_ms: request.attemptLatenciesMs,
       timeout_ms: timeoutMs,
-      max_attempts: Math.max(0, retries) + 1
+      max_attempts: Math.max(0, retries) + 1,
+      requested_response_format: responseSelection.requested,
+      response_format: responseSelection.effective,
+      schema_compatibility_fallback: responseSelection.compatibilityFallback
     }
   };
 }

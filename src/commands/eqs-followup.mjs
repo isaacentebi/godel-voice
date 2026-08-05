@@ -27,6 +27,7 @@ export const EQS_RANGE_FIELD_PATTERNS = Object.freeze([
 
 const NUMBER = "(?:\\d+(?:\\.\\d+)?|two point five|one hundred|five hundred|zero|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fourteen|fifteen|twenty(?: five)?|thirty|fifty|hundred)";
 const UNIT = "(?:\\s*(?:k|thousand|m|mm|million|b|bn|bill|billion|t|tn|trillion))?";
+const SPOKEN_VALUE = `\\$?${NUMBER}${UNIT}(?:\\s*(?:x|times))?`;
 
 function clean(value) {
   return String(value ?? "").toLowerCase().replace(/&/g, " and ")
@@ -37,7 +38,7 @@ function clean(value) {
 }
 
 function parseNumber(raw) {
-  const text = clean(raw).replace(/^\$/, "").trim();
+  const text = clean(raw).replace(/^\$/, "").replace(/\s*(?:x|times)$/, "").trim();
   const match = new RegExp(`^(${NUMBER})(?:\\s*(k|thousand|m|mm|million|b|bn|bill|billion|t|tn|trillion))?$`).exec(text);
   if (!match) return null;
   const base = /^\d/.test(match[1]) ? Number(match[1]) : NUMBER_WORDS.get(match[1]);
@@ -51,15 +52,17 @@ function parseNumber(raw) {
 }
 
 function rangeFromClause(clause) {
-  const between = new RegExp(`\\bbetween\\s+(\\$?${NUMBER}${UNIT})\\s+(?:and|to)\\s+(\\$?${NUMBER}${UNIT})\\b`).exec(clause);
+  const between = new RegExp(`\\b(?:between\\s+)?(${SPOKEN_VALUE})\\s+(?:and|to|through)\\s+(${SPOKEN_VALUE})\\b`).exec(
+    clause.replace(/\bfrom\s+/g, "")
+  );
   if (between) {
     const minimum = parseNumber(between[1]);
     const maximum = parseNumber(between[2]);
     if (minimum == null || maximum == null || minimum > maximum) return null;
     return { minimum, maximum };
   }
-  const minimumMatch = new RegExp(`\\b(?:above|over|greater than|at least|minimum|min(?:imum)? of)\\s+(?:a\\s+)?(\\$?${NUMBER}${UNIT})\\b`).exec(clause);
-  const maximumMatch = new RegExp(`\\b(?:below|under|less than|at most|no more than|maximum|max(?:imum)? of)\\s+(?:a\\s+)?(\\$?${NUMBER}${UNIT})\\b`).exec(clause);
+  const minimumMatch = new RegExp(`\\b(?:above|over|greater than(?: or equal to)?|at least|minimum|min(?:imum)? of)\\s+(?:a\\s+)?(${SPOKEN_VALUE})\\b`).exec(clause);
+  const maximumMatch = new RegExp(`\\b(?:below|under|less than(?: or equal to)?|at most|no more than|maximum|max(?:imum)? of)\\s+(?:a\\s+)?(${SPOKEN_VALUE})\\b`).exec(clause);
   const minimum = minimumMatch ? parseNumber(minimumMatch[1]) : null;
   const maximum = maximumMatch ? parseNumber(maximumMatch[1]) : null;
   return minimum == null && maximum == null ? null : { minimum, maximum };
@@ -87,7 +90,7 @@ function uniqueActions(actions) {
 }
 
 function explicitListFilters(text, actions) {
-  if (/\b(?:u\s*s|us) technology\b/.test(text)) {
+  if (/\b(?:(?:u\s*s|us|american) (?:technology|tech)|(?:technology|tech) (?:companies|stocks|equities) (?:in|from) (?:the )?(?:u\s*s|us|united states))\b/.test(text)) {
     actions.push(unboundAction("list_filter", "add", { field: "HQ Country", items: ["United States"] }, "EQS documented HQ Country list and exact United States option"));
     actions.push(unboundAction("list_filter", "add", { field: "Sector", items: ["Technology"] }, "EQS authenticated Technology sector option"));
   }

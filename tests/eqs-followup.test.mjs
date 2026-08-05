@@ -23,6 +23,27 @@ test("normalizes finance size units and noisy price-to-sales speech", () => {
   ]);
 });
 
+test("accepts natural range phrasing and spoken multiple suffixes without changing the exact EQS fields", () => {
+  const result = compileEQSFollowup("EQS", "forward P E from ten times through twenty five x and market cap greater than or equal to ten billion then run it");
+  assert.deepEqual(values(result), [
+    { feature: "range_filter", operation: "add", value: { field: "P/E (Fwd)", minimum: 10, maximum: 25 } },
+    { feature: "range_filter", operation: "add", value: { field: "Market Cap (USD)", minimum: 10e9, maximum: null } },
+    { feature: "screen", operation: "run", value: null }
+  ]);
+  assert.equal(result.ready_for_live_executor, true);
+});
+
+test("maps only the authenticated American technology shortcut to exact live values", () => {
+  const result = compileEQSFollowup("EQS", "screen American tech companies with forward P E below thirty then run it");
+  assert.deepEqual(values(result), [
+    { feature: "range_filter", operation: "add", value: { field: "P/E (Fwd)", minimum: null, maximum: 30 } },
+    { feature: "list_filter", operation: "add", value: { field: "HQ Country", items: ["United States"] } },
+    { feature: "list_filter", operation: "add", value: { field: "Sector", items: ["Technology"] } },
+    { feature: "screen", operation: "run", value: null }
+  ]);
+  assert.equal(result.ready_for_live_executor, true);
+});
+
 test("compiles only explicit dynamic list values and preserves runtime validation", () => {
   const result = compileEQSFollowup("EQS", "currency usd venue nasdaq hq country japan sector technology sub sector semiconductors");
   assert.deepEqual(values(result), [

@@ -31,14 +31,21 @@ test("truth file, contracts, guide, and capability cross-reference agree on the 
   assert.equal(truth.policies.enabled_contract_count, enabled.length);
 });
 
-test("every current control names all validator layers, exact postconditions, proof date, limitations, and honest VoiceInk status", () => {
+test("every current control names validators, postconditions, limitations, and honest live-proof status", () => {
   const core = fs.readFileSync(path.join(root, "extension/core.js"), "utf8");
   const workflow = fs.readFileSync(path.join(root, "src/workflow-plan.mjs"), "utf8");
+  const contractedById = new Map(contracted().map(item => [item.id, item.action]));
   for (const item of truth.current_contract_controls) {
     assert.match(item.command, /^[A-Z]+$/, item.id);
     assert.ok(item.postconditions.length >= 1, `${item.id} postconditions`);
-    assert.match(item.live_proof.date, /^2026-08-0[34]$/, `${item.id} proof date`);
     assert.match(item.live_proof.evidence, /\S/, `${item.id} proof evidence`);
+    const binding = contractedById.get(item.id)?.binding;
+    if (binding?.live_verified === false) {
+      assert.equal(item.live_proof.exists, false, `${item.id} must not claim live proof`);
+      assert.equal("date" in item.live_proof, false, `${item.id} must not fabricate a proof date`);
+    } else {
+      assert.match(item.live_proof.date, /^2026-08-0[34]$/, `${item.id} proof date`);
+    }
     assert.ok(item.limitations.length >= 1, `${item.id} limitations`);
     for (const layer of ["browser", "workflow", "fast_parser", "adapter"]) {
       assert.match(item.validators[layer] ?? "", /\S/, `${item.id} ${layer}`);
@@ -51,12 +58,12 @@ test("every current control names all validator layers, exact postconditions, pr
   }
 });
 
-test("all 78 unbound contracts are non-executable and absent from current truth", () => {
+test("all 83 unbound contracts are non-executable and absent from current truth", () => {
   const executableKinds = new Set(contracts.policy.executable_binding_kinds);
   const nonExecutableKinds = new Set(contracts.policy.non_executable_binding_kinds);
   const current = new Set(truth.current_contract_controls.map(item => item.id));
   const disabled = contracted().filter(item => !item.action.binding.enabled);
-  assert.equal(disabled.length, 78);
+  assert.equal(disabled.length, 83);
   assert.equal(truth.policies.disabled_contract_count, disabled.length);
   for (const item of disabled) {
     assert.equal(current.has(item.id), false, `${item.id} leaked into current truth`);

@@ -28,7 +28,7 @@ export const LAYOUT_PLACEMENTS = new Set([
   "full", "left", "right", "top", "bottom",
   "top-left", "top-right", "bottom-left", "bottom-right"
 ]);
-export const CONTROL_OPERATIONS = new Set(["move", "resize", "maximize", "restore", "focus", "close", "export"]);
+export const CONTROL_OPERATIONS = new Set(["move", "resize", "maximize", "restore", "focus", "close", "export", "reset_workspace"]);
 export const CONTROL_TARGET_MODES = new Set(["last", "focused", "command"]);
 export const EQS_RANGE_FIELDS = Object.freeze([
   "Market Cap (USD)", "P/E (Fwd)", "P/E (TTM)", "P/S (Fwd)", "P/S (TTM)",

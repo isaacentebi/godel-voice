@@ -129,6 +129,14 @@ test("official enum values are exact and difficult dynamic values stay dynamic",
   assert.equal(action("HMAP", "size_by.select").value.type, "dynamic-enum");
   assert.equal(action("HMAP", "label.select").value.type, "dynamic-enum");
   assert.match(action("HMAP", "update_interval.set").value.range, /unverified/i);
+  const chartResolutions = contractByCode.get("G").actions.filter(item => item.id.startsWith("chart.resolution."));
+  assert.deepEqual(chartResolutions.map(item => item.value.allowed[0]), ["1m", "5m", "15m", "30m", "1h", "1d"]);
+  assert.deepEqual(chartResolutions.filter(item => item.binding.live_verified).map(item => item.value.allowed[0]), ["1h"]);
+  assert.deepEqual(chartResolutions.filter(item => item.binding.enabled).map(item => item.value.allowed[0]), ["1h"]);
+  for (const item of chartResolutions.filter(item => !item.binding.live_verified)) {
+    assert.match(item.live_validation_required, /Arc/);
+    assert.match(item.completion, /popup.*chart/i);
+  }
 });
 
 test("EM contract enables only the end-to-end verified metric selector and strict valuation read", () => {
@@ -201,5 +209,5 @@ test("sensitive surfaces remain gated and no unverified action is executable", (
   const enabled = contracts.contracts.flatMap(contract => contract.actions
     .filter(action => action.binding.enabled)
     .map(action => `${contract.command}.${action.id}`));
-  assert.deepEqual(enabled, ["EQS.range_filter.add", "EQS.list_filter.usd_technology", "EQS.screen.run", "EQS.screen.clear", "HDS.view.select", "MOST.results.select", "HMAP.universe.select", "HMAP.view.select", "EM.metric.select", "EM.valuation.read", "IMAP.map.configure", "N.query.set", "SECF.people_search.configure", "OMON.strike_depth.set", "G.chart.resolution.1h", "HMS.comparison.configure"], "only end-to-end verified nested controls may be enabled");
+  assert.deepEqual(enabled, ["EQS.range_filter.add", "EQS.list_filter.usd_technology", "EQS.screen.run", "EQS.screen.clear", "HDS.view.select", "MOST.results.select", "HMAP.universe.select", "HMAP.view.select", "EM.metric.select", "EM.valuation.read", "IMAP.map.configure", "N.query.set", "SECF.people_search.configure", "OMON.strike_depth.set", "G.chart.resolution.1h", "HMS.comparison.configure"], "only live-verified controls may be runtime-enabled");
 });

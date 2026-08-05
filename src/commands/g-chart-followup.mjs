@@ -84,7 +84,7 @@ export function compileGChartVoice(context = {}, utterance) {
   const contradictions = [];
 
   const resolution = choose(text, "resolution", [
-    ["1m", /\b(?:one|1)[ -]?minute\b/], ["5m", /\b(?:five|5)[ -]?minute\b/],
+    ["1m", /\b(?:one|1)[ -]?minutes?\b/], ["5m", /\b(?:five|5)[ -]?minutes?\b/],
     ["15m", /\b(?:fifteen|15)[ -]?minutes?\b/], ["30m", /\b(?:thirty|30)[ -]?minutes?\b/],
     ["1h", /\b(?:one|1)[ -]?hour\b|\bhourly\b/], ["1d", /\b(?:one|1)[ -]?day\b|\bdaily\b/]
   ].map(([value, pattern]) => ({ value, pattern })), contradictions);

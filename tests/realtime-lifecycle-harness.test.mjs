@@ -66,3 +66,44 @@ test("only slow transcript research receives one progress acknowledgement before
   assert.equal(report.spoken_completion, "TRAN completed.");
   assert.equal(report.event_counts.spoken_responses, 2);
 });
+
+test("research below the progress threshold stays to one spoken completion", async () => {
+  const report = await runRealtimeLifecycleHarness({
+    transcript: "search the latest four Amazon earnings calls for AWS growth",
+    executionMs: 50,
+    transcriptionMs: 5,
+    synthesisMs: 3,
+    workflowProgressDelayMs: 250
+  });
+
+  assert.equal(report.pass, true);
+  assert.equal(report.event_counts.spoken_responses, 1);
+});
+
+test("a short false VAD event does not duck or cancel authorized speech", async () => {
+  const report = await runRealtimeLifecycleHarness({
+    transcript: "open the market heatmap",
+    executionMs: 10,
+    transcriptionMs: 5,
+    synthesisMs: 3,
+    falseVadDuringOutput: true
+  });
+
+  assert.equal(report.pass, true);
+  assert.deepEqual(report.interruption, { false_vad_volume: 1, response_cancelled: false });
+  assert.equal(report.event_counts.spoken_responses, 1);
+});
+
+test("unsolicited provider audio is muted before any startup syllable escapes", async () => {
+  const report = await runRealtimeLifecycleHarness({
+    transcript: "open the market heatmap",
+    executionMs: 10,
+    transcriptionMs: 5,
+    synthesisMs: 3,
+    unsolicitedStartupAudio: true
+  });
+
+  assert.equal(report.pass, true);
+  assert.deepEqual(report.startup_audio, { muted: true, response_cancelled: true });
+  assert.equal(report.event_counts.spoken_responses, 1);
+});

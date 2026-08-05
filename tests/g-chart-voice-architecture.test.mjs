@@ -24,16 +24,27 @@ test("a noisy complex chart phrase compiles without claiming UI execution", () =
   assert.equal(result.executable_actions.length, 0);
 });
 
-test("rejected inline resolution syntax stays out of CLI while only contextual 1h is live", () => {
+test("documented chart resolutions stay out of CLI while only one-hour is live", () => {
   const opening = compileGChartVoice({ command: "G", opening: true }, "open a fifteen minute chart");
   assert.deepEqual(opening.cli_arguments, []);
   assert.equal(opening.ready_for_cli, false);
-  const contextual = compileGChartVoice({ command: "G" }, "change this to fifteen minutes");
-  assert.equal(contextual.ready_for_live_executor, false);
-  assert.match(contextual.blockers.join(" "), /resolution 15m is runtime-disabled/);
-  const hourly = compileGChartVoice({ command: "G" }, "uh make the chart hourly please");
-  assert.deepEqual(hourly.executable_actions, [{ feature: "resolution", operation: "select", value: "1h", scope: "chart" }]);
-  assert.equal(hourly.ready_for_live_executor, true);
+  for (const [phrase, resolution] of [
+    ["one minute", "1m"], ["five minutes", "5m"], ["fifteen minutes", "15m"],
+    ["thirty minutes", "30m"], ["hourly", "1h"], ["daily", "1d"]
+  ]) {
+    const contextual = compileGChartVoice({ command: "G" }, `make this ${phrase}`);
+    assert.deepEqual(contextual.actions, [
+      { feature: "resolution", operation: "select", value: resolution, scope: "chart" }
+    ], phrase);
+    if (resolution === "1h") {
+      assert.deepEqual(contextual.executable_actions, contextual.actions, phrase);
+      assert.equal(contextual.ready_for_live_executor, true, phrase);
+    } else {
+      assert.deepEqual(contextual.executable_actions, [], phrase);
+      assert.equal(contextual.ready_for_live_executor, false, phrase);
+      assert.match(contextual.blockers.join(" "), /pending exact live proof/, phrase);
+    }
+  }
 });
 
 test("spoken corrections win and direct contradictions clarify", () => {

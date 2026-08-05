@@ -46,7 +46,8 @@ test("close is exact, panel-scoped, and rejects consequential families", () => {
   assert.match(bridge, /querySelectorAll\('\[data-cy-close-window="true"\]'\)/);
   assert.match(bridge, /controls\.length !== 1/);
   assert.match(bridge, /CHAT\|NOTE\|ACCOUNT\|BROK\|ORDER\|TRADE\|MESSAGE\|ALERT/);
-  assert.match(executor, /panelForControl\(step\.target, await activeScreenRoots\(\)\)/);
+  assert.match(executor, /const activeScreen = await activeScreenState\(\)/);
+  assert.match(executor, /panelForControl\(step\.target, activeScreen\.roots, activeScreen\.activeWindowId\)/);
   assert.doesNotMatch(executor, /window\.close\s*\(/);
 });
 

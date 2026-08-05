@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { compileNaturalRequest } from "../src/compile-natural-request.mjs";
 import { encodeControlFollowup, parseControlFollowup } from "../src/control-followup.mjs";
 import { parseWorkflowMarker } from "../src/workflow-plan.mjs";
 
@@ -20,6 +21,28 @@ test("compiles short contextual window controls without an LLM", () => {
   assert.equal(parseControlFollowup("bring the earnings matrix to the front").steps[0].operation, "focus");
 });
 
+test("open another preserves one exact connected multi-instance context", () => {
+  const chart = parseControlFollowup("open another one", {
+    focused_panel: { command: "G", security: "AMZN", connected: true }
+  });
+  assert.equal(chart.steps[0].terminal_command, "AMZN EQ G");
+  assert.equal(chart.layout.preserve_existing, true);
+
+  const named = parseControlFollowup("open another Meta chart", {
+    focused_panel: { command: "G", security: "AMZN", connected: true }
+  });
+  assert.equal(named.steps[0].terminal_command, "META EQ G");
+  assert.equal(named.layout.preserve_existing, true);
+
+  assert.equal(parseControlFollowup("open another one"), null);
+  assert.equal(parseControlFollowup("open another one", {
+    focused_panel: { command: "HMAP", security: null, connected: true }
+  }), null);
+  assert.equal(parseControlFollowup("open another one", {
+    focused_panel: { command: "G", security: "AMZN", connected: false }
+  }), null);
+});
+
 test("window controls win over nested market-map and halt vocabulary", () => {
   const heatmap = parseControlFollowup("make the market heatmap bigger").steps[0];
   assert.deepEqual({kind:heatmap.kind,operation:heatmap.operation,value:heatmap.value,target:heatmap.target}, {
@@ -32,15 +55,17 @@ test("window controls win over nested market-map and halt vocabulary", () => {
   assert.equal(halts.target.command,"HALT");
 });
 
-test("bulk destructive window language fails closed", () => {
-  assert.equal(parseControlFollowup("close all windows"), null);
-  assert.equal(parseControlFollowup("close everything"), null);
-  assert.equal(parseControlFollowup("remove every panel"), null);
-  assert.equal(parseControlFollowup("dismiss the whole screen"), null);
+test("bulk destructive window language compiles to a Voice-workspace reset", () => {
+  for (const utterance of ["close all windows", "close everything", "remove every panel", "dismiss the whole screen"]) {
+    const plan = parseControlFollowup(utterance);
+    assert.equal(plan.steps.length, 1);
+    assert.equal(plan.steps[0].operation, "reset_workspace");
+    assert.equal(plan.steps[0].target.mode, "focused");
+  }
   assert.equal(parseControlFollowup("close the Meta earnings matrix").steps[0].operation, "close");
 });
 
-test("bulk close uses only exact current non-consequential panel context", () => {
+test("bulk close resets the whole dedicated Voice workspace regardless of visible context", () => {
   const plan = parseControlFollowup("please close all the windows", {
     panels: [
       { command: "G", security: "AMZN", connected: true },
@@ -48,14 +73,9 @@ test("bulk close uses only exact current non-consequential panel context", () =>
       { command: "CHAT", security: null, connected: true }
     ]
   });
-  assert.equal(plan.steps.length, 2);
-  assert.deepEqual(plan.steps.map(step => [step.operation, step.target.command, step.target.security, step.required]), [
-    ["close", "G", "AMZN", false], ["close", "HMAP", null, false]
-  ]);
-  assert.deepEqual(plan.steps.map(step => step.failure_policy), ["continue", "continue"]);
-  assert.equal(parseControlFollowup("close these windows well please", {
-    panels: [{ command: "WEI", connected: true }, { command: "WEIF", connected: true }, { command: "G", security: "VIX", connected: true }]
-  }).steps.length, 3);
+  assert.equal(plan.steps.length, 1);
+  assert.equal(plan.steps[0].operation, "reset_workspace");
+  assert.equal(plan.steps[0].required, true);
 });
 
 test("real conversational compounds preserve every requested operation", () => {
@@ -74,6 +94,49 @@ test("real conversational compounds preserve every requested operation", () => {
   assert.deepEqual(pair.steps.map(step => [step.command, step.terminal_command]), [["HMAP", "HMAP"], ["G", "AMZN EQ G"]]);
   assert.equal(pair.layout.preset, "market");
   assert.deepEqual(pair.steps.map(step => step.layout?.placement), ["left", "right"]);
+});
+
+test("open-then-close is finite, model-free, ordered, and targets the exact opened panel", async () => {
+  const named = parseControlFollowup("open the market heatmap then close the heatmap");
+  assert.deepEqual(named.steps.map(step => [step.kind, step.command ?? step.operation]), [
+    ["command", "HMAP"], ["control", "close"]
+  ]);
+  assert.deepEqual(named.steps[1].target, { mode: "command", command: "HMAP", security: null });
+  assert.equal(named.steps[1].required, true);
+
+  const pronoun = parseControlFollowup("open the Amazon chart and then close it");
+  assert.equal(pronoun.steps[0].terminal_command, "AMZN EQ G");
+  assert.deepEqual(pronoun.steps[1].target, { mode: "command", command: "G", security: "AMZN" });
+
+  const compiled = await compileNaturalRequest("open the market heatmap then close the heatmap", {
+    compile: async () => { throw new Error("model forbidden"); }
+  });
+  assert.equal(compiled.kind, "execute");
+  assert.equal(compiled.route, "local");
+});
+
+test("impossible single-panel placement conflicts clarify without model latency", async () => {
+  let modelCalls = 0;
+  const result = await compileNaturalRequest(
+    "put the Amazon chart on the left and also on the right but do not duplicate it",
+    { compile: async () => { modelCalls += 1; throw new Error("model forbidden"); } }
+  );
+  assert.equal(result.kind, "clarify");
+  assert.equal(result.route, "local");
+  assert.match(result.message, /left or the right/i);
+  assert.equal(modelCalls, 0);
+});
+
+test("post-open geometry controls keep exact identity through recursive composition", () => {
+  const plan = parseControlFollowup("open the market heatmap then move it to the left and make it bigger");
+  assert.deepEqual(plan.steps.map(step => [step.kind, step.command ?? step.operation]), [
+    ["command", "HMAP"], ["control", "move"], ["control", "resize"]
+  ]);
+  assert.deepEqual(plan.steps.slice(1).map(step => step.target), [
+    { mode: "command", command: "HMAP", security: null },
+    { mode: "command", command: "HMAP", security: null }
+  ]);
+  assert.deepEqual(plan.steps.slice(1).map(step => step.value), ["left", "larger"]);
 });
 
 test("mixed Godel surfaces preserve clause-level left and right placement", () => {
@@ -121,6 +184,38 @@ test("opens the documented CBOE VIX chart from direct natural voice aliases", ()
   }
 });
 
+test("direct VIX charts retain an explicit native CLI interval", () => {
+  const plan = parseControlFollowup("open the VIX one hour chart");
+  assert.equal(plan.steps[0].terminal_command, "VIX CBOE IDX G 1h");
+  assert.deepEqual(plan.steps[0].arguments, ["1h"]);
+});
+
+test("direct chart resolutions use exact Godel CLI arguments without a model", async () => {
+  for (const [spoken, resolution] of [
+    ["one-minute", "1m"], ["five-minute", "5m"], ["fifteen-minute", "15m"],
+    ["thirty-minute", "30m"], ["hourly", "1h"], ["daily", "1d"]
+  ]) {
+    for (const phrase of [
+      `open a ${spoken} Apple chart`,
+      `open Apple ${spoken} chart`,
+      `open a chart for Apple, ${spoken}`
+    ]) {
+      const plan = parseControlFollowup(phrase);
+      assert.equal(plan.steps[0].terminal_command, `AAPL EQ G ${resolution}`, phrase);
+      assert.deepEqual(plan.steps[0].arguments, [resolution], phrase);
+      assert.deepEqual(plan.steps[0].actions, [], phrase);
+      const compiled = await compileNaturalRequest(phrase, {
+        compile: async () => { throw new Error("model forbidden"); }
+      });
+      assert.equal(compiled.route, "local", phrase);
+    }
+  }
+
+  assert.equal(parseControlFollowup("show Apple for five days"), null);
+  const fundamental = parseControlFollowup("open Apple's five-year operating margin chart");
+  assert.equal(fundamental.steps[0].command, "GF");
+});
+
 test("natural stock price questions use a grounded chart surface", () => {
   for (const voice of ["what is Meta's stock price", "tell me Amazon's share price", "how is Microsoft doing"]) {
     const plan = parseControlFollowup(voice);
@@ -152,7 +247,23 @@ test("VoiceInk forward-P/E variants route to the grounded earnings matrix", () =
     const step = parseControlFollowup(voice).steps[0];
     assert.equal(step.command, "EM", voice);
     assert.match(step.terminal_command, /^(?:META|AMZN) EQ EM$/, voice);
+    assert.deepEqual(step.actions, [{
+      feature: "valuation", operation: "read",
+      value: { row: "P/E", section: "Multiples", semantic_unit: "Multiple" }
+    }], voice);
   }
+});
+
+test("opens one earnings matrix and one analyst view for a real conversational compound", () => {
+  const plan = parseControlFollowup(
+    "Can you pull up the Amazon earnings matrix? Is there info on Amazon analyst price targets and its expectations?"
+  );
+  assert.deepEqual(plan.steps.map(step => [step.command, step.terminal_command]), [
+    ["EM", "AMZN EQ EM"],
+    ["ANR", "AMZN EQ ANR"]
+  ]);
+  assert.equal(plan.layout.preset, "grid");
+  assert.equal(plan.steps.filter(step => step.command === "EM").length, 1);
 });
 
 test("plain high-frequency opens compile locally without an LLM", () => {
@@ -186,6 +297,59 @@ test("plain high-frequency opens compile locally without an LLM", () => {
   assert.equal(ratingsDesk.layout.preset, "grid");
 
   assert.equal(parseControlFollowup("open the heatmap and compare Amazon with Meta"), null);
+});
+
+test("market index, active-option, and historical-change aliases remain local", async () => {
+  for (const [phrase, commands] of [
+    ["open world market indices", ["WEI"]],
+    ["show global market indices", ["WEI"]],
+    ["open active options", ["MOSO"]],
+    ["show active options and the market heatmap", ["MOSO", "HMAP"]],
+    ["open Amazon historical change percent", ["HCP"]],
+    ["open world market indices and the market heatmap", ["WEI", "HMAP"]]
+  ]) {
+    const compiled = await compileNaturalRequest(phrase, {
+      compile: async () => { throw new Error("model forbidden"); }
+    });
+    assert.equal(compiled.route, "local", phrase);
+    assert.deepEqual(parseWorkflowMarker(compiled.marker).steps.map(step => step.command), commands, phrase);
+  }
+});
+
+test("ALLQ identity wins over workspace-reset grammar", async () => {
+  const close = parseControlFollowup("close all quotes");
+  assert.equal(close.steps.length, 1);
+  assert.equal(close.steps[0].operation, "close");
+  assert.deepEqual(close.steps[0].target, { mode: "command", command: "ALLQ", security: null });
+
+  const compound = await compileNaturalRequest("open all quotes then close all quotes", {
+    compile: async () => { throw new Error("model forbidden"); }
+  });
+  assert.equal(compound.route, "local");
+  const plan = parseWorkflowMarker(compound.marker);
+  assert.deepEqual(plan.steps.map(step => step.command ?? step.operation), ["ALLQ", "close"]);
+  assert.deepEqual(plan.steps[1].target, { mode: "command", command: "ALLQ", security: null });
+});
+
+test("quick-quote compounds preserve exact G security and every operation", async () => {
+  for (const [phrase, expected] of [
+    ["open Amazon quick quote then close Amazon quick quote", ["G", "close"]],
+    ["open Amazon quick quote then move it left", ["G", "move"]],
+    ["close Amazon quick quote then open Amazon quick quote", ["close", "G"]]
+  ]) {
+    const compiled = await compileNaturalRequest(phrase, {
+      compile: async () => { throw new Error("model forbidden"); }
+    });
+    assert.equal(compiled.route, "local", phrase);
+    const plan = parseWorkflowMarker(compiled.marker);
+    assert.deepEqual(plan.steps.map(step => step.command ?? step.operation), expected, phrase);
+    for (const step of plan.steps.filter(step => step.kind === "control")) {
+      assert.deepEqual(step.target, { mode: "command", command: "G", security: "AMZN" }, phrase);
+    }
+    for (const step of plan.steps.filter(step => step.kind === "command")) {
+      assert.equal(step.terminal_command, "AMZN EQ G", phrase);
+    }
+  }
 });
 
 test("ordinary finance surfaces and noisy speech stay on the zero-model route", () => {
@@ -481,14 +645,16 @@ test("bulk cleanup preserves an and-connected open and its trailing maximize", (
     { command: "G", security: "AMZN", connected: true }
   ] };
   const opened = parseControlFollowup("close all windows and open Meta earnings matrix", context);
-  assert.deepEqual(opened.steps.map(step => step.kind), ["control", "control", "command"]);
+  assert.deepEqual(opened.steps.map(step => step.kind), ["control", "command"]);
+  assert.equal(opened.steps[0].operation, "reset_workspace");
   assert.equal(opened.steps.at(-1).terminal_command, "META EQ EM");
 
   const maximized = parseControlFollowup(
     "close everything then open Meta earnings matrix and maximize it",
     context
   );
-  assert.deepEqual(maximized.steps.map(step => step.kind), ["control", "control", "command", "control"]);
+  assert.deepEqual(maximized.steps.map(step => step.kind), ["control", "command", "control"]);
+  assert.equal(maximized.steps[0].operation, "reset_workspace");
   assert.deepEqual(maximized.steps.slice(-2).map(step => step.command ?? step.operation), ["EM", "maximize"]);
 });
 

@@ -5,18 +5,45 @@ import { compileVoiceWorkflow } from "./compiler.mjs";
 import { encodeWorkflowPlan } from "./automation-plan.mjs";
 import { readRecentExecutorContext } from "./executor-context.mjs";
 import { compileWorkflowWithValidatedFallback } from "./model-routing.mjs";
+import { deterministicClarification, encodeControlFollowup } from "./control-followup.mjs";
 
-const projectDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+export function writeVoiceInkCompileTelemetry(diagnosticsPath, {
+  requestId = null, route = "failed", compileMs = 0
+} = {}) {
+  if (!diagnosticsPath) return;
+  const safeRequestId = /^[A-Za-z0-9_.-]{1,96}$/.test(String(requestId ?? ""))
+    ? String(requestId) : null;
+  const safeRoute = String(route ?? "failed").toLowerCase().replace(/[^a-z_]/g, "").slice(0, 32) || "failed";
+  fs.mkdirSync(path.dirname(diagnosticsPath), { recursive: true });
+  fs.appendFileSync(diagnosticsPath, `${JSON.stringify({
+    at: new Date().toISOString(),
+    event: "voiceink_compile",
+    request_id: safeRequestId,
+    transcript_received: true,
+    route: safeRoute,
+    compile_ms: Number.isFinite(Number(compileMs)) ? Math.max(0, Math.round(Number(compileMs))) : 0
+  })}\n`, { mode: 0o600 });
+}
 
-async function main() {
-  const transcript = fs.readFileSync(0, "utf8").trim();
+export async function compileMarkerRequest(transcript, {
+  context = readRecentExecutorContext(),
+  compile = compileVoiceWorkflow,
+  fallbackModel = process.env.VOICE_LLM_FALLBACK_MODEL || null,
+  fallbackProviderOnly = process.env.VOICE_LLM_FALLBACK_PROVIDER_ONLY || process.env.OPENROUTER_PROVIDER_ONLY || null
+} = {}) {
+  transcript = String(transcript ?? "").trim();
   if (!transcript) throw new Error("VoiceInk supplied an empty transcript");
+  const localClarification = deterministicClarification(transcript);
+  if (localClarification) throw new Error(localClarification);
+
+  // Keep the deterministic compiler in front of every model entry point, not
+  // only the VoiceInk shell wrapper. This prevents direct callers and future
+  // integrations from paying network latency for locally provable workflows.
+  const localMarker = encodeControlFollowup(transcript, context);
+  if (localMarker) return { marker: localMarker, route: "local", result: null, routed: null };
 
   const routed = await compileWorkflowWithValidatedFallback(transcript, {
-    compile: compileVoiceWorkflow,
-    context: readRecentExecutorContext(),
-    fallbackModel: process.env.VOICE_LLM_FALLBACK_MODEL || null,
-    fallbackProviderOnly: process.env.VOICE_LLM_FALLBACK_PROVIDER_ONLY || process.env.OPENROUTER_PROVIDER_ONLY || null
+    compile, context, fallbackModel, fallbackProviderOnly
   });
   const result = routed.result;
   if (result.workflow.kind === "clarify") {
@@ -25,32 +52,41 @@ async function main() {
   if (result.workflow.kind !== "execute" || !result.plan) {
     throw new Error(result.plan_error || result.workflow.reason || "The request cannot be executed in Godel");
   }
-  const diagnosticsPath = process.env.GODEL_VOICE_DIAGNOSTICS_PATH;
-  if (diagnosticsPath) {
-    fs.mkdirSync(path.dirname(diagnosticsPath), { recursive: true });
-    fs.appendFileSync(diagnosticsPath, `${JSON.stringify({
-      at: new Date().toISOString(),
-      request_id: process.env.GODEL_VOICE_REQUEST_ID || null,
-      model: result.inference.model,
-      provider: result.inference.provider,
-      latency_ms: result.inference.latency_ms,
-      provider_latency_ms: result.inference.provider_latency_ms,
-      attempt_latencies_ms: result.inference.attempt_latencies_ms,
-      timeout_ms: result.inference.timeout_ms,
-      max_attempts: result.inference.max_attempts,
-      prompt_tokens: result.inference.prompt_tokens,
-      completion_tokens: result.inference.completion_tokens,
-      cost: result.inference.cost,
-      escalated: routed.escalated,
-      primary_error: routed.primary_error,
-      routing: routed.routing,
-      commands: result.plan.steps.map(step => step.command ?? step.target?.command ?? null)
-    })}\n`, { mode: 0o600 });
-  }
-  process.stdout.write(encodeWorkflowPlan(result.plan));
+  return {
+    marker: encodeWorkflowPlan(result.plan),
+    route: routed.escalated ? "fallback" : "model",
+    result,
+    routed
+  };
 }
 
-main().catch(error => {
-  console.error(error.message);
-  process.exitCode = 1;
-});
+async function main() {
+  const suppliedStartedAt = Number(process.env.GODEL_VOICE_COMPILE_STARTED_AT);
+  const compileStartedAt = Number.isFinite(suppliedStartedAt) && suppliedStartedAt > 0
+    ? suppliedStartedAt : Date.now();
+  const transcript = fs.readFileSync(0, "utf8").trim();
+  const diagnosticsPath = process.env.GODEL_VOICE_DIAGNOSTICS_PATH;
+  try {
+    const compiled = await compileMarkerRequest(transcript);
+    writeVoiceInkCompileTelemetry(diagnosticsPath, {
+      requestId: process.env.GODEL_VOICE_REQUEST_ID,
+      route: compiled.route,
+      compileMs: Date.now() - compileStartedAt
+    });
+    process.stdout.write(compiled.marker);
+  } catch (error) {
+    writeVoiceInkCompileTelemetry(diagnosticsPath, {
+      requestId: process.env.GODEL_VOICE_REQUEST_ID,
+      route: "failed",
+      compileMs: Date.now() - compileStartedAt
+    });
+    throw error;
+  }
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch(error => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
+}

@@ -176,17 +176,30 @@ test("Realtime can remove a stale queued progress acknowledgement before complet
   assert.deepEqual(sent, []);
 });
 
-test("Realtime can cancel an unaudible active progress response when the user resumes speaking", () => {
+test("Realtime can cancel any unaudible active response when the user resumes speaking", () => {
   const state = loadState();
   const sent = [];
   const coordinator = state.createCoordinator({
     runTurn: async () => {},
     sendResponse: response => sent.push(response.event.id)
   });
-  coordinator.enqueueResponse({ kind: "progress", workflowProgressId: "workflow-1", event: { id: "active-progress" } });
-  assert.equal(coordinator.cancelActiveResponse(response => response.workflowProgressId === "workflow-1"), true);
+  coordinator.enqueueResponse({ kind: "grounded_result", event: { id: "active-final" } });
+  assert.equal(coordinator.cancelActiveResponse(() => true), true);
   assert.equal(coordinator.snapshot().activeResponse, false);
-  assert.deepEqual(sent, ["active-progress"]);
+  assert.deepEqual(sent, ["active-final"]);
+});
+
+test("Realtime never treats already audible speech as a queued response", () => {
+  const state = loadState();
+  const coordinator = state.createCoordinator({
+    runTurn: async () => {},
+    sendResponse: () => {}
+  });
+  coordinator.enqueueResponse({ kind: "grounded_result", event: { id: "audible-final" } });
+  coordinator.responseCreated("provider-audible");
+  coordinator.responseStarted("provider-audible");
+  assert.equal(coordinator.cancelActiveResponse(() => true), false);
+  assert.equal(coordinator.snapshot().activeResponse, true);
 });
 
 test("Realtime event trace rearms batching during speech and drops only the failed segment", () => {

@@ -164,7 +164,7 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
     body: JSON.stringify({ session_id: sessionId, call_id: "call-check-in", workflow: checkInWorkflow })
   })).json();
-  assert.deepEqual(checkIn, { kind: "conversation", message: "Yes, I'm here and listening." });
+  assert.deepEqual(checkIn, { kind: "conversation", message: "I'm here." });
 
   const thanksWorkflow = structuredWorkflow("User is acknowledging with thanks. No action requested.");
   thanksWorkflow.workflow.kind = "unsupported";
@@ -174,7 +174,19 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
     body: JSON.stringify({ session_id: sessionId, call_id: "call-thanks", workflow: thanksWorkflow })
   })).json();
-  assert.deepEqual(thanks, { kind: "conversation", message: "You're welcome. I'm still listening." });
+  assert.deepEqual(thanks, { kind: "conversation", message: "Anytime." });
+
+  const ideasWorkflow = structuredWorkflow("Jarvis, give me some ideas.");
+  ideasWorkflow.workflow.kind = "unsupported";
+  ideasWorkflow.workflow.steps = [];
+  ideasWorkflow.workflow.reason = "Conversation only";
+  const ideas = await (await fetch(`${base}/realtime/request`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, call_id: "call-ideas", workflow: ideasWorkflow })
+  })).json();
+  assert.equal(ideas.kind, "conversation");
+  assert.match(ideas.message, /compare Amazon and Meta revenue/);
+  assert.match(ideas.message, /search Meta earnings calls for AI agents/);
 
   const leased = await (await fetch(`${base}/next?client=arc-a`, { headers: auth })).json();
   assert.equal(leased.realtime, true);
@@ -184,6 +196,128 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
   });
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(speakerCalls, []);
+});
+
+test("concurrent duplicate Realtime compilations share one queued workflow per endpoint", async t => {
+  let workflowCompiles = 0;
+  let preflightCompiles = 0;
+  const delayed = () => new Promise(resolve => setTimeout(resolve, 20));
+  const store = new HandoffStore();
+  const server = createHandoffServer({
+    secret, store, port: 0, realtimeEnabled: true, openaiApiKey: "private-openai-key",
+    realtimeFetch: async () => new Response(answer, { status: 200, headers: { "Content-Type": "application/sdp" } }),
+    realtimeWorkflowCompiler: async () => {
+      workflowCompiles += 1;
+      await delayed();
+      return { kind: "execute", route: "slow-workflow", marker: `GV1:${JSON.stringify({ version: 1, command: "HMAP", arguments: [], actions: [] })}` };
+    },
+    realtimeNaturalCompiler: async () => {
+      preflightCompiles += 1;
+      await delayed();
+      return { kind: "execute", route: "slow-preflight", marker: `GV1:${JSON.stringify({ version: 1, command: "HALT", arguments: [], actions: [] })}` };
+    }
+  });
+  const address = await server.listen();
+  t.after(() => server.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const sessionResponse = await fetch(`${base}/realtime/session`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/sdp" }, body: offer
+  });
+  const sessionId = sessionResponse.headers.get("x-godel-realtime-session");
+
+  const workflowBodies = ["parallel-workflow-a", "parallel-workflow-b"].map(callId => fetch(`${base}/realtime/request`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, call_id: callId, workflow: structuredWorkflow("open the slow custom dashboard") })
+  }).then(response => response.json()));
+  const workflowResults = await Promise.all(workflowBodies);
+  assert.equal(workflowCompiles, 1);
+  assert.equal(workflowResults[0].id, workflowResults[1].id);
+  assert.equal(store.entries.length, 1);
+  store.cancel(workflowResults[0].id);
+
+  const preflightBodies = ["parallel-preflight-a", "parallel-preflight-b"].map(turnId => fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, turn_id: turnId, transcript: "open the bespoke liquidity constellation" })
+  }).then(response => response.json()));
+  const preflightResults = await Promise.all(preflightBodies);
+  assert.equal(preflightCompiles, 1);
+  assert.equal(preflightResults[0].id, preflightResults[1].id);
+  assert.equal(store.entries.length, 2);
+  const serverSource = fs.readFileSync(new URL("../src/handoff-server.mjs", import.meta.url), "utf8");
+  assert.match(serverSource, /const key = `\$\{lane\}:\$\{markerDigest\(normalizedRealtimeRequest\(requestText\)\)\}`/);
+});
+
+test("closing Realtime during delayed compilation cannot enqueue late work on either endpoint", async t => {
+  let releaseWorkflow;
+  let releasePreflight;
+  let markWorkflowStarted;
+  let markPreflightStarted;
+  const workflowGate = new Promise(resolve => { releaseWorkflow = resolve; });
+  const preflightGate = new Promise(resolve => { releasePreflight = resolve; });
+  const workflowStarted = new Promise(resolve => { markWorkflowStarted = resolve; });
+  const preflightStarted = new Promise(resolve => { markPreflightStarted = resolve; });
+  const marker = `GV1:${JSON.stringify({ version: 1, command: "HMAP", arguments: [], actions: [] })}`;
+  const store = new HandoffStore();
+  const server = createHandoffServer({
+    secret, store, port: 0, realtimeEnabled: true, openaiApiKey: "private-openai-key",
+    realtimeFetch: async () => new Response(answer, { status: 200, headers: { "Content-Type": "application/sdp" } }),
+    realtimeWorkflowCompiler: async () => {
+      markWorkflowStarted();
+      await workflowGate;
+      return { kind: "execute", route: "delayed-workflow", marker };
+    },
+    realtimeNaturalCompiler: async () => {
+      markPreflightStarted();
+      await preflightGate;
+      return { kind: "execute", route: "delayed-preflight", marker };
+    }
+  });
+  const address = await server.listen();
+  t.after(() => server.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const createSession = async () => {
+    const response = await fetch(`${base}/realtime/session`, {
+      method: "POST", headers: { ...auth, "Content-Type": "application/sdp" }, body: offer
+    });
+    assert.equal(response.status, 200);
+    return response.headers.get("x-godel-realtime-session");
+  };
+  const closeSession = sessionId => fetch(`${base}/realtime/close`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, reason: "manual_toggle" })
+  });
+
+  const workflowSession = await createSession();
+  const pendingWorkflow = fetch(`${base}/realtime/request`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      session_id: workflowSession, call_id: "late-workflow",
+      workflow: structuredWorkflow("open the slow custom dashboard")
+    })
+  });
+  await workflowStarted;
+  assert.equal((await closeSession(workflowSession)).status, 200);
+  releaseWorkflow();
+  const workflowResult = await (await pendingWorkflow).json();
+  assert.equal(workflowResult.kind, "failed");
+  assert.match(workflowResult.message, /session ended before the request could start/);
+  assert.equal(store.entries.length, 0);
+
+  const preflightSession = await createSession();
+  const pendingPreflight = fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      session_id: preflightSession, turn_id: "late-preflight",
+      transcript: "open the bespoke liquidity constellation"
+    })
+  });
+  await preflightStarted;
+  assert.equal((await closeSession(preflightSession)).status, 200);
+  releasePreflight();
+  const preflightResult = await (await pendingPreflight).json();
+  assert.equal(preflightResult.kind, "failed");
+  assert.match(preflightResult.message, /session ended before the request could start/);
+  assert.equal(store.entries.length, 0);
 });
 
 test("Realtime deterministic preflight executes common commands without a model turn", async t => {
@@ -245,7 +379,7 @@ test("Realtime deterministic preflight executes common commands without a model 
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
     body: JSON.stringify({ session_id: sessionId, turn_id: "turn-check-in", transcript: "Are you there?" })
   })).json();
-  assert.deepEqual(checkIn, { kind: "conversation", message: "Yes, I'm here and listening." });
+  assert.deepEqual(checkIn, { kind: "conversation", message: "I'm here." });
 
   const capabilities = await (await fetch(`${base}/realtime/preflight`, {
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
@@ -253,7 +387,7 @@ test("Realtime deterministic preflight executes common commands without a model 
   })).json();
   assert.deepEqual(capabilities, {
     kind: "conversation",
-    message: "I can open and arrange Godel views, compare companies, screen equities, search earnings calls, read verified quotes, and export supported data."
+    message: "Try: compare Amazon and Meta revenue, screen U.S. technology above ten billion, search Meta earnings calls for AI agents, open the VIX chart, or build me a market desk."
   });
 
   const unsupportedComparison = await (await fetch(`${base}/realtime/preflight`, {
@@ -354,6 +488,100 @@ test("Realtime sessions and preflights retain exact executor and document affini
   assert.equal(store.armedExecutor().executor_id, ownerB);
 });
 
+test("Realtime reconnects preserve bounded verified continuity and retry the last exact plan", async t => {
+  const owner = "gx-continuity-owner";
+  const generation = "gd-continuity-document";
+  const store = new HandoffStore();
+  store.setContext({ focused_panel: null, last_panel: null, panels: [] }, owner, generation);
+  const server = createHandoffServer({
+    secret, store, port: 0, realtimeEnabled: true, openaiApiKey: "private-openai-key",
+    realtimeFetch: async () => new Response(answer, { status: 200, headers: { "Content-Type": "application/sdp" } })
+  });
+  const address = await server.listen();
+  t.after(() => server.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const sessionHeaders = {
+    ...auth, "Content-Type": "application/sdp",
+    "X-Godel-Executor-Id": owner, "X-Godel-Document-Generation": generation
+  };
+  const firstSessionResponse = await fetch(`${base}/realtime/session`, {
+    method: "POST", headers: sessionHeaders, body: offer
+  });
+  const firstSession = firstSessionResponse.headers.get("x-godel-realtime-session");
+  const first = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: firstSession, turn_id: "open-1", transcript: "open the market heatmap",
+      executor_id: owner, document_generation: generation })
+  })).json();
+  const leased = await (await fetch(`${base}/next?client=${owner}&executor=${owner}&generation=${generation}`, {
+    headers: auth
+  })).json();
+  assert.equal(leased.id, first.id);
+  const acknowledged = await fetch(`${base}/ack`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ id: leased.id, client_id: owner, executor_id: owner,
+      document_generation: generation, status: "completed", message: "Heatmap opened." })
+  });
+  assert.equal(acknowledged.status, 200);
+
+  const beforeReconnect = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: firstSession, turn_id: "recall-1", transcript: "what did you open",
+      executor_id: owner, document_generation: generation })
+  })).json();
+  assert.deepEqual(beforeReconnect, { kind: "conversation", message: "Heatmap opened." });
+
+  const secondSessionResponse = await fetch(`${base}/realtime/session`, {
+    method: "POST", headers: sessionHeaders, body: offer
+  });
+  const secondSession = secondSessionResponse.headers.get("x-godel-realtime-session");
+  const afterReconnect = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: secondSession, turn_id: "recall-2", transcript: "what did you open",
+      executor_id: owner, document_generation: generation })
+  })).json();
+  assert.deepEqual(afterReconnect, { kind: "conversation", message: "Heatmap opened." });
+
+  const retried = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: secondSession, turn_id: "retry-1", transcript: "try that again",
+      executor_id: owner, document_generation: generation })
+  })).json();
+  assert.equal(retried.kind, "execute");
+  assert.equal(retried.route, "local_retry");
+  assert.notEqual(retried.id, first.id);
+});
+
+test("manually stopping Realtime cancels its queued workflows server-side", async t => {
+  const owner = "gx-close-owner";
+  const generation = "gd-close-document";
+  const store = new HandoffStore();
+  const server = createHandoffServer({
+    secret, store, port: 0, realtimeEnabled: true, openaiApiKey: "private-openai-key",
+    realtimeFetch: async () => new Response(answer, { status: 200, headers: { "Content-Type": "application/sdp" } })
+  });
+  const address = await server.listen();
+  t.after(() => server.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const sessionResponse = await fetch(`${base}/realtime/session`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/sdp",
+      "X-Godel-Executor-Id": owner, "X-Godel-Document-Generation": generation }, body: offer
+  });
+  const sessionId = sessionResponse.headers.get("x-godel-realtime-session");
+  const prepared = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, turn_id: "close-active", transcript: "open the market heatmap",
+      executor_id: owner, document_generation: generation })
+  })).json();
+  assert.equal(store.status(prepared.id).status, "queued");
+  const closed = await fetch(`${base}/realtime/close`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, reason: "manual_toggle" })
+  });
+  assert.equal(closed.status, 200);
+  assert.equal(store.status(prepared.id).status, "cancelled");
+});
+
 test("Realtime browser surface contains no provider credential and has bounded teardown", () => {
   const source = fs.readFileSync(new URL("../extension/realtime.js", import.meta.url), "utf8");
   const serverSource = fs.readFileSync(new URL("../src/handoff-server.mjs", import.meta.url), "utf8");
@@ -417,16 +645,19 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /if \(intentStore\.isActive\(\)\) \{[\s\S]*start\(\{ reconnecting: true \}\)/);
   assert.match(source, /track\.enabled = true/);
   assert.match(source, /data-channel[\s\S]*authoritative signal/);
-  assert.match(source, /BARGE_IN_CONFIRM_MS = 420/);
+  assert.match(source, /BARGE_IN_CONFIRM_MS = 280/);
   assert.match(source, /RESPONSE_START_TIMEOUT_MS = 4_000/);
-  assert.match(source, /WORKFLOW_PROGRESS_DELAY_MS = 3_000/);
+  assert.match(source, /WORKFLOW_PROGRESS_DELAY_MS = 8_000/);
   assert.match(source, /scheduleWorkflowProgress\(request\.id, runGeneration, request\.progress_message\)/);
   assert.match(source, /if \(!message\) return/);
   assert.match(source, /exactResponse\(message, "workflow_progress"\)/);
   assert.doesNotMatch(source, /exactResponse\("Still working\."/);
   assert.match(source, /coordinator\.dropResponses/);
   assert.match(source, /cancelActiveResponse/);
-  assert.match(source, /audio\.volume = 0\.15/);
+  assert.match(source, /cancelActiveResponse\(\(\) => true\)/);
+  assert.match(source, /if \(cancelledPendingResponse\) \{[\s\S]*clearResponseStartTimer\(\);[\s\S]*type: "response\.cancel"/);
+  assert.doesNotMatch(source, /audio\.volume = 0\.15/);
+  assert.match(source, /audio\.volume = 1/);
   assert.match(source, /responseStarted/);
   assert.match(source, /failed\.audible !== true/);
   assert.match(source, /audio\.muted = true;[\s\S]*peer\.ontrack/);
@@ -452,6 +683,8 @@ test("verified successes are spoken exactly and first-audio latency is audited s
   assert.match(source, /responseRequestKind \?\? "response"/);
   assert.match(source, /Date\.now\(\) - responseRequestedAt/);
   assert.match(source, /max_output_tokens: 64/);
+  assert.equal(source.match(/conversation: "none", input: \[\]/g)?.length, 2,
+    "exact and grounded speech both stay outside the default conversation");
   assert.match(source, /return await api\("\/realtime\/preflight", options\)/);
   assert.match(source, /error\?\.status && error\.status < 500/);
 });

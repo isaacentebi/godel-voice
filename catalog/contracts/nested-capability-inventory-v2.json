@@ -155,7 +155,7 @@
     },
     {
       "id": "exports_and_downloads",
-      "download_gate": "Register the browser download before activation, require a non-empty artifact, validate extension/MIME and never silently overwrite.",
+      "download_gate": "Register the exact workflow, step, panel, command, format and Godel tab before activation; bind only a post-registration same-origin browser event; require a completed non-empty artifact with expected extension/MIME; expire stalled receipts and use Chromium uniquify conflict handling.",
       "commands": [
         {"command":"FA","action":"export.download","formats":["xlsx","json"],"state":"documented-unbound","voice":"Export this annual cash-flow statement to Excel.","evidence":["https://godelterminal.com/docs/commands/fa"]},
         {"command":"HP","action":"export.download","formats":["xlsx","json"],"state":"documented-unbound","voice":"Export every loaded one-minute Bitcoin row to Excel.","evidence":["https://godelterminal.com/docs/commands/hp"]},
@@ -182,11 +182,11 @@
         {"id":"window.restore","operation":"restore","value":{"type":"none"},"state":"source-verified","completion":"previous geometry is restored and native previous marker clears","evidence":["extension/main-world.js","docs/panel-adapters.md"]},
         {"id":"window.focus","operation":"focus","value":{"type":"target","modes":["last","focused","command plus optional security"]},"state":"source-verified","completion":"workspace active window id equals exact target id","evidence":["extension/main-world.js","extension/content.js"]},
         {"id":"window.close","operation":"close","value":{"type":"target","modes":["last","focused","command plus optional security"]},"state":"source-verified","completion":"exact Godel window disappears; unsafe command families are rejected","safety":"requires explicit spoken intent; never closes an Arc tab","evidence":["extension/main-world.js","extension/content.js"]},
-        {"id":"screen.create_or_reuse","operation":"create","value":{"name":"validated screen name"},"state":"source-verified","completion":"new/reused screen is active and exact title matches","prerequisites":["maximum eight screens; reuse empty Voice or Blank when possible"],"evidence":["extension/main-world.js","extension/content.js","live-ui:2026-08-03"]},
-        {"id":"screen.focus","operation":"focus","value":{"type":"exact-live-screen-name"},"state":"source-verified","completion":"active screen id matches selected screen","evidence":["extension/main-world.js"]},
-        {"id":"screen.rename","operation":"rename","value":{"type":"validated-screen-name"},"state":"source-verified","completion":"screen tab title matches exactly","evidence":["extension/main-world.js"]},
-        {"id":"screen.export","operation":"export","value":{"type":"current-screen-json"},"state":"source-verified","completion":"native exportScreen callback resolves","evidence":["extension/main-world.js"]},
-        {"id":"layout.export","operation":"export","value":{"type":"full-layout-json"},"state":"source-verified","completion":"native exportLayout callback resolves","evidence":["extension/main-world.js"]},
+        {"id":"screen.create_or_reuse","operation":"create","value":{"name":"Voice (reserved internal workspace)"},"state":"source-verified","completion":"the empty Voice/Blank workspace is active and titled Voice","prerequisites":["maximum eight screens; reuse empty Voice or Blank when possible","not an arbitrary user-named screen operation"],"evidence":["extension/main-world.js","extension/content.js","live-ui:2026-08-03"]},
+        {"id":"screen.focus","operation":"focus","value":{"type":"exact-receipted-Voice-screen"},"state":"source-verified","completion":"active screen id matches the internally owned Voice screen","evidence":["extension/main-world.js","extension/content.js"]},
+        {"id":"screen.rename","operation":"rename","value":{"type":"arbitrary-screen-name"},"state":"candidate-disabled","completion":"blocked: runtime uses rename only to claim an empty Blank screen as the reserved Voice workspace","evidence":["extension/main-world.js","extension/content.js"]},
+        {"id":"screen.export","operation":"export","value":{"type":"current-screen-json"},"state":"candidate-disabled","completion":"blocked: no voice compiler or verified artifact receipt","evidence":["extension/main-world.js"]},
+        {"id":"layout.export","operation":"export","value":{"type":"full-layout-json"},"state":"candidate-disabled","completion":"blocked: no voice compiler or verified artifact receipt","evidence":["extension/main-world.js"]},
         {"id":"screen.close","operation":"close","value":{"type":"exact-live-screen"},"state":"unsupported","completion":"blocked: no verified native screen-close adapter","evidence":["docs/panel-adapters.md"]},
         {"id":"window.move_between_screens","operation":"move","value":{"type":"target-screen"},"state":"unsupported","completion":"blocked: recreation on a target screen is the current safe fallback","evidence":["docs/panel-adapters.md"]}
       ],
@@ -194,7 +194,7 @@
         "On a fresh screen, put the market heatmap on the left and active halts on the right.",
         "Make the Meta earnings matrix bigger, move it to the top right and focus it.",
         "Close the Meta earnings matrix and open Meta's option chain.",
-        "Rename this screen Morning Markets and export the full layout."
+        "Close everything Jarvis opened on the Voice workspace."
       ]
     }
   ],

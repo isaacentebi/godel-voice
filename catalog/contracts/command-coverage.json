@@ -41,7 +41,7 @@
     {"code":"CALC","state":"strict-unbound","module":"src/commands/calculators-followup.mjs","generic_only":false,"aliases":[],"live_bindings":[]},
     {"code":"BROK","state":"safety-gated","module":"src/commands/aum-brok-followup.mjs","generic_only":false,"aliases":[],"live_bindings":[]},
     {"code":"AUM","state":"strict-unbound","module":"src/commands/aum-brok-followup.mjs","generic_only":false,"aliases":[],"live_bindings":[]},
-    {"code":"G","state":"live","module":"src/commands/g-chart-followup.mjs","generic_only":false,"aliases":["GIP","GP"],"live_bindings":["chart.resolution.1h"]},
+    {"code":"G","state":"live","module":"src/commands/g-chart-followup.mjs","generic_only":false,"aliases":["GIP","GP"],"live_bindings":["chart.resolution.1h"],"proof_candidates":["chart.resolution.1m","chart.resolution.5m","chart.resolution.15m","chart.resolution.30m","chart.resolution.1d"]},
     {"code":"HMS","state":"live","module":"src/commands/q-hldr-hms-followup.mjs","generic_only":false,"aliases":[],"live_bindings":["comparison.configure"]},
     {"code":"HP","state":"strict-unbound","module":"src/commands/fa-hp-followup.mjs","generic_only":false,"aliases":[],"live_bindings":[]},
     {"code":"GF","state":"strict-unbound","module":"src/commands/chart-options-followup.mjs","generic_only":false,"aliases":[],"live_bindings":[]},

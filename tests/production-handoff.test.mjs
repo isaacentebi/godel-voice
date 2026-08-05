@@ -29,14 +29,18 @@ test("an affined live Jarvis session keeps its deterministic executor and contex
   assert.match(content, /jarvisRealtimeActive = false/);
 });
 
-test("executor queue polling is low-latency, overlap-safe, and still leases only after eligibility", () => {
+test("executor queue delivery uses one bounded cancellable long-poll after eligibility", () => {
   const content = read("extension/content.js");
   assert.match(content, /let polling = false/);
-  assert.match(content, /if \(running \|\| polling\) return/);
+  assert.match(content, /if \(running \|\| polling \|\| nextLoopStopped\) return "busy"/);
   assert.match(content, /polling = true/);
-  assert.match(content, /if \(!\(await eligibleExecutor\(\)\.catch\(\(\) => false\)\)\) return/);
-  assert.match(content, /finally \{ polling = false; \}/);
-  assert.match(content, /setInterval\(poll, 100\)/);
+  assert.match(content, /if \(!\(await eligibleExecutor\(\)\.catch\(\(\) => false\)\)\) return "ineligible"/);
+  assert.match(content, /finally \{ nextRequestController = null; polling = false; \}/);
+  assert.match(content, /wait_ms=\$\{NEXT_WAIT_MS\}/);
+  assert.match(content, /signal: controller\.signal/);
+  assert.match(content, /async function runNextLoop\(\)/);
+  assert.match(content, /nextRequestController\?\.abort\(\)/);
+  assert.doesNotMatch(content, /setInterval\(poll, 100\)/);
 });
 
 test("command and nested-action execution use rendered postconditions instead of fixed settling sleeps", () => {
@@ -53,7 +57,7 @@ test("command and nested-action execution use rendered postconditions instead of
   assert.match(content, /waitUntilAsync\(\(\) => committedPanelIdentity\(panel, plan\.command\)/);
   assert.match(content, /markPhase\("panel_commit_ms"/);
   assert.match(content, /this is observation-only and never retries Enter after mutation/);
-  assert.match(content, /panelInternalAction\(panel, "GF", "addCompany"/);
+  assert.match(content, /measuredGFAction\(panel, "addCompany"/);
 });
 
 test("opening a fresh command palette never emits Godel's double-Escape close gesture", () => {
@@ -160,6 +164,24 @@ test("loopback credentials and plan bodies are not placed in process arguments o
   assert.doesNotMatch(delivery, /health\?token=/);
   assert.doesNotMatch(delivery, /--data-binary "\$marker"/);
   assert.doesNotMatch(content, /token=\$\{encodeURIComponent\(config\.secret\)\}/);
+});
+
+test("VoiceInk timing telemetry does not launch clock subprocesses on the request path", () => {
+  const delivery = read("bin/voiceink-deliver");
+  assert.match(delivery, /zmodload zsh\/datetime/);
+  assert.match(delivery, /EPOCHREALTIME \* 1000/);
+  assert.doesNotMatch(delivery, /node -e ['"]process\.stdout\.write\(String\(Date\.now\(\)\)\)/);
+});
+
+test("executor reports bounded workflow phases separately from command timings", () => {
+  const content = read("extension/content.js");
+  assert.match(content, /lifecycle_barrier_ms: lifecycleBarrierMs/);
+  assert.match(content, /phases\.workspace_prepare_ms/);
+  assert.match(content, /phases\.layout_ms/);
+  assert.match(content, /phases\.reconcile_ms/);
+  assert.match(content, /result\.phases\.completion_fact_ms/);
+  assert.match(content, /error\.workflowPhases/);
+  assert.match(content, /error: error\?\.message \?\? "", message, steps, phases/);
 });
 
 test("service manager is persistent on macOS and only replaces this checkout's exact server", () => {

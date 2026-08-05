@@ -203,21 +203,30 @@
       String(element.textContent ?? "").replace(/\s+/g, " ").trim().toLowerCase() === desired.toLowerCase());
     const active = button => String(button?.className ?? "").includes("bg-[#222222]")
       && String(button?.className ?? "").includes("text-[#eaeaea]");
-    const deadline = Date.now() + 6000;
-    let stableSince = 0;
-    while (Date.now() < deadline) {
+    const offered = buttonFor();
+    if (!offered) throw new Error(`Godel GF Range does not offer ${desired}`);
+    if (active(offered)) return { changed: false, value: desired };
+    // A freshly-mounted GF panel can replace its first range-button fiber
+    // during hydration. The callback then belongs to the discarded tree and
+    // produces no state change. Re-resolve and idempotently invoke the exact
+    // requested button until its rendered selected state is authoritative;
+    // return immediately on proof and never add a post-success settling wait.
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
       const button = buttonFor();
       if (!button) throw new Error(`Godel GF Range does not offer ${desired}`);
-      if (active(button)) {
-        stableSince ||= Date.now();
-        if (Date.now() - stableSince >= 900) return;
-      } else {
-        stableSince = 0;
-        const props = reactPropsFor(button);
-        if (typeof props?.onClick !== "function") throw new Error(`Godel GF Range ${desired} callback unavailable`);
-        props.onClick();
+      if (active(button)) return { changed: true, value: desired, attempt };
+      const props = reactPropsFor(button);
+      if (typeof props?.onClick !== "function") throw new Error(`Godel GF Range ${desired} callback unavailable`);
+      props.onClick();
+      try {
+        await waitForElement(() => {
+          const current = buttonFor();
+          return current && active(current) ? current : null;
+        }, `GF verified Range ${desired}`, 650);
+        return { changed: true, value: desired, attempt };
+      } catch (error) {
+        if (attempt === 5) throw error;
       }
-      await new Promise(resolve => setTimeout(resolve, 120));
     }
     throw new Error(`GF verified Range ${desired} unavailable`);
   }
@@ -335,27 +344,21 @@
       const symbol = String(payload.symbol ?? "").toUpperCase();
       if (!/^[A-Z0-9./-]{1,16}$/.test(symbol)) throw new Error("Invalid company symbol");
       const rail = railFor(root);
-      const company = rail.props.series.some(item => item.securityId === symbol)
-        ? null : await resolveCompany(root, symbol);
-      const deadline = Date.now() + 8000;
-      let stableSince = 0;
-      let lastAddAt = 0;
-      while (Date.now() < deadline) {
-        const currentRail = railFor(liveScopedRoot());
-        const loaded = currentRail.props.series.some(item => item.securityId === symbol);
-        if (loaded) {
-          stableSince ||= Date.now();
-          if (Date.now() - stableSince >= 900) return;
-        } else {
-          stableSince = 0;
-          if (company && Date.now() - lastAddAt >= 600) {
-            currentRail.props.onAddCompany(company);
-            lastAddAt = Date.now();
-          }
-        }
-        await new Promise(resolve => setTimeout(resolve, 120));
+      if (rail.props.series.some(item => item.securityId === symbol)) {
+        return { changed: false, symbol };
       }
-      throw new Error(`${symbol} company series did not stabilize`);
+      const company = await resolveCompany(root, symbol);
+      railFor(liveScopedRoot()).props.onAddCompany(company);
+      await waitForElement(() => {
+        try {
+          const currentRoot = liveScopedRoot();
+          const loaded = railFor(currentRoot).props.series.some(item => item.securityId === symbol);
+          const addMetric = [...currentRoot.querySelectorAll("button")].some(element =>
+            element.getAttribute("aria-label") === `Add metric for ${symbol}`);
+          return loaded && addMetric;
+        } catch { return false; }
+      }, `${symbol} company series`, 5000);
+      return { changed: true, symbol };
     }
     if (action === "setRange") {
       const value = String(payload.value ?? "").toUpperCase();
@@ -456,7 +459,9 @@
           break;
         }
         candidate.onClose();
-        await new Promise(resolve => setTimeout(resolve, 180));
+        await waitForElement(() => ![...livePanelRoot().querySelectorAll("button")].some(element =>
+          element.textContent.trim() === "Add series" && metricDialogFor(element)),
+        "GF stale metric builder closed", 1500);
       }
       if (!builder) throw new Error(`Godel ${symbol} metric builder did not synchronize`);
 
@@ -540,10 +545,6 @@
     if (!allowedRows.has(rowLabel) || payload.section !== "Multiples" || semanticUnit !== expectedUnit) {
       throw new Error("Invalid Godel EM valuation request");
     }
-    const multiplesHeading = [...root.querySelectorAll("*")]
-      .filter(visibleElement)
-      .some(element => compactElementText(element) === "Multiples");
-    if (!multiplesHeading) throw new Error("Godel EM Multiples heading is missing");
     const tables = [...root.querySelectorAll("table,[role='table'],[role='grid']")].filter(visibleElement);
     const matches = [];
     for (const table of tables) {
@@ -1144,9 +1145,13 @@
     const context = workspaceContextFor(contextRoot ?? root);
     const current = assertLayoutShape(context.layout);
     if (action === "workspaceInventory") {
+      const referencedIds = new Set(current.screenIds.flatMap(id => current.screens[id].windowIds.map(String)));
+      const layoutWindowIds = Object.keys(current.windows).map(String);
       return {
         active_screen_id: String(current.activeScreenId),
         total_windows: current.screenIds.reduce((total, id) => total + current.screens[id].windowIds.length, 0),
+        layout_window_ids: layoutWindowIds,
+        orphan_window_record_ids: layoutWindowIds.filter(id => !referencedIds.has(id)),
         screens: current.screenIds.map(id => ({
           id: String(id), title: current.screens[id].title,
           active: String(id) === String(current.activeScreenId),
@@ -1155,15 +1160,53 @@
         }))
       };
     }
+    if (action === "createOwnedScreen") {
+      const title = validateScreenName(payload.name ?? "Voice");
+      if (current.screenIds.length >= 8) throw new Error("Godel has reached its eight-screen limit; clear a screen first");
+      const id = current.nextScreenId;
+      if (current.screens[id] || current.screenIds.includes(id)) throw new Error("Godel next screen id is already in use");
+      const screen = { id, title, windowIds: [], activeWindowId: null };
+      let rejected = null;
+      context.setLayout(layoutValue => {
+        let layout;
+        try { layout = assertLayoutShape(layoutValue); }
+        catch (error) { rejected = error; return layoutValue; }
+        if (layout.nextScreenId !== id || layout.screens[id] || layout.screenIds.includes(id)) {
+          rejected = new Error("Godel screen state changed during Jarvis screen creation");
+          return layoutValue;
+        }
+        return {
+          ...layout,
+          activeScreenId: id,
+          nextScreenId: id + 1,
+          screenIds: [...layout.screenIds, id],
+          screens: { ...layout.screens, [id]: screen }
+        };
+      });
+      await waitForElement(() => {
+        if (rejected) throw rejected;
+        const tabs = screenTabs();
+        return String(tabs.activeItemId) === String(id)
+          && tabs.items.some(item => String(item.id) === String(id) && item.title === title);
+      }, `${title} owned screen`, 5000);
+      return { id: String(id), title, created: true };
+    }
     if (action === "clearVoiceScreen") {
-      const voiceScreens = current.screenIds.map(id => current.screens[id])
-        .filter(screen => screen.title.trim().toLowerCase() === "voice");
-      if (voiceScreens.length !== 1) throw new Error(`Expected one dedicated Voice screen, found ${voiceScreens.length}`);
-      const voice = voiceScreens[0];
+      const rawScreenId = String(payload.screen_id ?? "");
+      if (!/^\d+$/.test(rawScreenId)) throw new Error("Voice cleanup requires an exact owned screen id");
+      const voice = current.screens[Number(rawScreenId)];
+      if (!voice || String(voice.id) !== rawScreenId) throw new Error("The owned Voice screen no longer exists");
+      if (voice.title.trim().toLowerCase() !== "voice") throw new Error("The owned screen is no longer named Voice");
       const preserveIds = new Set((Array.isArray(payload.preserve_ids) ? payload.preserve_ids : []).map(String));
-      if (!Array.isArray(payload.only_ids)) throw new Error("Voice cleanup requires explicit Jarvis ownership receipts");
-      const onlyIds = new Set(payload.only_ids.map(String));
-      for (const id of [...preserveIds, ...(onlyIds ?? [])]) {
+      const replaceAllSafe = payload.replace_all_safe === true;
+      if (!replaceAllSafe && !Array.isArray(payload.only_ids)) throw new Error("Voice cleanup requires explicit Jarvis ownership receipts");
+      const onlyIds = new Set((Array.isArray(payload.only_ids) ? payload.only_ids : []).map(String));
+      const knownIds = new Set((Array.isArray(payload.known_ids) ? payload.known_ids : []).map(String));
+      const verifiedSafeIds = new Set((Array.isArray(payload.verified_safe_ids)
+        ? payload.verified_safe_ids : []).map(String));
+      const expectedWindowIds = (Array.isArray(payload.expected_window_ids) ? payload.expected_window_ids : null)?.map(String);
+      if (!expectedWindowIds) throw new Error("Voice cleanup requires an exact workspace snapshot");
+      for (const id of [...preserveIds, ...onlyIds, ...knownIds, ...verifiedSafeIds, ...expectedWindowIds]) {
         if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) throw new Error("Invalid Godel cleanup window id");
       }
       const duplicateIds = voice.windowIds.map(String).filter(id => current.screenIds.some(screenId =>
@@ -1175,26 +1218,40 @@
         if (nativeRoot instanceof HTMLElement) {
           try { if (consequentialWindowType(commandTypeFor(nativeRoot))) blockedIds.add(rawId); }
           catch { blockedIds.add(rawId); }
-        }
+        } else if (!verifiedSafeIds.has(rawId)) blockedIds.add(rawId);
       }
       const removeIds = new Set(voice.windowIds.map(String).filter(id =>
-        !preserveIds.has(id) && !blockedIds.has(id) && onlyIds.has(id)));
-      if (!removeIds.size) {
-        return { removed_ids: [], preserved_ids: [...preserveIds], blocked_ids: [...blockedIds] };
-      }
+        !preserveIds.has(id) && !blockedIds.has(id) && (replaceAllSafe || onlyIds.has(id))));
+      const referencedIds = new Set(current.screenIds.flatMap(id => current.screens[id].windowIds.map(String)));
+      const orphanRecordCandidates = new Set([...knownIds].filter(id => verifiedSafeIds.has(id)
+        && !referencedIds.has(id)
+        && Object.prototype.hasOwnProperty.call(current.windows, id)));
       let rejected = null;
       context.setLayout(layoutValue => {
         let layout;
         try { layout = assertLayoutShape(layoutValue); }
         catch (error) { rejected = error; return layoutValue; }
         const liveVoice = layout.screens[voice.id];
-        if (!liveVoice || [...removeIds].some(id => !liveVoice.windowIds.some(candidate => String(candidate) === id))) {
+        const liveWindowIds = liveVoice?.windowIds?.map(String) ?? [];
+        if (!liveVoice || liveWindowIds.length !== expectedWindowIds.length
+            || liveWindowIds.some((id, index) => id !== expectedWindowIds[index])
+            || [...removeIds].some(id => !liveWindowIds.includes(id))) {
           rejected = new Error("Godel Voice workspace changed during cleanup");
           return layoutValue;
         }
+        const duplicateIds = liveWindowIds.filter(id => layout.screenIds.some(screenId =>
+          String(screenId) !== String(voice.id) && layout.screens[screenId].windowIds.some(candidate => String(candidate) === id)));
+        if (duplicateIds.length) {
+          rejected = new Error("Godel layout contains windows assigned to more than one screen");
+          return layoutValue;
+        }
+        const liveReferencedIds = new Set(layout.screenIds.flatMap(id =>
+          layout.screens[id].windowIds.map(String)));
+        const liveOrphanRecordIds = new Set([...orphanRecordCandidates].filter(id =>
+          !liveReferencedIds.has(id) && Object.prototype.hasOwnProperty.call(layout.windows, id)));
         const remainingIds = liveVoice.windowIds.filter(id => !removeIds.has(String(id)));
         const windows = { ...layout.windows };
-        for (const id of removeIds) delete windows[id];
+        for (const id of [...removeIds, ...liveOrphanRecordIds]) delete windows[id];
         return {
           ...layout,
           windows,
@@ -1213,9 +1270,19 @@
         if (rejected) throw rejected;
         const layout = assertLayoutShape(workspaceContextFor(document.documentElement).layout);
         const screen = layout.screens[voice.id];
-        return screen && [...removeIds].every(id => !screen.windowIds.some(candidate => String(candidate) === id));
+        const referenced = new Set(layout.screenIds.flatMap(id => layout.screens[id].windowIds.map(String)));
+        return screen && [...removeIds].every(id => !screen.windowIds.some(candidate => String(candidate) === id))
+          && [...orphanRecordCandidates].every(id => referenced.has(id)
+            || !Object.prototype.hasOwnProperty.call(layout.windows, id));
       }, "Voice workspace cleanup", 3000);
-      return { removed_ids: [...removeIds], preserved_ids: [...preserveIds], blocked_ids: [...blockedIds] };
+      const settled = assertLayoutShape(workspaceContextFor(document.documentElement).layout);
+      const settledReferenced = new Set(settled.screenIds.flatMap(id => settled.screens[id].windowIds.map(String)));
+      const removedOrphanRecordIds = [...orphanRecordCandidates].filter(id =>
+        !settledReferenced.has(id) && !Object.prototype.hasOwnProperty.call(settled.windows, id));
+      return {
+        removed_ids: [...removeIds], removed_orphan_record_ids: removedOrphanRecordIds,
+        preserved_ids: [...preserveIds], blocked_ids: [...blockedIds]
+      };
     }
     if (action === "activeWindowIds") {
       const screen = current.screens[current.activeScreenId];
@@ -1494,6 +1561,38 @@
     adapters.set(code, Object.freeze(adapter));
   }
 
+  function expandRootUntil(root, predicate) {
+    let scope = root;
+    for (let depth = 0; scope instanceof HTMLElement && depth < 8; depth += 1) {
+      if (predicate(scope)) return scope;
+      scope = scope.parentElement;
+    }
+    return root;
+  }
+
+  function expandEMRoot(root) {
+    return expandRootUntil(root, scope => {
+      const hasMetricSelector = [...scope.querySelectorAll("select")].some(select => {
+        const labels = new Set([...select.options].map(option => compactElementText(option)));
+        return ["Sales", "EBITDA", "EPS (GAAP)"].every(label => labels.has(label));
+      });
+      const hasValuationTable = [...scope.querySelectorAll("table,[role='table'],[role='grid']")]
+        .filter(visibleElement)
+        .some(table => {
+          const headers = [...table.querySelectorAll("thead th,[role='columnheader']")].map(compactElementText);
+          return headers[0] === "Last 4Q" && headers[1] === "Next 4Q";
+        });
+      return hasMetricSelector || hasValuationTable;
+    });
+  }
+
+  function expandHDSRoot(root) {
+    return expandRootUntil(root, scope => ["Table", "Treemap", "Bubble"].every(label =>
+      [...scope.querySelectorAll("button,[role='button'],[role='tab']")]
+        .filter(visibleElement)
+        .some(element => compactElementText(element).toLowerCase() === label.toLowerCase())));
+  }
+
   registerAdapter("GF", {
       expandRoot(root) {
         let panel = root;
@@ -1508,9 +1607,9 @@
       run: runGF
   });
 
-  registerAdapter("EM", { run: runEM });
+  registerAdapter("EM", { expandRoot: expandEMRoot, run: runEM });
   registerAdapter("MOST", { run: runMOST });
-  registerAdapter("HDS", { run: runHDS });
+  registerAdapter("HDS", { expandRoot: expandHDSRoot, run: runHDS });
   registerAdapter("OMON", { run: runOMON });
   registerAdapter("N", { run: runNews });
   if (window.GodelVoiceIMAPAdapter?.install) {

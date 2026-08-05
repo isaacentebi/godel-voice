@@ -125,6 +125,22 @@ test("long market overview remains a single ordered zero-model plan", () => {
   assert.equal(plan.layout.new_screen, true);
 });
 
+test("mixed market and research cockpit stays zero-model and preserves every requested step", () => {
+  const plan = parseControlFollowup(
+    "on a new screen open the market heat map table view upper left active halts lower left most active stocks upper right top Reuters lower right then amazon description earnings matrix estimates filings transcript and finally maximize the matrix"
+  );
+  assert.deepEqual(plan.steps.map(step => step.kind === "control" ? step.operation : step.command), [
+    "HMAP", "HALT", "MOST", "TOP", "DES", "EM", "ERN", "CF", "TRAN", "maximize"
+  ]);
+  assert.deepEqual(plan.steps.slice(0, 4).map(step => step.layout.placement), [
+    "top-left", "bottom-left", "top-right", "bottom-right"
+  ]);
+  assert.deepEqual(plan.steps[0].actions, [{ feature: "view", operation: "select", value: "Table" }]);
+  assert.deepEqual(plan.steps[1].actions, [{ feature: "tab", operation: "select", value: "Active" }]);
+  assert.deepEqual(plan.steps.at(-1).target, { mode: "command", command: "EM", security: "AMZN" });
+  assert.equal(plan.layout.new_screen, true);
+});
+
 test("mixed market and company requests never compile as a partial desk", () => {
   const plan = compileDeterministicDesk({
     transcript: "new screen world indices and amazon earnings matrix",
@@ -207,9 +223,9 @@ test("close-all plus a supported comparison compiles atomically", () => {
     "close all the other windows, then compare Amazon and Meta operating margin and revenue",
     context
   );
-  assert.deepEqual(plan.steps.map(step => step.kind), ["control", "control", "command"]);
-  assert.deepEqual(plan.steps.slice(0, 2).map(step => step.operation), ["close", "close"]);
-  assert.equal(plan.steps[2].command, "GF");
+  assert.deepEqual(plan.steps.map(step => step.kind), ["control", "command"]);
+  assert.equal(plan.steps[0].operation, "reset_workspace");
+  assert.equal(plan.steps[1].command, "GF");
 });
 
 test("open-a-chart comparing grammar keeps cleanup and the full GF comparison", () => {
@@ -221,11 +237,10 @@ test("open-a-chart comparing grammar keeps cleanup and the full GF comparison", 
     "Close all other windows, then open a chart comparing Amazon and Meta operating margin and revenue over the last five years.",
     context
   );
-  assert.deepEqual(plan.steps.map(step => step.kind), ["control", "control", "command"]);
-  assert.deepEqual(plan.steps.slice(0, 2).map(step => step.operation), ["close", "close"]);
-  assert.deepEqual(plan.steps.slice(0, 2).map(step => step.failure_policy), ["continue", "continue"]);
-  assert.equal(plan.steps[2].terminal_command, "AMZN EQ GF");
-  assert.deepEqual(plan.steps[2].actions, [
+  assert.deepEqual(plan.steps.map(step => step.kind), ["control", "command"]);
+  assert.equal(plan.steps[0].operation, "reset_workspace");
+  assert.equal(plan.steps[1].terminal_command, "AMZN EQ GF");
+  assert.deepEqual(plan.steps[1].actions, [
     { feature: "range", operation: "select", value: "5Y" },
     { feature: "add company", operation: "add", value: "META" },
     { feature: "margin metric", operation: "add", value: "Operating Margin" },
@@ -233,14 +248,15 @@ test("open-a-chart comparing grammar keeps cleanup and the full GF comparison", 
   ]);
 });
 
-test("close-all then open stays local when the Voice screen is already empty", () => {
+test("close-all remains an explicit idempotent reset when the Voice screen is already empty", () => {
   const plan = parseControlFollowup(
     "Close all other windows, then open a chart comparing Amazon and Meta operating margin and revenue over the last five years.",
     { panels: [] }
   );
-  assert.deepEqual(plan.steps.map(step => step.kind), ["command"]);
-  assert.equal(plan.steps[0].terminal_command, "AMZN EQ GF");
-  assert.deepEqual(plan.steps[0].actions.map(action => action.value), ["5Y", "META", "Operating Margin", "Revenue"]);
+  assert.deepEqual(plan.steps.map(step => step.kind), ["control", "command"]);
+  assert.equal(plan.steps[0].operation, "reset_workspace");
+  assert.equal(plan.steps[1].terminal_command, "AMZN EQ GF");
+  assert.deepEqual(plan.steps[1].actions.map(action => action.value), ["5Y", "META", "Operating Margin", "Revenue"]);
 });
 
 test("spoken comparison variants stay on the same zero-model GF route", () => {

@@ -131,6 +131,8 @@ export async function runRealtimeLifecycleHarness({
   synthesisMs = 28,
   disconnectAfterLease = false,
   disconnectDuringPreflight = false,
+  falseVadDuringOutput = false,
+  unsolicitedStartupAudio = false,
   workflowProgressDelayMs = null,
   outputPath = null
 } = {}) {
@@ -161,6 +163,7 @@ export async function runRealtimeLifecycleHarness({
   let channel;
   let lease;
   let host;
+  let clientStopped = false;
   let stopped = false;
   let disconnectedOnce = false;
   let acknowledgedMessage = "";
@@ -185,6 +188,18 @@ export async function runRealtimeLifecycleHarness({
     await sleep(synthesisMs);
     stamps.firstAudio = Date.now();
     emitProvider({ type: "output_audio_buffer.started", event_id: "audio-start-1" });
+    if (falseVadDuringOutput) {
+      emitProvider({ type: "input_audio_buffer.speech_started", event_id: "false-vad-start-1" });
+      const remoteAudio = document.mountedElements.find(element => element.tagName === "AUDIO");
+      stamps.falseVadVolume = remoteAudio?.volume;
+      await sleep(10);
+      emitProvider({ type: "input_audio_buffer.speech_stopped", event_id: "false-vad-stop-1" });
+      emitProvider({
+        type: "conversation.item.input_audio_transcription.failed",
+        event_id: "false-vad-transcription-1",
+        item_id: "false-vad-item-1"
+      });
+    }
     emitProvider({
       type: "response.output_audio_transcript.done",
       event_id: "assistant-transcript-1",
@@ -333,7 +348,7 @@ export async function runRealtimeLifecycleHarness({
   try {
     stamps.harnessStart = Date.now();
     const sourceForHarness = Number.isFinite(workflowProgressDelayMs)
-      ? realtimeSource.replace("WORKFLOW_PROGRESS_DELAY_MS = 3_000", `WORKFLOW_PROGRESS_DELAY_MS = ${Math.max(1, Math.round(workflowProgressDelayMs))}`)
+      ? realtimeSource.replace("WORKFLOW_PROGRESS_DELAY_MS = 8_000", `WORKFLOW_PROGRESS_DELAY_MS = ${Math.max(1, Math.round(workflowProgressDelayMs))}`)
       : realtimeSource;
     vm.runInNewContext(sourceForHarness, context, { filename: "extension/realtime.js" });
     host = await waitFor(() => document.mountedElements.find(candidate => candidate.id === "godel-jarvis-control"), {
@@ -357,6 +372,12 @@ export async function runRealtimeLifecycleHarness({
     await waitFor(() => channel?.readyState === "open", { message: "Realtime data channel" });
     stamps.channelOpen = Date.now();
     emitProvider({ type: "session.created" });
+    if (unsolicitedStartupAudio) {
+      emitProvider({ type: "output_audio_buffer.started", event_id: "startup-audio-start-1" });
+      const remoteAudio = document.mountedElements.find(element => element.tagName === "AUDIO");
+      stamps.startupAudioMuted = remoteAudio?.muted;
+      emitProvider({ type: "output_audio_buffer.stopped", event_id: "startup-audio-stop-1" });
+    }
     stamps.speechStart = Date.now();
     emitProvider({ type: "input_audio_buffer.speech_started", event_id: "speech-start-1" });
     await sleep(25);
@@ -422,8 +443,17 @@ export async function runRealtimeLifecycleHarness({
         client: clientEvents.length,
         provider: providerEvents.length,
         audit: audit.length,
-        spoken_responses: clientEvents.filter(item => item.type === "response.create").length
+        spoken_responses: clientEvents.filter(item => item.type === "response.create").length,
+        response_cancellations: clientEvents.filter(item => item.type === "response.cancel").length
       },
+      interruption: falseVadDuringOutput ? {
+        false_vad_volume: stamps.falseVadVolume,
+        response_cancelled: clientEvents.some(item => item.type === "response.cancel")
+      } : null,
+      startup_audio: unsolicitedStartupAudio ? {
+        muted: stamps.startupAudioMuted,
+        response_cancelled: clientEvents.some(item => item.type === "response.cancel")
+      } : null,
       render_states: renderTrace.map(item => item.state),
       coverage: {
         browser_realtime_state_machine: true,
@@ -450,10 +480,17 @@ export async function runRealtimeLifecycleHarness({
       fs.writeFileSync(path.resolve(outputPath), `${JSON.stringify(report, null, 2)}\n`);
     }
     shadow.button.dispatchEvent(new Event("click"));
+    clientStopped = true;
     await sleep(10);
     await Promise.allSettled([...providerTasks]);
     return report;
   } finally {
+    if (host && !clientStopped) {
+      try {
+        host.shadowRootForHarness.button.dispatchEvent(new Event("click"));
+        clientStopped = true;
+      } catch {}
+    }
     stopped = true;
     executorAbort.abort();
     await Promise.allSettled([executor, ...providerTasks]);

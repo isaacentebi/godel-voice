@@ -16,7 +16,7 @@
   "policies": {
     "contract_source": "catalog/contracts/adapter-contracts-v1.json",
     "enabled_contract_count": 16,
-    "disabled_contract_count": 78,
+    "disabled_contract_count": 83,
     "fail_closed": "Every disabled contract binding is non-executable. A request containing any unbound nested action must execute none of its sibling actions.",
     "atomicity": "Validated mixed nested actions are all-or-nothing; deterministic fast paths decline rather than execute a verified subset.",
     "voiceink_definition": "true means the repository contains explicit evidence of a real post-code VoiceInk/natural-delivery run for this exact action family; deterministic, direct-workflow, model-open, or manual UI evidence alone is false"
@@ -138,9 +138,9 @@
       "id": "G.chart.resolution.1h", "command": "G", "feature": "resolution", "operation": "select",
       "validators": {"browser":"extension/core.js + extension/content.js", "workflow":"src/workflow-plan.mjs", "fast_parser":"src/commands/chart-options-followup.mjs", "adapter":"extension/content.js#executeG"},
       "postconditions": ["one authenticated iframe popup reads 1 hour", "same iframe image label ends in , 1 hour"],
-      "live_proof": {"date":"2026-08-04", "evidence":"live-ui:2026-08-03"},
+      "live_proof": {"exists":true, "date":"2026-08-04", "evidence":"live-ui:2026-08-03"},
       "real_post_code_voiceink": {"exists":false, "successful":false, "evidence":"verified through trusted browser input, not an explicit post-code VoiceInk run"},
-      "limitations": ["contextual 1h only", "opening-time interval syntax and all other chart controls remain disabled"]
+      "limitations": ["other chart controls remain disabled"]
     },
     {
       "id": "HMS.comparison.configure", "command": "HMS", "feature": "comparison", "operation": "configure",

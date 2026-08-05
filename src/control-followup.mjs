@@ -17,7 +17,8 @@ const targetCommands = [
   ["market halts", "HALT"], ["halts", "HALT"],
   ["most active stocks", "MOST"], ["most active", "MOST"],
   ["world equity index futures", "WEIF"], ["index futures", "WEIF"],
-  ["world equity index", "WEI"], ["world stock indexes", "WEI"], ["world indices", "WEI"],
+  ["world equity index", "WEI"], ["world stock indexes", "WEI"], ["world market indices", "WEI"],
+  ["global market indices", "WEI"], ["world indices", "WEI"],
   ["fundamentals graph", "GF"], ["fundamental graph", "GF"], ["chart", "G"],
   ["historical comparison", "HMS"], ["comparison graph", "HMS"],
   ["news feed", "N"], ["news", "N"], ["option chain", "OMON"], ["screener", "EQS"],
@@ -72,6 +73,15 @@ function clean(value) {
     .replace(/\s+/g, " ").trim();
 }
 
+export function deterministicClarification(transcript) {
+  const text = clean(transcript);
+  const conflictingSinglePanelPlacement = /\b(?:chart|graph|window|panel)\b.*\b(?:on|to) (?:the )?left\b.*\b(?:on|to) (?:the )?right\b.*\b(?:do not|don t|dont|without) duplicate\b/.test(text)
+    || /\b(?:do not|don t|dont|without) duplicate\b.*\b(?:on|to) (?:the )?left\b.*\b(?:on|to) (?:the )?right\b/.test(text);
+  return conflictingSinglePanelPlacement
+    ? "Should the single panel go on the left or the right?"
+    : null;
+}
+
 function resolvedEquities(value) {
   return resolveTranscriptSecurities(value).filter(item => item.asset_class === "EQ");
 }
@@ -85,6 +95,7 @@ const directGlobalOpen = new Set([
   "NI", "TOP", "TREND", "ALLQ", "SECF", "WJI", "IPO", "CALC", "CITADEL", "KELLY", "HELP", "CHANGE",
   "OVME", "BROK", "AUM", "ACM", "PDF", "AL", "ENT", "ERR"
 ]);
+const multiInstanceOpen = new Set(["EM", "QM", "MOST", "N", "G"]);
 const directOpenModifier = /\b(?:with|as|set|change|switch|compare|versus|vs|download|export|close|move|put|place|bigger|smaller|table|bubbles?|treemap|active|resumed|all|metric|multiple|revenue|ebit|ebitda|margin|growth|minutes?|hourly|candles?|ten k|ten q|eight k|forms?)\b/;
 
 function targetFor(text) {
@@ -172,6 +183,23 @@ function trailingOpenControl(text) {
   return null;
 }
 
+function exactTargetForOpenedStep(step) {
+  if (!step || step.kind !== "command" || !step.command) return null;
+  const command = String(step.command).toUpperCase();
+  const terminal = String(step.terminal_command ?? "").toUpperCase();
+  const securityMatch = terminal.match(/^([A-Z0-9.\-]+)\s+(?:EQ|US|CBOE|GBL|FX1|CME|FUT)\b/);
+  return {
+    mode: "command",
+    command,
+    security: securityMatch?.[1] ?? null
+  };
+}
+
+function exactTargetForLastOpenedStep(plan) {
+  const opened = [...(plan?.steps ?? [])].reverse().find(step => step.kind === "command");
+  return exactTargetForOpenedStep(opened);
+}
+
 function exactTerminalStep(command, terminalCommand, id, placement = null) {
   return {
     id, kind: "command", command, terminal_command: terminalCommand,
@@ -183,7 +211,8 @@ function exactTerminalStep(command, terminalCommand, id, placement = null) {
 export function parseControlFollowup(transcript, context = null) {
   const text = clean(transcript);
   if (!text) return null;
-  const focusedPanel = context?.focused_panel;
+  const focusedPanel = context?.focused_panel?.connected === false ? null : context?.focused_panel;
+  const lastContextPanel = context?.last_panel?.connected === false ? null : context?.last_panel;
   let target = targetFor(text);
   // “Open eye” is a frequent OpenAI transcription and is query content, not
   // an instruction to open a new Godel panel.
@@ -203,12 +232,55 @@ export function parseControlFollowup(transcript, context = null) {
       steps: [commandStep("Q", target.security)]
     });
   }
+
+  // A frequent spoken research request asks for the earnings matrix and then
+  // immediately asks whether analyst price targets or expectations are
+  // available. Treat that as one two-panel desk. Without this explicit lane,
+  // a model may duplicate EM or confuse the broad word "expectations" with a
+  // second earnings surface.
+  const requestedSecurity = resolvedEquities(text)[0]?.ticker ?? null;
+  const asksForEarningsMatrix = /\b(?:earnings? matrix|matrix)\b/.test(text);
+  const asksForAnalystView = /\b(?:analyst(?:s|')? (?:ratings?|recommendations?|price targets?|targets?|expectations?)|price targets?)\b/.test(text);
+  if (requestedSecurity && asksForEarningsMatrix && asksForAnalystView
+      && /\b(?:open|show|pull|bring|info|information|see|view|check)\b/.test(text)) {
+    return validateWorkflowPlan({
+      version: 2, failure_policy: "stop_on_any", layout: workflowLayout("grid"),
+      steps: [
+        commandStep("EM", requestedSecurity, "command-1"),
+        commandStep("ANR", requestedSecurity, "command-2")
+      ]
+    });
+  }
   if (!explicitlyOpening && focusedPanel?.command) {
     const focusedCommand = String(focusedPanel.command).toUpperCase();
     const focusedSecurity = focusedPanel.security ? String(focusedPanel.security).toUpperCase() : null;
     if (target.command == null || (target.command === focusedCommand && !target.security)) {
       target = { mode: "focused", command: focusedCommand, security: target.security ?? focusedSecurity };
     }
+  }
+
+  // “Another” is additive by definition. Reopen only a Godel surface whose
+  // multi-instance behavior is explicitly recorded, and carry security from
+  // the named request or one exact connected contextual panel. This avoids the
+  // ordinary replacement default silently closing the panel being duplicated.
+  const asksForAnother = /\b(?:open|show|display|launch|bring up|pull up)\s+(?:me\s+)?(?:another|one more)(?:\s+(?:one|window|panel|copy|instance))?\b/.test(text);
+  if (asksForAnother) {
+    const contextualPanel = focusedPanel ?? lastContextPanel ?? null;
+    const requestedCommand = target.command ?? contextualPanel?.command ?? null;
+    const canonicalCommand = String(requestedCommand ?? "").toUpperCase();
+    if (!multiInstanceOpen.has(canonicalCommand)) return null;
+    const requestedSecurity = resolvedEquities(text)[0]?.ticker ?? null;
+    const contextualSecurity = contextualPanel
+      && String(contextualPanel.command ?? "").toUpperCase() === canonicalCommand
+      ? String(contextualPanel.security ?? "").toUpperCase() || null : null;
+    const anotherSecurity = requestedSecurity ?? contextualSecurity;
+    if (["EM", "G"].includes(canonicalCommand) && !anotherSecurity) return null;
+    const layout = workflowLayout(canonicalCommand === "G" ? "focus" : "grid");
+    layout.preserve_existing = true;
+    return validateWorkflowPlan({
+      version: 2, failure_policy: "stop_on_any", layout,
+      steps: [commandStep(canonicalCommand, anotherSecurity)]
+    });
   }
 
   // Plural geometry and close requests need exact panel identities. Reducing
@@ -218,42 +290,33 @@ export function parseControlFollowup(transcript, context = null) {
       && /\b(?:both|these two|those two|the two)\b/.test(text))
       || /\b(?:move|put|place|resize|make|maximize|maximise|restore)\s+them\b/.test(text)) return null;
 
-  // Close every currently authenticated, non-consequential Godel panel when
-  // the exact live context is available. Without that context, bulk language
-  // still fails closed instead of degrading to a single arbitrary close.
+  // A whole-workspace close is an explicit reset of Jarvis' dedicated Voice
+  // desk. It must not depend on the visible context: hidden Godel layout-store
+  // records are precisely what make a damaged desk impossible to recover by
+  // enumerating mounted panels. The executor still scopes this operation to
+  // the disposable Voice screen and never touches another Godel screen.
   if (/\b(close|dismiss|remove)\b/.test(text)
-      && (/\b(?:close|dismiss|remove)\s+(?:all|everything)\b/.test(text)
-        || /\b(all|every|everything|entire|whole)\b.*\b(windows?|panels?|screens?)\b/.test(text)
-        || /\b(?:these|those)\s+(?:windows?|panels?|screens?)\b/.test(text))) {
-    const unsafe = new Set(["CHAT", "NOTE", "ACM", "BROK", "AL", "ENT"]);
-    const panels = Array.isArray(context?.panels) ? context.panels.filter(panel =>
-      panel?.connected !== false && typeof panel?.command === "string"
-      && !unsafe.has(String(panel.command).toUpperCase())).slice(0, 12) : [];
+      && (/\b(?:close|dismiss|remove)\s+everything\b/.test(text)
+        || /\b(?:close|dismiss|remove)\s+all(?=\s*(?:$|(?:and\s+then|then|and)\b|(?:the\s+)?(?:windows?|panels?|screens?|workspace|desk)\b))/.test(text)
+        || /\b(all|every|everything|entire|whole)\b.*\b(windows?|panels?|screens?|workspace|desk)\b/.test(text))) {
     const continuation = /\b(?:and\s+then|then|and)\b[\s,:-]*(?=(?:open|show|pull(?: up)?|bring up|build|create|compare)\b)(.+)$/.exec(text)?.[1]?.trim() ?? "";
     const nextPlan = continuation && /\b(?:open|show|pull|bring|build|create|compare)\b/.test(continuation)
       ? parseControlFollowup(continuation, context) : null;
     if (continuation && !nextPlan) return null;
-    // “Close everything, then open …” is still a complete request on an
-    // already-clean Voice screen. Do not fall through to a model simply
-    // because idempotent cleanup has no current targets.
-    if (!panels.length) return nextPlan;
-    const cleanupSteps = panels.map((panel, index) => ({
-      id: `cleanup-${index + 1}`, kind: "control", operation: "close",
-      target: { mode: "command", command: String(panel.command).toUpperCase(), security: panel.security ? String(panel.security).toUpperCase() : null },
-      // The Voice-workspace transaction may have already removed this exact
-      // panel before ordered steps begin. Treat an already-closed target as
-      // idempotent cleanup, never as a reason to abort the requested open.
-      value: null, required: false, failure_policy: "continue"
-    }));
+    const cleanupStep = {
+      id: "reset-workspace", kind: "control", operation: "reset_workspace",
+      target: { mode: "focused", command: null, security: null },
+      value: null, required: true, failure_policy: "stop"
+    };
     if (nextPlan) {
       return validateWorkflowPlan({
         version: 2, failure_policy: nextPlan.failure_policy, layout: nextPlan.layout,
-        steps: [...cleanupSteps, ...nextPlan.steps]
+        steps: [cleanupStep, ...nextPlan.steps]
       });
     }
     return validateWorkflowPlan({
-      version: 2, failure_policy: "stop_on_required", layout: null,
-      steps: cleanupSteps
+      version: 2, failure_policy: "stop_on_any", layout: null,
+      steps: [cleanupStep]
     });
   }
 
@@ -282,7 +345,10 @@ export function parseControlFollowup(transcript, context = null) {
     });
   }
 
-  if (/\bquick quote\b/.test(text) && security) {
+  const hasTrailingWindowControl = /\b(?:close|dismiss|remove|maximize|maximise|restore|move|put|place|resize)\b/.test(text)
+    || /\bmake\s+(?:it|that|this)\s+(?:bigger|larger|wider|taller|smaller|narrower|shorter|full ?screen)\b/.test(text)
+    || /\b(?:on|to)\s+(?:the\s+)?(?:top[ -]?left|top[ -]?right|bottom[ -]?left|bottom[ -]?right|left|right|top|bottom|full)\b/.test(text);
+  if (/\bquick quote\b/.test(text) && security && !hasTrailingWindowControl) {
     return validateWorkflowPlan({
       version: 2, failure_policy: "stop_on_any", layout: workflowLayout("focus"),
       steps: [exactTerminalStep("G", `${security} EQ G`, "command-1", "full")]
@@ -372,14 +438,32 @@ export function parseControlFollowup(transcript, context = null) {
     });
   }
 
+  // Godel accepts candle resolution as a native CLI argument after G. Parse it
+  // before the special VIX route so volatility charts retain the same direct,
+  // low-latency interval behavior as ordinary equity charts.
+  const directChartResolutionMatches = [
+    { value: "1m", pattern: /\b(?:one|1)[ -]?minutes?\b/ },
+    { value: "5m", pattern: /\b(?:five|5)[ -]?minutes?\b/ },
+    { value: "15m", pattern: /\b(?:fifteen|15)[ -]?minutes?\b/ },
+    { value: "30m", pattern: /\b(?:thirty|30)[ -]?minutes?\b/ },
+    { value: "1h", pattern: /\b(?:hourly|(?:one|1)[ -]?hours?)\b/ },
+    { value: "1d", pattern: /\b(?:daily|(?:one|1)[ -]?days?)\b/ }
+  ].filter(candidate => candidate.pattern.test(text));
+  const directChartResolution = directChartResolutionMatches.length === 1
+    ? directChartResolutionMatches[0].value : null;
+
   // Godel documents VIX as the CBOE index identity `VIX CBOE IDX`.
   // Route direct natural-language volatility-index requests to its native chart.
   const directVIX = /\b(?:vix|fear index|(?:cboe )?volatility index)\b/.test(text)
     || /\b(?:market )?volatility (?:chart|graph)\b/.test(text);
   if (directVIX && (explicitlyOpening || /\b(?:show|see|how|what)\b/.test(text))) {
+    const terminal = `VIX CBOE IDX G${directChartResolution ? ` ${directChartResolution}` : ""}`;
     return validateWorkflowPlan({
       version: 2, failure_policy: "stop_on_any", layout: workflowLayout("focus"),
-      steps: [exactTerminalStep("G", "VIX CBOE IDX G", "command-1", "full")]
+      steps: [{
+        ...exactTerminalStep("G", terminal, "command-1", "full"),
+        arguments: directChartResolution ? [directChartResolution] : []
+      }]
     });
   }
 
@@ -404,7 +488,29 @@ export function parseControlFollowup(transcript, context = null) {
   if (forwardPE && security) {
     return validateWorkflowPlan({
       version: 2, failure_policy: "stop_on_any", layout: null,
-      steps: [commandStep("EM", security)]
+      steps: [{
+        ...commandStep("EM", security),
+        actions: [{
+          feature: "valuation", operation: "read",
+          value: { row: "P/E", section: "Multiples", semantic_unit: "Multiple" }
+        }]
+      }]
+    });
+  }
+
+  // Godel accepts candle resolution as a native CLI argument after G. Keep
+  // direct chart opens off the nested TradingView path, while requiring the
+  // interval to describe the chart/candles so range phrases such as "show five
+  // days" and fundamentals such as "five-year margin chart" cannot collide.
+  const fundamentalChartLanguage = /\b(?:fundamentals?|revenue|sales|ebit|ebitda|nopat|margin|valuation|multiple|p e|pe ratio|earnings?)\b/.test(text);
+  const directChartLanguage = /\b(?:chart|graph|candles?)\b/.test(text);
+  if (explicitlyOpening && security && directChartLanguage && directChartResolution && !fundamentalChartLanguage) {
+    return validateWorkflowPlan({
+      version: 2, failure_policy: "stop_on_any", layout: null,
+      steps: [{
+        ...exactTerminalStep("G", `${security} EQ G ${directChartResolution}`, "command-1", "full"),
+        arguments: [directChartResolution]
+      }]
     });
   }
 
@@ -430,6 +536,11 @@ export function parseControlFollowup(transcript, context = null) {
   // an exact supported surface and, for security-scoped commands, a known
   // company. Anything involving configuration remains on the strict path.
   const openClauses = text.split(/\b(?:and then|then|and)\b/).map(value => value.trim()).filter(Boolean);
+  const modifierScanText = text
+    .replace(/\b(?:most )?active options?\b/g, "")
+    .replace(/\bhistorical (?:change percent|percent changes?)\b/g, "")
+    .replace(/\ball quotes\b/g, "")
+    .replace(/\bmost active(?: stocks?)?\b/g, "");
 
   const placementForClause = clause => {
     for (const placement of ["top-left", "top-right", "bottom-left", "bottom-right", "left", "right", "top", "bottom"]) {
@@ -465,20 +576,49 @@ export function parseControlFollowup(transcript, context = null) {
   if (explicitlyOpening && openControl) {
     const openingPlan = parseControlFollowup(openControl.core, context);
     if (!openingPlan?.steps?.some(step => step.kind === "command")) return null;
+    const controlTarget = openControl.target.mode === "last"
+      ? exactTargetForLastOpenedStep(openingPlan)
+      : openControl.target;
+    if (!controlTarget) return null;
     return validateWorkflowPlan({
       version: 2, failure_policy: openingPlan.failure_policy, layout: openingPlan.layout,
       steps: [
         ...openingPlan.steps,
         {
           id: `control-${openingPlan.steps.length + 1}`, kind: "control",
-          operation: openControl.operation, target: openControl.target,
+          operation: openControl.operation, target: controlTarget,
           value: openControl.value, required: true
         }
       ]
     });
   }
 
-  if (explicitlyOpening && openClauses.length === 2 && !directOpenModifier.test(text)) {
+  // Preserve the spoken order for "open X, then close it/X". This must run
+  // before close-and-open replacement parsing: recursively parsing from an
+  // opener at index zero would otherwise pass the identical sentence back
+  // into this function forever.
+  const openThenClose = /^(.*?)(?:\s+(?:and then|then|and))\s+(?:close|dismiss|remove)\s+(.+)$/.exec(text);
+  if (explicitlyOpening && openThenClose) {
+    const openingPlan = parseControlFollowup(openThenClose[1], context);
+    if (!openingPlan?.steps?.some(step => step.kind === "command")) return null;
+    const namedClose = targetFor(openThenClose[2]);
+    const closeTarget = namedClose.command
+      ? { mode: "command", command: namedClose.command, security: namedClose.security }
+      : exactTargetForLastOpenedStep(openingPlan);
+    if (!closeTarget) return null;
+    return validateWorkflowPlan({
+      version: 2, failure_policy: "stop_on_any", layout: openingPlan.layout,
+      steps: [
+        ...openingPlan.steps,
+        {
+          id: `control-${openingPlan.steps.length + 1}`, kind: "control",
+          operation: "close", target: closeTarget, value: null, required: true
+        }
+      ]
+    });
+  }
+
+  if (explicitlyOpening && openClauses.length === 2 && !directOpenModifier.test(modifierScanText)) {
     const pair = openClauses.map((clause, index) => {
       const clauseTarget = targetFor(clause);
       const allowed = directGlobalOpen.has(clauseTarget.command)
@@ -495,12 +635,13 @@ export function parseControlFollowup(transcript, context = null) {
   // requested information from opening.
   if (/\b(close|dismiss|remove)\b/.test(text) && explicitlyOpening) {
     const opener = /\b(?:open|launch|create|build|display)\b|\bpull(?: up)?\b|\bbring up\b|\bshow\b/.exec(text);
-    if (opener) {
+    const closer = /\b(?:close|dismiss|remove)\b/.exec(text);
+    if (opener && closer && closer.index < opener.index) {
       const openingPlan = parseControlFollowup(text.slice(opener.index), context);
       if (!openingPlan?.steps?.some(step => step.kind === "command")) return null;
       const closeClause = text.slice(0, opener.index);
       const namedClose = targetFor(closeClause);
-      const contextual = context?.focused_panel?.command
+      const contextual = focusedPanel?.command
         ? { mode: "focused", command: null, security: null }
         : { mode: "last", command: null, security: null };
       const closeTarget = namedClose.command
@@ -543,9 +684,8 @@ export function parseControlFollowup(transcript, context = null) {
     || (target.command === "IPO" && /\bipo\b.*\b(?:calendar|recent performance)\b/.test(text))
     || (target.command === "MAP" && /\bworld (?:venue|exchange opening) map\b/.test(text))
     || (target.command === "ALLQ" && /\bevery (?:listing|venue)\b.*\bquote\b/.test(text));
-  const activeIsSurfaceName = ["MOST", "MOSO"].includes(target.command) && /\bmost active\b/.test(text);
   const hasOpenModifier = (/\b(?:and|then)\b/.test(text) && !describesOneSurface)
-    || (directOpenModifier.test(text) && !activeIsSurfaceName);
+    || directOpenModifier.test(modifierScanText);
   if (explicitlyOpening && target.command === "EM" && security) {
     const emOpen = compileEMFollowup({ command: "EM", target }, transcript);
     if (emOpen?.ready_for_live_executor && emOpen.actions.length) {

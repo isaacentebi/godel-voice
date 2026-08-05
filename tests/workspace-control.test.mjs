@@ -46,12 +46,42 @@ test("content executor acknowledges leased work and checks cancellation between 
   assert.match(content, /\/heartbeat/);
   assert.match(content, /publishExecutorContext/);
   assert.match(content, /\/context`/);
+  const completionBlock = content.slice(content.indexOf("const result = await executePlan(payload.marker, payload.id)"),
+    content.indexOf("finally { clearInterval(heartbeatTimer)", content.indexOf("const result = await executePlan(payload.marker, payload.id)")));
+  assert.ok(completionBlock.indexOf("await acknowledgeCompletedWithReconciliation(payload.id")
+    < completionBlock.lastIndexOf("emitCompletion({"),
+  "success must not be emitted before the server accepts the terminal acknowledgement");
+  assert.match(content, /async function acknowledgeCompletedWithReconciliation/);
+  assert.match(content, /observed\?\.status === "completed"/);
+  assert.match(content, /if \(error instanceof CancelledError\) throw error/);
+  assert.match(completionBlock, /Godel action finished, but its result could not be verified/);
+});
+
+test("completion acknowledgement reconciles lost responses without replaying DOM work or speech", () => {
+  const helper = content.slice(content.indexOf("async function acknowledgeCompletedWithReconciliation"),
+    content.indexOf("async function releaseForRetry"));
+  assert.match(helper, /attempt < 3/);
+  assert.match(helper, /await workflowStatus\(id\)/);
+  assert.match(helper, /observed\?\.status === "completed"/);
+  assert.match(helper, /acknowledgement_reconciled: true/);
+  assert.match(helper, /observed\?\.status !== "inflight" \|\| observed\?\.lease_owned !== true/);
+  assert.match(helper, /await heartbeat\(id\)/);
+  assert.doesNotMatch(helper, /executePlan|emitCompletion|speechSynthesis/);
+  assert.ok(helper.indexOf('observed?.status === "cancelled"')
+    < helper.indexOf('observed?.status === "completed"'),
+  "terminal cancellation must win over a recovered success");
+  const poll = content.slice(content.indexOf("async function poll()"), content.indexOf("async function runNextLoop()"));
+  assert.equal((poll.match(/executePlan\(payload\.marker, payload\.id\)/g) ?? []).length, 1);
+  assert.equal((poll.match(/status: "completed", message: result\.message/g) ?? []).length, 1);
+  assert.match(poll, /acknowledgement\?\.acknowledgement_reconciled === true/);
 });
 
 test("Jarvis replaces safe windows only inside its dedicated Voice screen", () => {
   assert.match(content, /godel-voice-managed-window-ids-v1/);
   assert.match(content, /if \(replacesVoiceWorkspace\)/);
-  assert.match(content, /await workspaceInternalAction\("createScreen", \{ name: "Voice" \}\)/);
+  assert.match(content, /await workspaceInternalAction\("createOwnedScreen", \{ name: "Voice" \}\)/);
+  assert.match(content, /async function ensureVoiceScreen/);
+  assert.match(content, /godel-voice-owned-screen-v1/);
   assert.match(content, /await closeVoiceScreenPanels\(\{ replaceAllSafe: true \}\)/);
   assert.match(content, /await workspaceInternalAction\("nameActiveScreen", \{ name: "Voice" \}\)/);
   assert.match(content, /activeScreenInfo/);
@@ -71,7 +101,7 @@ test("top-level quote requests also clear stale Jarvis panels", () => {
   assert.match(content, /const opensNewPanels = plan\.steps\.some\(step => step\.kind === "command" && step\.command !== "Q"\)/);
 });
 
-test("manual Jarvis shutdown cleans only receipted Voice-screen windows and preserves session-start followups", () => {
+test("manual Jarvis shutdown empties the owned Voice workspace and preserves session-start followups", () => {
   const realtime = fs.readFileSync(new URL("../extension/realtime.js", import.meta.url), "utf8");
   assert.match(realtime, /godel-voice:session-started/);
   assert.match(realtime, /!preserveIntent && reason !== "pagehide"/);
@@ -82,11 +112,11 @@ test("manual Jarvis shutdown cleans only receipted Voice-screen windows and pres
   assert.match(content, /Starting or reconnecting Jarvis must preserve the visible panels/);
   assert.match(content, /if \(!closeAll && requestedEpoch !== jarvisSessionEpoch\) return/);
   assert.match(content, /await lifecycleCleanup/);
-  assert.match(content, /const payload = await response\.json\(\);[\s\S]{0,320}await lifecycleCleanup;[\s\S]{0,80}running = true/);
+  assert.match(content, /const payload = await response\.json\(\);[\s\S]{0,520}await lifecycleCleanup;[\s\S]{0,180}running = true/);
   assert.match(content, /while \(running\) await pause\(100\)/);
   assert.match(content, /createdBefore: event\.detail\?\.stopped_at/);
   assert.match(content, /requestId: event\.detail\?\.workflow_id/);
-  assert.match(content, /await closeVoiceScreenPanels\(\{ requestId, createdBefore \}\)/);
+  assert.match(content, /await executeDurableWorkspaceReset\(\{ requestId, createdBefore \}\)/);
 });
 
 test("manual shutdown keeps exact same-document receipts for layout-store orphan panels", () => {
@@ -158,22 +188,100 @@ test("completion narration names only completed panels and admits skipped comman
   assert.match(content, /function failedStepSubject\(step\)/);
   assert.match(content, /const failedSteps = plan\.steps\.filter/);
   assert.match(content, /I couldn't complete/);
+  assert.match(content, /export: "Export menu opened\."/);
+  assert.doesNotMatch(content, /export: "Export ready\."/);
   assert.match(content, /completionMessage\(workflow, result\.grounded, result\.timings\)/);
 });
 
 test("Voice workspace cleanup atomically prunes stale Jarvis layout records", () => {
   assert.match(bridge, /action === "clearVoiceScreen"/);
   assert.match(bridge, /Voice cleanup requires explicit Jarvis ownership receipts/);
-  assert.match(bridge, /Expected one dedicated Voice screen/);
+  assert.match(bridge, /const replaceAllSafe = payload\.replace_all_safe === true/);
+  assert.match(bridge, /replaceAllSafe \|\| onlyIds\.has\(id\)/);
+  assert.match(bridge, /The owned Voice screen no longer exists/);
+  assert.match(bridge, /The owned screen is no longer named Voice/);
+  assert.match(bridge, /Voice cleanup requires an exact workspace snapshot/);
   assert.match(bridge, /const windows = \{ \.\.\.layout\.windows \}/);
   assert.match(bridge, /delete windows\[id\]/);
   assert.match(bridge, /consequentialWindowType/);
   assert.match(content, /workspaceInternalAction\("clearVoiceScreen"/);
   assert.match(content, /preserve_ids: \[\.\.\.borrowedWindowReceipts\.keys\(\)\]/);
-  assert.match(content, /only_ids: \[\.\.\.ownedIds\]/);
+  assert.match(content, /only_ids: \[\.\.\.\(snapshotIds \?\? ownedIds\)\]/);
   assert.match(content, /function pendingCleanupReceipts\(requestId = null, createdBefore = null\)/);
   assert.match(content, /attempt < 5/);
   assert.match(content, /await pause\(100 \* \(2 \*\* attempt\)\)/);
+});
+
+test("an explicit workspace reset clears hidden Voice records and remembered follow-up targets", () => {
+  assert.match(content, /if \(step\.operation === "reset_workspace"\)/);
+  assert.match(content, /await executeDurableWorkspaceReset\(\{ recoveryAdoptionAuthorized: true \}\)/);
+  assert.match(content, /commandWindows\.clear\(\)/);
+  assert.match(content, /commandPanels\.clear\(\)/);
+  assert.match(content, /replace_all_safe: replaceAllSafe/);
+});
+
+test("workspace reset is a crash-safe write-ahead transaction", () => {
+  assert.match(content, /godel-voice-pending-reset-v1/);
+  assert.match(content, /async function beginPendingWorkspaceReset/);
+  assert.match(content, /async function executeDurableWorkspaceReset/);
+  assert.match(content, /version: 2/);
+  assert.match(content, /target_window_ids:/);
+  assert.match(content, /workspaceSnapshotIds: reset\.target_window_ids/);
+  const begin = content.slice(content.indexOf("async function beginPendingWorkspaceReset"),
+    content.indexOf("async function verifyPendingWorkspaceReset"));
+  const persisted = begin.indexOf("persistPendingWorkspaceReset();");
+  assert.ok(persisted >= 0, "reset marker must be persisted");
+  assert.ok(persisted < begin.indexOf("persistVoiceScreenReceipt();"),
+    "reset marker must precede recovery ownership mutation");
+  const execute = content.slice(content.indexOf("async function executeDurableWorkspaceReset"),
+    content.indexOf("function rememberVoiceWindowId"));
+  assert.ok(execute.indexOf("beginPendingWorkspaceReset(options)")
+    < execute.indexOf('workspaceInternalAction("focusScreen"'),
+  "write-ahead setup must precede Godel focus mutation");
+  assert.match(content, /if \(pendingWorkspaceReset\) queueVoiceCleanup\(jarvisSessionEpoch, \{ closeAll: true \}\)/);
+});
+
+test("pending reset clears only after exact authoritative inventory verification", () => {
+  assert.match(content, /async function verifyPendingWorkspaceReset\(reset, cleanup\)/);
+  assert.match(content, /String\(item\.id\) === String\(reset\.screen_id\)/);
+  assert.match(content, /const remainingOnScreen = new Set\(screen\.window_ids\.map\(String\)\)/);
+  assert.match(content, /inventory\?\.layout_window_ids/);
+  assert.match(content, /inventory\?\.orphan_window_record_ids/);
+  assert.match(content, /const blocked = new Set\(\(cleanup\?\.blocked_ids \?\? \[\]\)\.map\(String\)\)/);
+  assert.match(content, /reset\.target_window_ids\.every\(id => absent\(id\) \|\| blocked\.has\(String\(id\)\)\)/);
+  assert.match(content, /\[\.\.\.removed\]\.every\(absent\)/);
+  assert.match(content, /reset\.known_orphan_record_ids\.every/);
+  assert.match(content, /if \(!\(await verifyPendingWorkspaceReset\(reset, cleanup\)\)\)/);
+  assert.match(content, /pendingWorkspaceReset = null;\s*persistPendingWorkspaceReset\(\)/);
+});
+
+test("workspace reset preserves explicitly blocked user windows without becoming unverifiable", () => {
+  const verify = content.slice(content.indexOf("async function verifyPendingWorkspaceReset"),
+    content.indexOf("async function executeDurableWorkspaceReset"));
+  assert.match(verify, /cleanup\?\.blocked_ids/);
+  assert.match(verify, /absent\(id\) \|\| blocked\.has\(String\(id\)\)/);
+  assert.doesNotMatch(verify, /target_window_ids\.every\(id => !remainingOnScreen/);
+});
+
+test("an explicit reset drains an inherited snapshot before capturing current Voice state", () => {
+  assert.match(content, /const inheritedSnapshot = pendingWorkspaceReset\?\.version === 2/);
+  assert.match(content, /options\.recoveryAdoptionAuthorized === true && inheritedSnapshot/);
+  assert.match(content, /await executeDurableWorkspaceReset\(\{ \.\.\.options, recoveryAdoptionAuthorized: true \}\)/);
+});
+
+test("automatic recovery never adopts a nonempty unowned Voice screen", () => {
+  assert.match(content, /Owned Voice workspace is unavailable; cleanup was not verified/);
+  assert.match(content, /if \(!reset\.recovery_adoption_authorized\) \{\s*throw new Error\("Automatic Voice recovery cannot adopt an unowned screen"\)/);
+  assert.match(content, /An unowned nonempty Voice screen already exists; refusing to create a duplicate/);
+  assert.match(content, /existingVoice\.window_ids\.length === 0/);
+  assert.match(content, /reset_workspace[\s\S]{0,180}recoveryAdoptionAuthorized: true/);
+  assert.match(content, /executeDurableWorkspaceReset\(\{ requestId, createdBefore \}\)/);
+  assert.doesNotMatch(content, /executeDurableWorkspaceReset\(\{ requestId, createdBefore, recoveryAdoptionAuthorized: true/);
+});
+
+test("ordinary workflow recovery never abandons managed panels when Voice was renamed or removed", () => {
+  assert.match(content, /Owned Voice workspace is unavailable; refusing to abandon managed panels/);
+  assert.match(content, /managedWindowReceipts\.size \|\| managedDomReceipts\.size \|\| borrowedWindowReceipts\.size/);
 });
 
 test("successful requests reconcile orphaned receipts and enforce a bounded managed-window cap", () => {
@@ -210,13 +318,24 @@ test("id-less Godel panels keep an exact title-toolbar receipt for later cleanup
   assert.match(content, /const root = nativeRoot \?\? titleReceiptRoot\(canonicalCommand\) \?\? panel/);
 });
 
-test("replacement requests clear remounted safe panels on the dedicated Voice desk", () => {
-  assert.match(content, /async function closeAllSafePanelsOnVoice\(\)/);
+test("replacement cleanup stays within native Voice membership and exact DOM receipts", () => {
   assert.match(content, /closeVoiceScreenPanels\(\{ replaceAllSafe: true \}\)/);
-  assert.match(content, /if \(replaceAllSafe\) await closeAllSafePanelsOnVoice\(\)/);
-  assert.match(content, /if \(candidate\.native\) await panelInternalAction\(candidate\.native, "LAYOUT", "close"\)/);
-  assert.match(content, /else await closeOwnedDomPanel\(candidate\.root, candidate\.command, null\)/);
-  assert.match(content, /Manual Stop remains receipt-only/);
+  assert.match(content, /workspaceInternalAction\("clearVoiceScreen"/);
+  assert.match(content, /for \(const \[panel, receipt\] of ownedDom\)/);
+  assert.doesNotMatch(content, /async function closeAllSafePanelsOnVoice/);
+  assert.doesNotMatch(content, /for \(const command of Object\.keys\(PANEL_TITLES\)\)[\s\S]{0,800}panelInternalAction\(candidate\.native, "LAYOUT", "close"\)/);
+  assert.match(content, /const belongsOnlyToVoice = id =>/);
+  assert.match(content, /if \(receipt\.id && !belongsOnlyToVoice\(receipt\.id\)\)/);
+  assert.match(content, /receipt\.document_generation !== documentGeneration/);
+  assert.match(content, /verified_safe_ids: verifiedSafeIds/);
+  assert.match(bridge, /else if \(!verifiedSafeIds\.has\(rawId\)\) blockedIds\.add\(rawId\)/);
+  assert.match(bridge, /knownIds\]\.filter\(id => verifiedSafeIds\.has\(id\)/);
+});
+
+test("retained cleanup receipts become a terminal visible failure after bounded retries", () => {
+  assert.match(content, /const incomplete = pendingWorkspaceReset/);
+  assert.match(content, /Retained Jarvis panel receipts remain after cleanup retries/);
+  assert.match(content, /Godel Voice cleanup incomplete:/);
 });
 
 test("a title-authenticated native panel can be receipted when Godel omits its command-type attribute", () => {
@@ -248,9 +367,30 @@ test("singleton panels borrowed from another screen are restored instead of clos
   assert.match(bridge, /restoredSourceIds\.splice\(sourceIndex, 0, nativeId\)/);
   assert.match(bridge, /manager\.updateWindowPosition\(nativeId, \{ \.\.\.existing, \.\.\.rect \}\)/);
   assert.match(content, /const transactionBorrowedIds = new Set\(\)/);
-  assert.match(content, /borrowedWindowReceipts\.set\(nativeId, receipt\)/);
+  assert.match(content, /borrowedWindowReceipts\.set\(nativeId, \{/);
   assert.match(content, /transactionBorrowedIds\.add\(nativeId\)/);
   assert.match(content, /await restoreBorrowedWindows\(\{ onlyIds: transactionBorrowedIds \}\)/);
+});
+
+test("borrowed receipts are document-bound and restore only exact identity and membership", () => {
+  assert.match(content, /document_generation: documentGeneration,[\s\S]{0,120}command: step\.command,[\s\S]{0,80}security: borrowedSecurity/);
+  const restore = content.slice(content.indexOf("async function restoreBorrowedWindows"),
+    content.indexOf("function managedWindowId"));
+  assert.match(restore, /receipt\.document_generation !== generation/);
+  assert.match(restore, /belongs to an older Godel document/);
+  assert.ok(restore.indexOf("receipt.document_generation !== generation")
+    < restore.indexOf('workspaceInternalAction("restoreWindowLocation", receipt)'),
+  "a stale-generation receipt must be rejected before any restore mutation");
+  assert.match(restore, /owners\.length !== 1/);
+  assert.match(restore, /String\(owners\[0\]\.id\) !== receipt\.target_screen_id/);
+  assert.match(restore, /String\(restoredOwners\[0\]\.id\) !== receipt\.source_screen_id/);
+  assert.match(restore, /panelMatchesCommand\(panel, receipt\.command\)/);
+  assert.match(restore, /panelMatchesReceiptSecurity\(panel, receipt\.command, receipt\.security\)/);
+  assert.match(restore, /panelMatchesReceiptSecurity\(restoredPanel, receipt\.command, receipt\.security\)/);
+  assert.match(restore, /could not safely restore borrowed/);
+  const staleBranch = restore.slice(restore.indexOf("receipt.document_generation !== generation"),
+    restore.indexOf("if (!receipt.command"));
+  assert.doesNotMatch(staleBranch, /borrowedWindowReceipts\.delete|restoreWindowLocation/);
 });
 
 test("fresh rendered windows wait for Godel's layout store before transfer", () => {
@@ -307,7 +447,7 @@ test("contextual controls target last, focused, or remembered command windows", 
   assert.match(content, /target\.mode === "last"/);
   assert.match(content, /target\.mode === "focused"/);
   assert.match(content, /commandWindows\.get\(target\.command\)/);
-  assert.match(content, /workspaceInternalAction\("activeWindowIds"\)/);
+  assert.match(content, /workspaceInternalAction\("workspaceInventory"\)/);
   assert.match(content, /workspaceWindowId/);
   assert.match(content, /beforeWindowIds/);
   assert.match(content, /activeIds\.find\(id => !beforeWindowIds\.includes\(id\)\)/);
@@ -316,17 +456,33 @@ test("contextual controls target last, focused, or remembered command windows", 
   assert.match(content, /await pause\(25\)/);
   assert.match(content, /workspaceInternalAction\("setWindowGeometry"/);
   assert.match(content, /document\.getElementById\("godel-voice-workspace-anchor"\)/);
-  assert.match(content, /panelForControl\(step\.target, await activeScreenRoots\(\)\)/);
+  assert.match(content, /panelForControl\(step\.target, activeScreen\.roots, activeScreen\.activeWindowId\)/);
   assert.match(content, /uniqueVisiblePanelForControl\(step\.target\)/);
   assert.match(content, /titles\.length !== 1/);
   assert.match(content, /panelExposureScore\(native\) < 1/);
   assert.match(content, /panelContainsSecurity\(shell, target\.security\)/);
   assert.match(content, /roots\.filter\(root => panelMatchesCommand\(root, target\.command\)\)/);
   assert.match(bridge, /screen\.activeWindowId == null/);
-  assert.match(content, /ids\.map\(id => roots\.find\(root => windowId\(root\) === String\(id\)\)\)/);
+  assert.match(content, /activeScreen\.window_ids\s*\n\s*\.map\(id => roots\.find\(root => windowId\(root\) === String\(id\)\)\)/);
   assert.match(content, /panelExposureScore\(b\) - panelExposureScore\(a\)/);
   assert.match(content, /document\.elementFromPoint/);
   assert.match(content, /openExport/);
+});
+
+test("contextual controls fail closed outside authoritative active-screen identity", () => {
+  assert.match(content, /async function activeScreenState\(\)/);
+  assert.match(content, /workspaceInternalAction\("workspaceInventory"\)/);
+  assert.match(content, /return \{ roots: \[\], activeWindowId: null \}/);
+  assert.match(content, /activeWindowId && searchRoots\.find\(root => windowId\(root\) === String\(activeWindowId\)\)/);
+  assert.doesNotMatch(content, /return \[\.\.\.searchRoots\]\.sort\(\(a, b\) => \(Number\.parseInt\(getComputedStyle\(b\)\.zIndex/);
+  assert.match(content, /candidates\.length === 1 \? candidates\[0\] : null/);
+});
+
+test("closing a contextual panel clears every remembered target for that exact panel", () => {
+  assert.match(content, /for \(const \[command, id\] of \[\.\.\.commandWindows\]\)/);
+  assert.match(content, /commandWindows\.delete\(command\)/);
+  assert.match(content, /for \(const \[command, remembered\] of \[\.\.\.commandPanels\]\)/);
+  assert.match(content, /commandPanels\.delete\(command\)/);
 });
 
 test("explicit post-open geometry is never undone by automatic layout", () => {
@@ -339,4 +495,11 @@ test("a workflow cannot report success when every requested action failed", () =
   assert.match(content, /completedRequestedActions = timings\.filter/);
   assert.match(content, /if \(failures\.length && completedRequestedActions\.length === 0\)/);
   assert.match(content, /None of the .* requested Godel action/);
+});
+
+test("layout warnings become failures when the opened panel is not actually visible", () => {
+  assert.match(content, /function panelUsablyVisible\(panel\)/);
+  assert.match(content, /intersectionWidth >= 160 && intersectionHeight >= 90/);
+  assert.match(content, /opened\.some\(item => !panelUsablyVisible\(item\.panel\)\)/);
+  assert.match(content, /an opened Godel panel is outside the usable Voice workspace/);
 });

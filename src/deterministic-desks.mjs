@@ -147,6 +147,44 @@ export function compileDeterministicDesk({ transcript, text, security, explicitl
     && marketSurfaces.some(item => item.command === "HMAP")
     && /\b(?:operating|gross|net) margins?\b|\brevenues?\b|\breturn on equity\b/.test(text);
 
+  // Large mixed workspaces are where model latency and omission risk hurt the
+  // most. When the user names every native panel explicitly, compose the
+  // market strip first and the company research strip second, preserving the
+  // spoken order between those two clauses. Only live-verified nested actions
+  // are attached; a trailing maximize is a separate exact control step.
+  const explicitMixedWorkspace = security
+    && (asksNewScreen || explicitlyOpening)
+    && marketSurfaces.length >= 2
+    && researchSurfaces.length >= 2
+    && /\b(?:then|and then)\b/.test(text);
+  if (explicitMixedWorkspace) {
+    const combined = [
+      ...dynamicCommandSteps(marketSurfaces),
+      ...dynamicCommandSteps(researchSurfaces, security)
+    ].map((step, index) => ({ ...step, id: `command-${index + 1}` }));
+    for (const step of combined) {
+      if (step.command === "HALT") {
+        const value = /\b(?:active|current) halts?\b/.test(text) ? "Active"
+          : /\bresumed (?:trading )?halts?\b/.test(text) ? "Resumed"
+            : /\ball halts?\b/.test(text) ? "All" : null;
+        if (value) step.actions.push({ feature: "tab", operation: "select", value });
+      }
+      if (step.command === "HMAP" && /\b(?:heat\s*map|hmap)\b[^.]{0,40}\btable(?: view)?\b/.test(text)) {
+        step.actions.push({ feature: "view", operation: "select", value: "Table" });
+      }
+    }
+    if (/\b(?:finally\s+)?maximi[sz]e (?:the )?(?:earnings )?matrix\b/.test(text)) {
+      combined.push({
+        id: `control-${combined.length + 1}`, kind: "control", operation: "maximize",
+        target: { mode: "command", command: "EM", security }, value: null, required: true
+      });
+    }
+    return {
+      version: 2, failure_policy: "stop_on_any",
+      layout: layout("market", asksNewScreen), steps: combined
+    };
+  }
+
   // Mixed market and company research requests need clause-level placement
   // and must stay on the strict planner; never execute only one half.
   if (researchSurfaces.length && marketSurfaces.length && !mixedMarketFundamentals) return null;

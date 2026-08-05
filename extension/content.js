@@ -67,6 +67,9 @@
     });
   let running = false;
   let polling = false;
+  let nextRequestController = null;
+  let nextLoopStopped = false;
+  const NEXT_WAIT_MS = 20_000;
   let clientId = null;
   let documentGeneration = null;
   const executorIdentityReady = runtimeMessage({ type: "godel-voice:executor-identity" }).then(response => {
@@ -96,6 +99,45 @@
   const commandPanels = new Map();
   const panelMetadata = new WeakMap();
   const panelCommandTimings = new WeakMap();
+  const panelNestedActionTimings = new WeakMap();
+  const voiceScreenStorageKey = "godel-voice-owned-screen-v1";
+  const pendingResetStorageKey = "godel-voice-pending-reset-v1";
+  let voiceScreenReceipt = (() => {
+    try {
+      const value = JSON.parse(sessionStorage.getItem(voiceScreenStorageKey) ?? "null");
+      if (!value || !/^\d+$/.test(String(value.screen_id ?? ""))) return null;
+      return {
+        screen_id: String(value.screen_id),
+        claimed_at: Math.max(0, Number(value.claimed_at ?? 0)),
+        known_window_ids: Array.isArray(value.known_window_ids)
+          ? [...new Set(value.known_window_ids.map(String).filter(id => /^[A-Za-z0-9_-]{1,120}$/.test(id)))].slice(-128)
+          : []
+      };
+    } catch { return null; }
+  })();
+  let pendingWorkspaceReset = (() => {
+    try {
+      const value = JSON.parse(sessionStorage.getItem(pendingResetStorageKey) ?? "null");
+      if (!value || !/^\d+$/.test(String(value.screen_id ?? ""))) return null;
+      const validId = id => /^[A-Za-z0-9_-]{1,120}$/.test(String(id));
+      const snapshotIds = Number(value.version) === 2 && Array.isArray(value.target_window_ids)
+        ? [...new Set(value.target_window_ids.map(String).filter(validId))].slice(-128)
+        : null;
+      return {
+        version: Number(value.version) === 2 ? 2 : 1,
+        screen_id: String(value.screen_id),
+        requested_at: Math.max(0, Number(value.requested_at ?? 0)),
+        request_id: String(value.request_id ?? "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 96) || null,
+        created_before: value.created_before != null && Number.isFinite(Number(value.created_before))
+          ? Math.max(0, Number(value.created_before)) : null,
+        known_orphan_record_ids: Array.isArray(value.known_orphan_record_ids)
+          ? [...new Set(value.known_orphan_record_ids.map(String).filter(validId))].slice(-128)
+          : [],
+        target_window_ids: snapshotIds,
+        recovery_adoption_authorized: value.recovery_adoption_authorized === true
+      };
+    } catch { return null; }
+  })();
   const managedWindowStorageKey = "godel-voice-managed-window-ids-v1";
   const managedWindowReceipts = new Map((() => {
     try {
@@ -127,7 +169,18 @@
       return value.filter(receipt => receipt && /^[A-Za-z0-9_-]{1,120}$/.test(String(receipt.id ?? ""))
         && /^\d+$/.test(String(receipt.source_screen_id ?? ""))
         && /^\d+$/.test(String(receipt.target_screen_id ?? "")))
-        .slice(-16).map(receipt => [String(receipt.id), receipt]);
+        .slice(-16).map(receipt => [String(receipt.id), {
+          ...receipt,
+          id: String(receipt.id),
+          source_screen_id: String(receipt.source_screen_id),
+          target_screen_id: String(receipt.target_screen_id),
+          document_generation: String(receipt.document_generation ?? "")
+            .replace(/[^A-Za-z0-9_-]/g, "").slice(0, 120) || null,
+          command: String(receipt.command ?? "").toUpperCase()
+            .replace(/[^A-Z0-9]/g, "").slice(0, 12) || null,
+          security: String(receipt.security ?? "").toUpperCase()
+            .replace(/[^A-Z0-9./-]/g, "").slice(0, 16) || null
+        }]);
     } catch { return []; }
   })());
   let lastContextDigest = "";
@@ -212,18 +265,296 @@
     sessionStorage.setItem(borrowedWindowStorageKey, JSON.stringify([...borrowedWindowReceipts.values()].slice(-16)));
   }
 
+  function persistVoiceScreenReceipt() {
+    if (voiceScreenReceipt) sessionStorage.setItem(voiceScreenStorageKey, JSON.stringify(voiceScreenReceipt));
+    else sessionStorage.removeItem(voiceScreenStorageKey);
+  }
+
+  function persistPendingWorkspaceReset() {
+    if (pendingWorkspaceReset) {
+      sessionStorage.setItem(pendingResetStorageKey, JSON.stringify(pendingWorkspaceReset));
+    } else {
+      sessionStorage.removeItem(pendingResetStorageKey);
+    }
+  }
+
+  async function beginPendingWorkspaceReset({ requestId = null, createdBefore = null,
+    recoveryAdoptionAuthorized = false } = {}) {
+    if (pendingWorkspaceReset?.version === 2 && Array.isArray(pendingWorkspaceReset.target_window_ids)) {
+      return pendingWorkspaceReset;
+    }
+    if (pendingWorkspaceReset) {
+      // Version-one reset records did not bind the mutation to a window
+      // snapshot. Only an explicit reset may replace that unsafe legacy record;
+      // automatic recovery must fail closed rather than delete newer windows.
+      if (!recoveryAdoptionAuthorized) throw new Error("Pending Voice reset lacks an exact workspace snapshot");
+      pendingWorkspaceReset = null;
+      persistPendingWorkspaceReset();
+    }
+    const inventory = await workspaceInternalAction("workspaceInventory");
+    const screens = Array.isArray(inventory?.screens) ? inventory.screens : [];
+    let screen = voiceScreenReceipt
+      ? screens.find(item => String(item.id) === voiceScreenReceipt.screen_id
+        && String(item.title).trim().toLowerCase() === "voice")
+      : null;
+    if (!screen && recoveryAdoptionAuthorized) {
+      const recoverable = screens.filter(item => String(item.title).trim().toLowerCase() === "voice");
+      if (recoverable.length > 1) {
+        throw new Error(`Expected one user-authorized Voice screen, found ${recoverable.length}`);
+      }
+      screen = recoverable[0] ?? null;
+    }
+    // Automatic Stop and startup recovery may touch only the exact screen that
+    // this tab previously receipted. In particular, a nonempty Voice screen is
+    // never inferred to be ours merely from its title.
+    if (!screen) {
+      if (voiceScreenReceipt || managedWindowReceipts.size || managedDomReceipts.size
+          || borrowedWindowReceipts.size) {
+        throw new Error("Owned Voice workspace is unavailable; cleanup was not verified");
+      }
+      return null;
+    }
+    const borrowedIds = new Set(borrowedWindowReceipts.keys());
+    const knownIds = recoveryAdoptionAuthorized && voiceScreenReceipt?.screen_id !== String(screen.id)
+      ? (Array.isArray(screen.window_ids) ? screen.window_ids.map(String) : [])
+      : (voiceScreenReceipt?.known_window_ids ?? []);
+    pendingWorkspaceReset = {
+      version: 2,
+      screen_id: String(screen.id),
+      requested_at: Date.now(),
+      request_id: String(requestId ?? "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 96) || null,
+      created_before: createdBefore != null && Number.isFinite(Number(createdBefore))
+        ? Math.max(0, Number(createdBefore)) : null,
+      known_orphan_record_ids: [...new Set(knownIds.map(String).filter(id =>
+        /^[A-Za-z0-9_-]{1,120}$/.test(id) && !borrowedIds.has(id)))].slice(-128),
+      // Persist the exact mutation boundary before focus or cleanup. A window
+      // opened after this record is written belongs to a later action and must
+      // never be swept into crash recovery.
+      target_window_ids: [...new Set((Array.isArray(screen.window_ids) ? screen.window_ids : [])
+        .map(String).filter(id => /^[A-Za-z0-9_-]{1,120}$/.test(id) && !borrowedIds.has(id)))].slice(-128),
+      recovery_adoption_authorized: recoveryAdoptionAuthorized === true
+    };
+    // This is the transaction's write-ahead record. It must reach sessionStorage
+    // before focus, restore, close, rename, or any other Godel mutation begins.
+    persistPendingWorkspaceReset();
+    if (!voiceScreenReceipt || voiceScreenReceipt.screen_id !== pendingWorkspaceReset.screen_id) {
+      if (!pendingWorkspaceReset.recovery_adoption_authorized) {
+        throw new Error("Pending Voice reset has no exact ownership receipt");
+      }
+      voiceScreenReceipt = {
+        screen_id: pendingWorkspaceReset.screen_id,
+        claimed_at: pendingWorkspaceReset.requested_at,
+        known_window_ids: [...pendingWorkspaceReset.known_orphan_record_ids]
+      };
+      persistVoiceScreenReceipt();
+    }
+    return pendingWorkspaceReset;
+  }
+
+  async function verifyPendingWorkspaceReset(reset, cleanup) {
+    const inventory = await workspaceInternalAction("workspaceInventory");
+    const screen = Array.isArray(inventory?.screens)
+      ? inventory.screens.find(item => String(item.id) === String(reset.screen_id)) : null;
+    if (!screen || String(screen.title).trim().toLowerCase() !== "voice"
+        || !Array.isArray(screen.window_ids)
+        || !Array.isArray(inventory?.layout_window_ids)
+        || !Array.isArray(inventory?.orphan_window_record_ids)) return false;
+    const remainingOnScreen = new Set(screen.window_ids.map(String));
+    const remainingRecords = new Set(inventory.layout_window_ids.map(String));
+    const remainingOrphans = new Set(inventory.orphan_window_record_ids.map(String));
+    const removed = new Set((cleanup?.removed_ids ?? []).map(String));
+    const removedOrphans = new Set((cleanup?.removed_orphan_record_ids ?? []).map(String));
+    const blocked = new Set((cleanup?.blocked_ids ?? []).map(String));
+    const absent = id => !remainingOnScreen.has(String(id)) && !remainingRecords.has(String(id));
+    // A reset snapshots every window on the dedicated Voice screen before it
+    // mutates Godel. Some of those windows can be deliberately preserved by
+    // the native safety classifier (for example CHAT). Verification must prove
+    // that every unblocked snapshot id is gone, not incorrectly demand that a
+    // blocked user window was closed too.
+    return reset.target_window_ids.every(id => absent(id) || blocked.has(String(id)))
+      && [...removed].every(absent)
+      && [...removedOrphans].every(id =>
+        !remainingRecords.has(String(id)) && !remainingOrphans.has(String(id)))
+      && reset.known_orphan_record_ids.every(id => absent(id)
+        || remainingOnScreen.has(String(id)) || blocked.has(String(id)));
+  }
+
+  async function executeDurableWorkspaceReset(options = {}) {
+    const inheritedSnapshot = pendingWorkspaceReset?.version === 2
+      && Array.isArray(pendingWorkspaceReset.target_window_ids);
+    const reset = await beginPendingWorkspaceReset(options);
+    if (!reset) return { skipped: true, verified: true };
+    const inventory = await workspaceInternalAction("workspaceInventory");
+    const exactScreen = Array.isArray(inventory?.screens) ? inventory.screens.find(item =>
+      String(item.id) === reset.screen_id && String(item.title).trim().toLowerCase() === "voice") : null;
+    if (!exactScreen) throw new Error("The pending owned Voice screen is unavailable");
+    if (!voiceScreenReceipt || voiceScreenReceipt.screen_id !== reset.screen_id) {
+      if (!reset.recovery_adoption_authorized) {
+        throw new Error("Automatic Voice recovery cannot adopt an unowned screen");
+      }
+      voiceScreenReceipt = {
+        screen_id: reset.screen_id,
+        claimed_at: reset.requested_at,
+        known_window_ids: [...reset.known_orphan_record_ids]
+      };
+      persistVoiceScreenReceipt();
+    }
+    if (String(inventory.active_screen_id) !== reset.screen_id) {
+      await workspaceInternalAction("focusScreen", { target: reset.screen_id });
+    }
+    await restoreBorrowedWindows();
+    await ensureVoiceScreen();
+    const cleanup = await closeVoiceScreenPanels({
+      requestId: reset.request_id,
+      createdBefore: reset.created_before,
+      workspaceSnapshotIds: reset.target_window_ids
+    });
+    if (!(await verifyPendingWorkspaceReset(reset, cleanup))) {
+      throw new Error("Godel Voice reset is pending authoritative verification");
+    }
+    pendingWorkspaceReset = null;
+    persistPendingWorkspaceReset();
+    if (options.recoveryAdoptionAuthorized === true && inheritedSnapshot) {
+      // Finishing a crash-safe transaction proves only its original mutation
+      // boundary. A later explicit “close everything” authorizes a fresh
+      // snapshot too, so drain the WAL first and then reset current Voice state.
+      const current = await executeDurableWorkspaceReset({ ...options, recoveryAdoptionAuthorized: true });
+      return {
+        ...current,
+        removed_ids: [...new Set([...(cleanup?.removed_ids ?? []), ...(current?.removed_ids ?? [])])],
+        removed_orphan_record_ids: [...new Set([
+          ...(cleanup?.removed_orphan_record_ids ?? []), ...(current?.removed_orphan_record_ids ?? [])
+        ])],
+        verified: true
+      };
+    }
+    return { ...cleanup, verified: true };
+  }
+
+  function rememberVoiceWindowId(id) {
+    const value = String(id ?? "");
+    if (!voiceScreenReceipt || !/^[A-Za-z0-9_-]{1,120}$/.test(value)) return;
+    voiceScreenReceipt.known_window_ids = [...new Set([...voiceScreenReceipt.known_window_ids, value])].slice(-128);
+    persistVoiceScreenReceipt();
+  }
+
+  async function ensureVoiceScreen({ allowExistingVoice = false } = {}) {
+    let inventory = await workspaceInternalAction("workspaceInventory");
+    let screen = voiceScreenReceipt
+      ? inventory.screens.find(item => String(item.id) === voiceScreenReceipt.screen_id
+        && String(item.title).trim().toLowerCase() === "voice")
+      : null;
+    if (voiceScreenReceipt && !screen) {
+      if (managedWindowReceipts.size || managedDomReceipts.size || borrowedWindowReceipts.size
+          || pendingWorkspaceReset) {
+        throw new Error("Owned Voice workspace is unavailable; refusing to abandon managed panels");
+      }
+      voiceScreenReceipt = null;
+      persistVoiceScreenReceipt();
+    }
+    if (!screen) {
+      const existing = inventory.screens.filter(item => String(item.title).trim().toLowerCase() === "voice");
+      if (existing.length > 1) throw new Error(`Expected at most one recoverable Voice screen, found ${existing.length}`);
+      const existingVoice = existing[0] ?? null;
+      if (existingVoice && (!Array.isArray(existingVoice.window_ids) || existingVoice.window_ids.length > 0)
+          && !allowExistingVoice) {
+        throw new Error("An unowned nonempty Voice screen already exists; refusing to create a duplicate");
+      }
+      // An empty reserved Voice screen has no user content to adopt and is the
+      // only safe automatic recovery after a tab or sessionStorage restart.
+      screen = existingVoice && (allowExistingVoice || existingVoice.window_ids.length === 0)
+        ? existingVoice : null;
+      screen ??= inventory.screens.find(item => String(item.title).trim().toLowerCase() === "blank"
+        && Array.isArray(item.window_ids) && item.window_ids.length === 0) ?? null;
+      if (screen) {
+        await workspaceInternalAction("focusScreen", { target: String(screen.id) });
+        if (String(screen.title).trim().toLowerCase() !== "voice") {
+          await workspaceInternalAction("renameScreen", { target: String(screen.id), name: "Voice" });
+        }
+      } else {
+        const created = await workspaceInternalAction("createOwnedScreen", { name: "Voice" });
+        screen = { id: String(created.id), title: "Voice", window_ids: [] };
+      }
+      voiceScreenReceipt = {
+        screen_id: String(screen.id), claimed_at: Date.now(), known_window_ids: []
+      };
+      persistVoiceScreenReceipt();
+      inventory = await workspaceInternalAction("workspaceInventory");
+      screen = inventory.screens.find(item => String(item.id) === voiceScreenReceipt.screen_id) ?? null;
+    } else if (String(inventory.active_screen_id) !== voiceScreenReceipt.screen_id) {
+      await workspaceInternalAction("focusScreen", { target: voiceScreenReceipt.screen_id });
+      inventory = await workspaceInternalAction("workspaceInventory");
+      screen = inventory.screens.find(item => String(item.id) === voiceScreenReceipt.screen_id) ?? null;
+    }
+    if (!screen || String(inventory.active_screen_id) !== voiceScreenReceipt.screen_id
+        || String(screen.title).trim().toLowerCase() !== "voice") {
+      throw new Error("Jarvis could not establish its exclusively owned Voice screen");
+    }
+    return { inventory, screen, receipt: voiceScreenReceipt };
+  }
+
   async function restoreBorrowedWindows({ onlyIds = null } = {}) {
+    const { documentGeneration: generation } = await executorIdentityReady;
     const allowed = onlyIds ? new Set([...onlyIds].map(String)) : null;
     for (const [id, receipt] of [...borrowedWindowReceipts].reverse()) {
       if (allowed && !allowed.has(id)) continue;
+      // A native id can be reused after reload. Retain the stale receipt as
+      // evidence for the user, but never send it to Godel's restore callback.
+      if (!receipt.document_generation || receipt.document_generation !== generation) {
+        toast(`Godel Voice cleanup incomplete: borrowed ${receipt.command ?? "window"} belongs to an older Godel document`, true);
+        continue;
+      }
+      if (!receipt.command || !Object.prototype.hasOwnProperty.call(PANEL_TITLES, receipt.command)) {
+        toast("Godel Voice cleanup incomplete: borrowed window identity is invalid", true);
+        continue;
+      }
       try {
+        const before = await workspaceInternalAction("workspaceInventory");
+        const source = (before.screens ?? []).filter(screen =>
+          String(screen.id) === receipt.source_screen_id);
+        const target = (before.screens ?? []).filter(screen =>
+          String(screen.id) === receipt.target_screen_id);
+        const owners = (before.screens ?? []).filter(screen =>
+          Array.isArray(screen.window_ids) && screen.window_ids.map(String).includes(id));
+        const panel = panelById(id);
+        if (source.length !== 1 || target.length !== 1 || owners.length !== 1
+            || String(owners[0].id) !== receipt.target_screen_id
+            || source[0].window_ids.map(String).includes(id)
+            || target[0].window_ids.map(String).filter(value => value === id).length !== 1
+            || !panel || String(windowId(panel) ?? "") !== id
+            || !panelMatchesCommand(panel, receipt.command)
+            || !panelMatchesReceiptSecurity(panel, receipt.command, receipt.security)) {
+          throw new Error("borrowed window no longer matches its exact restore receipt");
+        }
         await workspaceInternalAction("restoreWindowLocation", receipt);
+        const after = await workspaceInternalAction("workspaceInventory");
+        const restoredSource = (after.screens ?? []).filter(screen =>
+          String(screen.id) === receipt.source_screen_id);
+        const restoredTarget = (after.screens ?? []).filter(screen =>
+          String(screen.id) === receipt.target_screen_id);
+        const restoredOwners = (after.screens ?? []).filter(screen =>
+          Array.isArray(screen.window_ids) && screen.window_ids.map(String).includes(id));
+        const restoredPanel = panelById(id);
+        if (restoredSource.length !== 1 || restoredTarget.length !== 1 || restoredOwners.length !== 1
+            || String(restoredOwners[0].id) !== receipt.source_screen_id
+            || restoredSource[0].window_ids.map(String).filter(value => value === id).length !== 1
+            || restoredTarget[0].window_ids.map(String).includes(id)
+            || !restoredPanel || String(windowId(restoredPanel) ?? "") !== id
+            || !panelMatchesCommand(restoredPanel, receipt.command)
+            || !panelMatchesReceiptSecurity(restoredPanel, receipt.command, receipt.security)) {
+          throw new Error("borrowed window restoration could not be verified");
+        }
         borrowedWindowReceipts.delete(id);
         managedWindowIds.delete(id);
         managedWindowReceipts.delete(id);
+        if (voiceScreenReceipt) {
+          voiceScreenReceipt.known_window_ids = voiceScreenReceipt.known_window_ids.filter(value => value !== id);
+          persistVoiceScreenReceipt();
+        }
       } catch {
         // Never close or forget a user-owned panel unless its original screen
         // was restored exactly. A later session cleanup can retry safely.
+        toast(`Godel Voice cleanup incomplete: could not safely restore borrowed ${receipt.command} window`, true);
       }
     }
     persistBorrowedWindows();
@@ -296,6 +627,7 @@
     if (!id) return receipt;
     managedWindowIds.add(id);
     managedWindowReceipts.set(id, { ...receipt, id });
+    rememberVoiceWindowId(id);
     persistManagedWindowIds();
     return { ...receipt, id };
   }
@@ -382,63 +714,44 @@
       await waitUntil(() => !panel.isConnected || !visible(panel), `${command} receipted panel closed`, 2000);
   }
 
-  async function closeAllSafePanelsOnVoice() {
-    // Replacement requests own the dedicated Voice desk as a workspace, not
-    // merely the React nodes that happened to survive from the prior render.
-    // Godel can remount an id-less panel (currently observed on EM), which
-    // invalidates its exact DOM receipt. On this one explicitly replaceable
-    // screen, close every recognised non-consequential panel before opening
-    // the new desk. Manual Stop remains receipt-only and therefore cannot
-    // remove an ordinary panel from any other screen.
-    for (let pass = 0; pass < 24; pass += 1) {
-      let candidate = null;
-      for (const command of Object.keys(PANEL_TITLES)) {
-        const titles = panelTitleNodes(command);
-        if (!titles.length) continue;
-        const ranked = titles.map(title => {
-          const native = nativeWindowRoot(title);
-          const root = native ?? titleReceiptRootForNode(title);
-          const rect = root?.getBoundingClientRect();
-          return { command, root, native, area: rect ? rect.width * rect.height : 0 };
-        }).filter(item => item.root instanceof HTMLElement && item.root.isConnected
-          && panelMatchesCommand(item.root, item.command))
-          .sort((left, right) => right.area - left.area);
-        if (ranked.length) { candidate = ranked[0]; break; }
-      }
-      if (!candidate) return;
-      if (candidate.native) await panelInternalAction(candidate.native, "LAYOUT", "close");
-      else await closeOwnedDomPanel(candidate.root, candidate.command, null);
-      await pause(16);
-    }
-    if (Object.keys(PANEL_TITLES).some(command => panelTitleNodes(command).length)) {
-      throw new Error("Godel Voice workspace did not clear completely");
-    }
-  }
-
   async function closeVoiceScreenPanels({ onlyIds = null, requestId = null, createdBefore = null,
-    replaceAllSafe = false } = {}) {
+    replaceAllSafe = false, workspaceSnapshotIds = null } = {}) {
     const requestedReceipt = String(requestId ?? "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 96) || null;
     const cutoff = Number.isFinite(Number(createdBefore)) ? Math.max(0, Number(createdBefore)) : null;
     const matchesRequestedReceipt = receipt => requestedReceipt
       && (receipt.request_id === requestedReceipt || receipt.request_id?.startsWith(`${requestedReceipt}.`));
     const withinCleanupBoundary = receipt => (cutoff == null || Number(receipt.created_at) <= cutoff)
       || matchesRequestedReceipt(receipt);
-    const requestedIds = onlyIds ? new Set([...onlyIds].map(String))
+    const snapshotIds = Array.isArray(workspaceSnapshotIds)
+      ? new Set(workspaceSnapshotIds.map(String)) : null;
+    const requestedIds = snapshotIds ?? (onlyIds ? new Set([...onlyIds].map(String))
       : (requestedReceipt || cutoff != null) ? new Set([...managedWindowReceipts]
         .filter(([, receipt]) => withinCleanupBoundary(receipt)).map(([id]) => id))
-        : new Set(managedWindowIds);
+        : new Set(managedWindowIds));
     const ownedIds = new Set([...requestedIds].filter(id => managedWindowReceipts.has(id)));
     const ownedDom = [...managedDomReceipts.entries()].filter(([, receipt]) =>
       (!onlyIds && !requestedReceipt && cutoff == null)
       || (receipt.id && requestedIds.has(String(receipt.id)))
       || (withinCleanupBoundary(receipt) && (cutoff != null || matchesRequestedReceipt(receipt))));
-    if (!ownedIds.size && !ownedDom.length && !replaceAllSafe) return { removed_ids: [] };
-    const active = await workspaceInternalAction("activeScreenInfo");
-    const title = String(active?.title ?? "").toLowerCase();
-    if (title === "blank" && windowRoots().length === 0) return;
-    if (title !== "voice") {
-      throw new Error("Jarvis could not establish its dedicated Voice screen");
+    if (!ownedIds.size && !ownedDom.length && !replaceAllSafe && !snapshotIds) return { removed_ids: [] };
+    const ownedVoice = await ensureVoiceScreen();
+    if (String(ownedVoice.screen.id) !== String(voiceScreenReceipt?.screen_id)) {
+      throw new Error("Jarvis lost ownership of its dedicated Voice screen");
     }
+    const ownersById = new Map();
+    for (const screen of ownedVoice.inventory.screens ?? []) {
+      for (const rawId of Array.isArray(screen?.window_ids) ? screen.window_ids : []) {
+        const id = String(rawId);
+        const owners = ownersById.get(id) ?? [];
+        owners.push(String(screen.id));
+        ownersById.set(id, owners);
+      }
+    }
+    const belongsOnlyToVoice = id => {
+      const owners = ownersById.get(String(id)) ?? [];
+      return owners.length === 1 && owners[0] === String(ownedVoice.screen.id);
+    };
+    const rejectedNativeIds = new Set();
 
     for (const [panel, receipt] of ownedDom) {
       const currentPanel = receipt.command ? panelForDomReceipt(panel, receipt) : null;
@@ -447,6 +760,19 @@
         // Retain the exact receipt. A transient React remount must not turn a
         // later explicit Stop into a permanent leak, and retaining evidence is
         // safer than adopting a merely similar user-owned panel.
+        continue;
+      }
+      if (receipt.id && !belongsOnlyToVoice(receipt.id)) {
+        // A user may move a Jarvis-created panel to another screen before Stop
+        // or crash recovery. The exact receipt remains useful evidence, but it
+        // no longer authorizes a cross-screen close.
+        rejectedNativeIds.add(String(receipt.id));
+        continue;
+      }
+      if (!receipt.id && (receipt.document_generation !== documentGeneration
+          || String(ownedVoice.inventory.active_screen_id) !== String(ownedVoice.screen.id))) {
+        // Id-less receipts are deliberately non-persistent. Close them only in
+        // the same document while the exact receipted Voice screen is active.
         continue;
       }
       try {
@@ -471,12 +797,18 @@
       if (!id) continue;
       if (borrowedWindowReceipts.has(id)) continue;
       if (!ownedIds.has(id)) continue;
+      if (!belongsOnlyToVoice(id)) {
+        rejectedNativeIds.add(id);
+        ownedIds.delete(id);
+        continue;
+      }
       const receipt = managedWindowReceipts.get(id);
       if (!receipt?.command || !panelMatchesCommand(panel, receipt.command)
           || !panelMatchesReceiptSecurity(panel, receipt.command, receipt.security)) {
         // An id can be reused by Godel after a reload. Remove it from this
         // cleanup transaction so the native fallback cannot close a different
         // user-owned window under a stale receipt.
+        rejectedNativeIds.add(id);
         ownedIds.delete(id);
         continue;
       }
@@ -497,9 +829,19 @@
     // native layout transaction after restoring temporarily borrowed panels.
     // This prevents unbounded buildup without treating screen membership as
     // permission to delete an ordinary Godel window.
+    const cleanupSnapshot = await ensureVoiceScreen();
+    const verifiedSafeIds = [...managedWindowReceipts]
+      .filter(([id, receipt]) => !rejectedNativeIds.has(String(id)) && receipt?.command
+        && !/CHAT|NOTE|ACCOUNT|BROK|ORDER|TRADE|MESSAGE|ALERT/.test(receipt.command))
+      .map(([id]) => String(id));
     const cleanup = await workspaceInternalAction("clearVoiceScreen", {
+      screen_id: cleanupSnapshot.receipt.screen_id,
+      expected_window_ids: cleanupSnapshot.screen.window_ids.map(String),
+      known_ids: cleanupSnapshot.receipt.known_window_ids,
       preserve_ids: [...borrowedWindowReceipts.keys()],
-      only_ids: [...ownedIds]
+      only_ids: [...(snapshotIds ?? ownedIds)],
+      verified_safe_ids: verifiedSafeIds,
+      replace_all_safe: replaceAllSafe
     });
     for (const id of cleanup?.removed_ids ?? []) {
       managedWindowIds.delete(String(id));
@@ -508,7 +850,11 @@
         if (String(receipt.id ?? "") === String(id)) managedDomReceipts.delete(panel);
       }
     }
-    if (replaceAllSafe) await closeAllSafePanelsOnVoice();
+    if (voiceScreenReceipt) {
+      const removed = new Set([...(cleanup?.removed_ids ?? []), ...(cleanup?.removed_orphan_record_ids ?? [])].map(String));
+      voiceScreenReceipt.known_window_ids = voiceScreenReceipt.known_window_ids.filter(id => !removed.has(id));
+      persistVoiceScreenReceipt();
+    }
     persistManagedWindowIds();
     return cleanup;
   }
@@ -587,6 +933,18 @@
   function rectOf(element) {
     const rect = element.getBoundingClientRect();
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  }
+
+  function panelUsablyVisible(panel) {
+    const root = nativeWindowRoot(panel) ?? panel;
+    if (!(root instanceof HTMLElement) || !root.isConnected || !visible(root)) return false;
+    const rect = root.getBoundingClientRect();
+    const viewport = workspaceViewport();
+    const intersectionWidth = Math.max(0,
+      Math.min(rect.right, viewport.x + viewport.width) - Math.max(rect.left, viewport.x));
+    const intersectionHeight = Math.max(0,
+      Math.min(rect.bottom, viewport.y + viewport.height) - Math.max(rect.top, viewport.y));
+    return intersectionWidth >= 160 && intersectionHeight >= 90;
   }
 
   function waitFor(find, description, timeoutMs = 6000) {
@@ -1236,7 +1594,25 @@
     }, `${symbol} company added`, 8000);
   }
 
-  async function executeGF(panel, action, plan, terminalCommand) {
+  async function measuredGFAction(panel, action, payload, telemetry, subject, attempt = 1) {
+    const startedAt = performance.now();
+    try {
+      const result = await panelInternalAction(panel, "GF", action, payload);
+      telemetry?.push({
+        action, subject, attempt, status: "completed",
+        duration_ms: Math.max(0, Math.round(performance.now() - startedAt))
+      });
+      return result;
+    } catch (error) {
+      telemetry?.push({
+        action, subject, attempt, status: "failed",
+        duration_ms: Math.max(0, Math.round(performance.now() - startedAt))
+      });
+      throw error;
+    }
+  }
+
+  async function executeGF(panel, action, plan, terminalCommand, telemetry = null) {
     const feature = action.feature;
     const value = String(action.value ?? "");
     const primarySecurity = String(terminalCommand ?? "").trim().toUpperCase().split(/\s+/)[0];
@@ -1244,7 +1620,7 @@
       ? { security: primarySecurity } : {};
     if (feature === "add company") {
       const symbol = value.trim().toUpperCase().split(/\s+/)[0];
-      await panelInternalAction(panel, "GF", "addCompany", { symbol, ...securityPayload });
+      await measuredGFAction(panel, "addCompany", { symbol, ...securityPayload }, telemetry, symbol);
       return;
     }
     if (["add metric", "ratio metric", "margin metric"].includes(feature)) {
@@ -1283,24 +1659,23 @@
       for (const company of [...new Set(companies)]) {
         const symbol = company.toUpperCase();
         let added = false;
-        for (let attempt = 0; attempt < 24; attempt += 1) {
+        for (let attempt = 1; attempt <= 3; attempt += 1) {
           try {
-            await panelInternalAction(panel, "GF", "addMetric", {
+            await measuredGFAction(panel, "addMetric", {
               symbol, metricKey, keepDefaultRevenue, ...securityPayload
-            });
+            }, telemetry, `${symbol}:${metricKey}`, attempt);
             added = true;
             break;
           } catch (error) {
-            if (!/company .* is not loaded/i.test(String(error.message)) || attempt === 23) throw error;
+            if (!/company .* is not loaded/i.test(String(error.message)) || attempt === 3) throw error;
             // A delayed GF render can restore the primary-series snapshot
             // after a peer was visibly added. Re-add only peers explicitly
             // named in this authenticated plan, then resume the exact metric.
             if (explicitCompanies.includes(symbol)) {
-              await panelInternalAction(panel, "GF", "addCompany", {
+              await measuredGFAction(panel, "addCompany", {
                 symbol, ...securityPayload
-              });
+              }, telemetry, symbol, attempt);
             }
-            await pause(250);
           }
         }
         if (!added) throw new Error(`Godel company ${symbol} did not finish loading`);
@@ -1309,25 +1684,26 @@
     }
     if (feature === "include consensus estimates") {
       const desired = ["on", "true", "yes"].includes(value.toLowerCase());
-      await panelInternalAction(panel, "GF", "setEstimates", { value: desired, ...securityPayload });
+      await measuredGFAction(panel, "setEstimates", { value: desired, ...securityPayload }, telemetry,
+        desired ? "on" : "off");
       return;
     }
     if (feature === "range") {
       const canonical = value.toUpperCase() === "MAX" ? "Max" : value.toUpperCase();
       if (!["1Y", "3Y", "5Y", "10Y", "Max"].includes(canonical)) throw new Error("Unsupported GF range");
-      await panelInternalAction(panel, "GF", "setRange", { value: canonical, ...securityPayload });
+      await measuredGFAction(panel, "setRange", { value: canonical, ...securityPayload }, telemetry, canonical);
       return;
     }
     if (feature === "periodicity") {
-      await panelInternalAction(panel, "GF", "setPeriodicity", { value, ...securityPayload });
+      await measuredGFAction(panel, "setPeriodicity", { value, ...securityPayload }, telemetry, value);
       return;
     }
     if (feature === "layout") {
-      await panelInternalAction(panel, "GF", "setLayout", { value, ...securityPayload });
+      await measuredGFAction(panel, "setLayout", { value, ...securityPayload }, telemetry, value);
       return;
     }
     if (feature === "display currency") {
-      await panelInternalAction(panel, "GF", "setDisplayCurrency", { value, ...securityPayload });
+      await measuredGFAction(panel, "setDisplayCurrency", { value, ...securityPayload }, telemetry, value);
       return;
     }
     return clickExact(panel, value);
@@ -1339,11 +1715,10 @@
     const companies = actions.filter(action => action.feature === "add company");
     if (!metrics.length || !companies.length) return actions;
     const controls = actions.filter(action => !metrics.includes(action) && !companies.includes(action));
-    // Godel's metric builder commits the series snapshot it opened with. Set
-    // the primary company's metrics first, add peers, then replay the metrics
-    // so only the newly-added peer series need mutation. This prevents a stale
-    // primary-company modal from erasing peers that were just added.
-    return [...controls, ...metrics, ...companies, ...metrics];
+    // Company insertion now waits for both the native rail series and its exact
+    // per-company metric control. The metric builder then requires that complete
+    // rail snapshot before committing, so each metric is applied exactly once.
+    return [...controls, ...companies, ...metrics];
   }
 
   async function executeHMS(panel, action) {
@@ -1434,7 +1809,8 @@
   }
 
   function hmapTableVisible(panel) {
-    const tables = [...panel.querySelectorAll("table,[role='table'],[role='grid']")].filter(visible);
+    const scope = nativeWindowRoot(panel) ?? panel;
+    const tables = [...scope.querySelectorAll("table,[role='table'],[role='grid']")].filter(visible);
     return tables.some(table => {
       const headings = compactText([...table.querySelectorAll("th,[role='columnheader']")]
         .map(element => element.textContent).join(" ")).toLowerCase();
@@ -1447,7 +1823,8 @@
 
   function hmapMapVisible(panel) {
     if (hmapTableVisible(panel)) return false;
-    const visuals = [...panel.querySelectorAll("canvas,svg,[class*='heatmap' i],[class*='treemap' i]")].filter(visible);
+    const scope = nativeWindowRoot(panel) ?? panel;
+    const visuals = [...scope.querySelectorAll("canvas,svg,[class*='heatmap' i],[class*='treemap' i]")].filter(visible);
     return visuals.some(element => {
       const rect = element.getBoundingClientRect();
       return rect.width >= 240 && rect.height >= 140;
@@ -1459,7 +1836,8 @@
   }
 
   function hmapUniverseControls(panel) {
-    return [...panel.querySelectorAll("button,[role='tab']")].filter(element =>
+    const scope = nativeWindowRoot(panel) ?? panel;
+    return [...scope.querySelectorAll("button,[role='tab']")].filter(element =>
       visible(element) && ["S&P 500", "DJIA"].includes(compactText(element.textContent)));
   }
 
@@ -1482,9 +1860,10 @@
   }
 
   function hmapMemberCount(panel) {
-    const local = [...compactText(panel.textContent).matchAll(/\b(\d{1,4}) members\b/gi)].map(match => Number(match[1]));
+    const scope = nativeWindowRoot(panel) ?? panel;
+    const local = [...compactText(scope.textContent).matchAll(/\b(\d{1,4}) members\b/gi)].map(match => Number(match[1]));
     if (local.length === 1) return local[0];
-    const panelRect = panel.getBoundingClientRect();
+    const panelRect = scope.getBoundingClientRect();
     const spatial = [...document.querySelectorAll("span,div,p")].filter(element => {
       if (!visible(element) || !/^\d{1,4} members$/i.test(compactText(element.textContent))) return false;
       if ([...element.children].some(child => /^\d{1,4} members$/i.test(compactText(child.textContent)))) return false;
@@ -1507,12 +1886,13 @@
   }
 
   function hmapTileSignature(panel) {
+    const scope = nativeWindowRoot(panel) ?? panel;
     if (hmapTableVisible(panel)) {
-      const table = [...panel.querySelectorAll("table,[role='table'],[role='grid']")].filter(visible)[0];
+      const table = [...scope.querySelectorAll("table,[role='table'],[role='grid']")].filter(visible)[0];
       const rows = [...table.querySelectorAll("tr,[role='row']")].map(row => compactText(row.textContent)).filter(Boolean);
       return rows.length >= 2 ? `table:${hmapHash(rows.join("|"))}` : null;
     }
-    const visuals = [...panel.querySelectorAll("canvas,svg,[class*='heatmap' i],[class*='treemap' i]")]
+    const visuals = [...scope.querySelectorAll("canvas,svg,[class*='heatmap' i],[class*='treemap' i]")]
       .filter(visible)
       .map(element => ({ element, rect: element.getBoundingClientRect() }))
       .filter(item => item.rect.width >= 240 && item.rect.height >= 140)
@@ -1548,6 +1928,11 @@
       const canonical = { "s&p 500": "S&P 500", djia: "DJIA" }[String(action.value).trim().toLowerCase()];
       if (!canonical) throw new Error("Unsupported HMAP universe");
       const control = await waitFor(() => hmapUniverseControl(panel, canonical), `HMAP ${canonical} universe control`);
+      // Godel mounts the universe buttons before the member counter and map
+      // payload settle. Reading the pre-state in that short gap produced a
+      // false failure even though the default S&P 500 selection was correct.
+      await waitFor(() => Number.isInteger(hmapMemberCount(panel)) ? true : null,
+        "HMAP authoritative member count", 3000);
       if (hmapUniverseMatches(panel, canonical)) return;
       const before = hmapUniverseSnapshot(panel, canonical);
       if (!Number.isInteger(before.count) || before.countMatches) {
@@ -1975,6 +2360,14 @@
     ["15 minutes", "15m"], ["15 min", "15m"], ["30 minutes", "30m"], ["30 min", "30m"],
     ["1 hour", "1h"], ["1 h", "1h"], ["1 day", "1d"], ["1 d", "1d"]
   ]);
+  const G_INTERVAL_PROOFS = Object.freeze({
+    "1m": Object.freeze({ input: "1", label: "1 minute" }),
+    "5m": Object.freeze({ input: "5", label: "5 minutes" }),
+    "15m": Object.freeze({ input: "15", label: "15 minutes" }),
+    "30m": Object.freeze({ input: "30", label: "30 minutes" }),
+    "1h": Object.freeze({ input: "60", label: "1 hour" }),
+    "1d": Object.freeze({ input: "1D", label: "1 day" })
+  });
 
   function gFrameElementVisible(element, view) {
     if (!element || !view) return false;
@@ -2024,18 +2417,21 @@
   }
 
   async function executeG(panel, action) {
-    if (action.feature !== "resolution" || action.operation !== "select" || action.value !== "1h") {
-      throw new Error("G live executor permits only the independently proven 1h contextual resolution");
+    const resolution = String(action.value ?? "").trim().toLowerCase();
+    const proof = G_INTERVAL_PROOFS[resolution];
+    if (action.feature !== "resolution" || action.operation !== "select" || !proof) {
+      throw new Error("G resolution must be one of 1m, 5m, 15m, 30m, 1h, 1d");
     }
     const initial = await waitFor(() => gChartFrameContext(panel), "authenticated G chart interval control", 5000);
-    if (initial.interval === "1h" && /, 1 hour$/i.test(initial.chartLabel)) return;
+    if (initial.interval === resolution && initial.chartLabel.toLowerCase().endsWith(`, ${proof.label}`)) return;
     await cdp("click", { rect: gChartViewportRect(initial) });
-    await trustedType("60");
+    await trustedType(proof.input);
     await press("Enter");
     await waitUntil(() => {
       const current = gChartFrameContext(panel);
-      return current?.interval === "1h" && /, 1 hour$/i.test(current.chartLabel);
-    }, "G 1 hour popup and chart label", 6000);
+      return current?.interval === resolution
+        && current.chartLabel.toLowerCase().endsWith(`, ${proof.label}`);
+    }, `G ${proof.label} popup and chart label`, 6000);
   }
 
   const TRAN_STOP_WORDS = new Set(["a", "an", "and", "are", "for", "from", "in", "is", "of", "on", "or", "the", "to", "was", "were", "with"]);
@@ -2671,21 +3067,30 @@
 
     phaseStartedAt = performance.now();
     const actions = plan.command === "GF" ? orderedGFActions(plan.actions) : (plan.actions ?? []);
-    for (const action of actions) {
-      if (plan.command === "GF") await executeGF(panel, action, plan, terminalCommand);
-      else if (plan.command === "HMS") await executeHMS(panel, action);
-      else if (plan.command === "GR") await executeGR(panel, action);
-      else if (plan.command === "HALT") await executeHALT(panel, action);
-      else if (plan.command === "HMAP") await executeHMAP(panel, action);
-      else if (plan.command === "IMAP") await executeIMAP(panel, action);
-      else if (plan.command === "EM") await executeEM(panel, action);
-      else if (plan.command === "MOST") await executeMOST(panel, action);
-      else if (plan.command === "HDS") await executeHDS(panel, action);
-      else if (plan.command === "EQS") await executeEQS(panel, action);
-      else if (plan.command === "SECF") await executeSECF(panel, action);
-      else if (plan.command === "G") await executeG(panel, action);
-      else if (plan.command === "TRAN") await executeTRAN(panel, action, plan);
-      else if (plan.command === "N") await executeNews(panel, action);
+    const nestedActionTimings = [];
+    if (plan.command === "GF") panelNestedActionTimings.set(panel, nestedActionTimings);
+    try {
+      for (const action of actions) {
+        if (plan.command === "GF") await executeGF(panel, action, plan, terminalCommand, nestedActionTimings);
+        else if (plan.command === "HMS") await executeHMS(panel, action);
+        else if (plan.command === "GR") await executeGR(panel, action);
+        else if (plan.command === "HALT") await executeHALT(panel, action);
+        else if (plan.command === "HMAP") await executeHMAP(panel, action);
+        else if (plan.command === "IMAP") await executeIMAP(panel, action);
+        else if (plan.command === "EM") await executeEM(panel, action);
+        else if (plan.command === "MOST") await executeMOST(panel, action);
+        else if (plan.command === "HDS") await executeHDS(panel, action);
+        else if (plan.command === "EQS") await executeEQS(panel, action);
+        else if (plan.command === "SECF") await executeSECF(panel, action);
+        else if (plan.command === "G") await executeG(panel, action);
+        else if (plan.command === "TRAN") await executeTRAN(panel, action, plan);
+        else if (plan.command === "N") await executeNews(panel, action);
+      }
+    } catch (error) {
+      markPhase("nested_actions_ms", phaseStartedAt);
+      phases.total_ms = Math.max(0, Math.round(performance.now() - commandStartedAt));
+      error.godelVoiceTiming = { phases, nested_actions: nestedActionTimings };
+      throw error;
     }
     markPhase("nested_actions_ms", phaseStartedAt);
     // The chart shell appears before its live quote header. Wait only until
@@ -2753,16 +3158,31 @@
     return windowRoots().find(root => windowId(root) === String(id)) ?? null;
   }
 
-  async function activeScreenRoots() {
+  async function activeScreenState() {
     const roots = windowRoots();
     try {
-      const ids = await workspaceInternalAction("activeWindowIds");
-      if (!Array.isArray(ids)) return roots;
-      const active = ids.map(id => roots.find(root => windowId(root) === String(id))).filter(Boolean);
-      return active.sort((a, b) => panelExposureScore(b) - panelExposureScore(a));
+      const inventory = await workspaceInternalAction("workspaceInventory");
+      const activeScreen = Array.isArray(inventory?.screens)
+        ? inventory.screens.find(screen => String(screen.id) === String(inventory.active_screen_id)) : null;
+      if (!activeScreen || !Array.isArray(activeScreen.window_ids)) {
+        return { roots: [], activeWindowId: null };
+      }
+      const active = activeScreen.window_ids
+        .map(id => roots.find(root => windowId(root) === String(id))).filter(Boolean)
+        .sort((a, b) => panelExposureScore(b) - panelExposureScore(a));
+      return {
+        roots: active,
+        activeWindowId: activeScreen.active_window_id == null ? null : String(activeScreen.active_window_id)
+      };
     } catch {
-      return roots;
+      // Window controls must not broaden from the active Godel screen to every
+      // mounted React root when the authoritative workspace lookup fails.
+      return { roots: [], activeWindowId: null };
     }
+  }
+
+  async function activeScreenRoots() {
+    return (await activeScreenState()).roots;
   }
 
   function panelExposureScore(root) {
@@ -2779,22 +3199,21 @@
     return score;
   }
 
-  function panelForControl(target, roots = windowRoots()) {
+  function panelForControl(target, roots = [], activeWindowId = null) {
     const searchRoots = [...new Set(roots)];
     if (target.mode === "last") {
       const last = lastWindowId && searchRoots.find(root => windowId(root) === String(lastWindowId));
       if (last) return last;
       const rememberedPanel = lastPanelElement?.isConnected ? (nativeWindowRoot(lastPanelElement) ?? lastPanelElement) : null;
       if (rememberedPanel && searchRoots.includes(rememberedPanel)) return rememberedPanel;
-      return [...searchRoots].sort((a, b) => (Number.parseInt(getComputedStyle(b).zIndex, 10) || 0)
-        - (Number.parseInt(getComputedStyle(a).zIndex, 10) || 0))[0] ?? null;
+      return null;
     }
     if (target.mode === "focused") {
-      return searchRoots.find(root => {
+      return (activeWindowId && searchRoots.find(root => windowId(root) === String(activeWindowId)))
+        ?? searchRoots.find(root => {
         const active = root.getAttribute("data-cy-active-window");
         return active !== null && active !== "false";
-      }) ?? (lastWindowId && searchRoots.find(root => windowId(root) === String(lastWindowId)))
-        ?? null;
+      }) ?? null;
     }
     const remembered = commandWindows.get(target.command);
     const rememberedPanel = commandPanels.get(target.command);
@@ -2807,9 +3226,7 @@
         const active = root.getAttribute("data-cy-active-window");
         return active !== null && active !== "false";
       }),
-      candidates[0],
-      ...candidates.sort((a, b) => (Number.parseInt(getComputedStyle(b).zIndex, 10) || 0)
-        - (Number.parseInt(getComputedStyle(a).zIndex, 10) || 0))
+      candidates.length === 1 ? candidates[0] : null
     ].filter(Boolean);
     const fallbackPanel = topPanelForCommand(target.command);
     const scopedFallback = fallbackPanel && searchRoots.includes(nativeWindowRoot(fallbackPanel) ?? fallbackPanel) ? fallbackPanel : null;
@@ -2904,12 +3321,22 @@
   }
 
   async function executeControlStep(step) {
+    if (step.operation === "reset_workspace") {
+      await executeDurableWorkspaceReset({ recoveryAdoptionAuthorized: true });
+      lastWindowId = null;
+      lastPanelElement = null;
+      lastPanelContext = null;
+      commandWindows.clear();
+      commandPanels.clear();
+      return;
+    }
     // Godel currently renders some title bars and their native `*-window`
     // roots as React siblings. Prefer the active-screen inventory, then allow
     // only one exposed, exact-title native root with the requested security.
     // This keeps follow-up controls deterministic without falling back to an
     // arbitrary active window.
-    const panel = panelForControl(step.target, await activeScreenRoots())
+    const activeScreen = await activeScreenState();
+    const panel = panelForControl(step.target, activeScreen.roots, activeScreen.activeWindowId)
       ?? uniqueVisiblePanelForControl(step.target);
     if (!panel) throw new Error(`No Godel window matches ${step.target.command ?? step.target.mode}`);
     if (step.operation === "move") {
@@ -2931,7 +3358,18 @@
     } else {
       const actions = { maximize: "maximize", restore: "restore", focus: "focus", close: "close", export: "openExport" };
       await panelInternalAction(panel, "LAYOUT", actions[step.operation]);
-      if (step.operation === "close") forgetManagedPanel(panel);
+      if (step.operation === "close") {
+        forgetManagedPanel(panel);
+        const closedId = String(windowId(nativeWindowRoot(panel) ?? panel) ?? "");
+        for (const [command, id] of [...commandWindows]) {
+          if (closedId && String(id) === closedId) commandWindows.delete(command);
+        }
+        for (const [command, remembered] of [...commandPanels]) {
+          if (remembered === panel || panel.contains(remembered) || remembered.contains(panel)) {
+            commandPanels.delete(command);
+          }
+        }
+      }
     }
     if (step.operation !== "close") rememberPanel(panel, step.target.command, step.target.security);
     else if (lastPanelElement && (panel === lastPanelElement || panel.contains(lastPanelElement) || lastPanelElement.contains(panel))) {
@@ -2942,7 +3380,8 @@
   }
 
   async function executeConfigureStep(step) {
-    const panel = panelForControl(step.target, await activeScreenRoots())
+    const activeScreen = await activeScreenState();
+    const panel = panelForControl(step.target, activeScreen.roots, activeScreen.activeWindowId)
       ?? detachedUniqueHDSPanel(step.target)
       ?? detachedUniqueOMONPanel(step.target);
     if (!panel) {
@@ -2983,11 +3422,8 @@
 
   async function cancellationRequested(requestId) {
     if (!requestId) return false;
-    const response = await fetch(`${config.handoffUrl}/status?id=${encodeURIComponent(requestId)}&client=${encodeURIComponent(clientId)}`, {
-      cache: "no-store", headers: { Authorization: `Bearer ${config.secret}` }
-    });
-    if (!response.ok) return false;
-    const status = await response.json();
+    let status;
+    try { status = await workflowStatus(requestId); } catch { return false; }
     return status.cancel_requested === true || status.status !== "inflight" || status.lease_owned !== true;
   }
 
@@ -3019,6 +3455,7 @@
     const grounded = [];
     const failures = [];
     const timings = [];
+    const phases = {};
     const transactionWindowIds = new Set();
     const transactionBorrowedIds = new Set();
     const opensNewPanels = plan.steps.some(step => step.kind === "command" && step.command !== "Q");
@@ -3028,19 +3465,25 @@
       && ["maximize", "restore", "move", "resize"].includes(step.operation));
     let workflowScreenId = null;
     try {
+    const workspacePrepareStartedAt = Date.now();
+    try {
     if (replacesVoiceWorkspace) {
       await ensureNotCancelled(requestId);
-      await workspaceInternalAction("createScreen", { name: "Voice" });
-      const voiceScreen = await workspaceInternalAction("activeScreenInfo");
-      workflowScreenId = String(voiceScreen?.id ?? "");
+      const voiceScreen = await ensureVoiceScreen();
+      workflowScreenId = voiceScreen.receipt.screen_id;
       await restoreBorrowedWindows();
-      await workspaceInternalAction("createScreen", { name: "Voice" });
+      await ensureVoiceScreen();
       await closeVoiceScreenPanels({ replaceAllSafe: true });
     } else if (plan.layout.new_screen) {
       await ensureNotCancelled(requestId);
-      await workspaceInternalAction("createScreen", { name: "Voice" });
-      const voiceScreen = await workspaceInternalAction("activeScreenInfo");
-      workflowScreenId = String(voiceScreen?.id ?? "");
+      const voiceScreen = await ensureVoiceScreen();
+      workflowScreenId = voiceScreen.receipt.screen_id;
+      await restoreBorrowedWindows();
+      await ensureVoiceScreen();
+      await closeVoiceScreenPanels({ replaceAllSafe: true });
+    }
+    } finally {
+      phases.workspace_prepare_ms = Math.max(0, Date.now() - workspacePrepareStartedAt);
     }
     for (let index = 0; index < plan.steps.length; index += 1) {
       const step = plan.steps[index];
@@ -3113,10 +3556,24 @@
             const nativeId = native ? String(windowId(native) ?? "") : "";
             let borrowed = false;
             if (nativeId && workflowScreenId && panel.dataset.godelVoiceWorkspaceCommitted !== "false") {
+              const borrowedContext = contextPanel(panel);
+              const borrowedSecurity = borrowedContext?.security
+                ?? submittedTerminalIdentity?.security
+                ?? null;
+              if (borrowedContext?.command !== step.command
+                  || !panelMatchesReceiptSecurity(panel, step.command, borrowedSecurity)) {
+                throw new Error(`Could not bind borrowed ${step.command} window to its exact identity`);
+              }
               const receipt = await moveWindowToWorkflowScreen(nativeId, workflowScreenId);
               if (receipt?.moved === true) {
                 borrowed = true;
-                borrowedWindowReceipts.set(nativeId, receipt);
+                borrowedWindowReceipts.set(nativeId, {
+                  ...receipt,
+                  id: nativeId,
+                  document_generation: documentGeneration,
+                  command: step.command,
+                  security: borrowedSecurity
+                });
                 transactionBorrowedIds.add(nativeId);
                 managedWindowIds.delete(nativeId);
                 managedWindowReceipts.delete(nativeId);
@@ -3180,7 +3637,9 @@
           ...(openedStep?.workspaceWindowId ? { workspace_window_id: String(openedStep.workspaceWindowId) } : {}),
           ...(openedStep?.workspaceWindowId && transactionBorrowedIds.has(String(openedStep.workspaceWindowId)) ? { borrowed: true } : {}),
           ...(step.kind === "command" && executedPanel && panelCommandTimings.get(executedPanel)
-            ? { phases: panelCommandTimings.get(executedPanel) } : {})
+            ? { phases: panelCommandTimings.get(executedPanel) } : {}),
+          ...(step.kind === "command" && executedPanel && panelNestedActionTimings.get(executedPanel)?.length
+            ? { nested_actions: panelNestedActionTimings.get(executedPanel) } : {})
         });
       } catch (error) {
         for (let itemIndex = opened.length - 1; itemIndex >= 0; itemIndex -= 1) {
@@ -3226,7 +3685,10 @@
         timings.push({
           step_id: step.id, kind: step.kind, command: step.command ?? step.target?.command, operation: step.operation ?? (step.kind === "configure" ? "configure" : null),
           status: step.failure_policy === "stop" ? "failed" : "skipped",
-          duration_ms: Date.now() - stepStartedAt, error: error.message
+          duration_ms: Date.now() - stepStartedAt, error: error.message,
+          ...(error.godelVoiceTiming?.phases ? { phases: error.godelVoiceTiming.phases } : {}),
+          ...(error.godelVoiceTiming?.nested_actions?.length
+            ? { nested_actions: error.godelVoiceTiming.nested_actions } : {})
         });
         if (step.failure_policy !== "stop" && step.kind === "command" && step.command !== "Q") {
           const stepNewIds = new Set([...transactionWindowIds]
@@ -3267,7 +3729,12 @@
         step_id: "workflow-layout", kind: "control", command: null, operation: "layout",
         status: "skipped", duration_ms: Date.now() - layoutStartedAt, error: error.message
       });
+      if (opened.some(item => !panelUsablyVisible(item.panel))) {
+        throw new Error(`${error.message}; an opened Godel panel is outside the usable Voice workspace`);
+      }
       toast(`Godel Voice: windows opened; layout incomplete`, true);
+    } finally {
+      phases.layout_ms = Math.max(0, Date.now() - layoutStartedAt);
     }
     if (failures.length) toast(`Godel Voice: workflow ready with ${failures.length} skipped step${failures.length === 1 ? "" : "s"}`, true);
     else if (plan.steps.every(step => step.kind === "control" || step.kind === "configure")) toast("Godel Voice: window updated");
@@ -3278,14 +3745,19 @@
       const native = nativeWindowRoot(item.panel);
       if (native) currentRequestWindowIds.add(String(windowId(native)));
     }
-    await reconcileManagedWindows({ preserveIds: currentRequestWindowIds }).catch(() => {});
-    return { timings, opened, grounded, layoutWarning };
+    const reconcileStartedAt = Date.now();
+    try {
+      await reconcileManagedWindows({ preserveIds: currentRequestWindowIds }).catch(() => {});
+    } finally {
+      phases.reconcile_ms = Math.max(0, Date.now() - reconcileStartedAt);
+    }
+    return { timings, opened, grounded, layoutWarning, phases };
     } catch (error) {
       if (opensNewPanels) {
         try {
-          await workspaceInternalAction("createScreen", { name: "Voice" });
+          await ensureVoiceScreen();
           await restoreBorrowedWindows({ onlyIds: transactionBorrowedIds });
-          await workspaceInternalAction("createScreen", { name: "Voice" });
+          await ensureVoiceScreen();
           if (plan.layout.preserve_existing === false) await closeVoiceScreenPanels({ replaceAllSafe: true });
           else await closeVoiceScreenPanels({ onlyIds: transactionWindowIds, requestId });
           await publishExecutorContext();
@@ -3294,6 +3766,7 @@
           // the original failure if Godel itself is too unhealthy to clean up.
         }
       }
+      try { error.workflowPhases = { ...phases }; } catch {}
       throw error;
     }
   }
@@ -3316,10 +3789,24 @@
       }
     };
     const result = await executeWorkflow(workflow, requestId);
-    const message = completionMessage(workflow, result.grounded, result.timings);
+    const completionFactStartedAt = Date.now();
+    let message;
+    let completionError = null;
+    try {
+      message = completionMessage(workflow, result.grounded, result.timings);
+    } catch (error) {
+      completionError = error;
+    } finally {
+      result.phases.completion_fact_ms = Math.max(0, Date.now() - completionFactStartedAt);
+    }
+    if (completionError) {
+      try { completionError.workflowPhases = { ...result.phases }; } catch {}
+      throw completionError;
+    }
     return {
       message: result.layoutWarning ? `${message} I couldn't finish the requested placement.` : message,
-      steps: result.timings
+      steps: result.timings,
+      phases: result.phases
     };
   }
 
@@ -3374,6 +3861,10 @@
       const valuation = step?.actions?.find(action => action.feature === "valuation" && action.operation === "read");
       const requestedRow = valuation?.value?.row;
       const semanticUnit = valuation?.value?.semantic_unit;
+      // Opening an Earnings Matrix is not itself a request to narrate a
+      // valuation. Only extract and speak a row that the executable plan
+      // explicitly requested; otherwise the completion stays "on screen."
+      if (!requestedRow || !semanticUnit) return "";
       for (const table of panel.querySelectorAll("table,[role='table'],[role='grid']")) {
         const headers = [...table.querySelectorAll("thead th,[role='columnheader']")]
           .map(cell => compactText(cell.textContent));
@@ -3382,14 +3873,13 @@
         for (const row of table.querySelectorAll("tbody tr,[role='row']")) {
           const cells = [...row.querySelectorAll("th,td,[role='cell'],[role='gridcell']")]
             .map(cell => compactText(cell.textContent));
-          const rowLabel = requestedRow ?? "P/E";
+          const rowLabel = requestedRow;
           if (cells[0] !== rowLabel || cells.length !== headers.length + 1) continue;
           const values = cells.slice(1);
-          const unit = semanticUnit ?? "Multiple";
+          const unit = semanticUnit;
           const pattern = unit === "Percent" ? /^-?\d{1,5}(?:\.\d{1,6})?\s*%$/ : /^-?\d{1,5}(?:\.\d{1,6})?\s*[x×]$/;
           if (!values.every(value => pattern.test(value))) continue;
-          if (requestedRow) return `EM Multiples ${rowLabel} ${unit} :: ${headers.map((header, index) => `${header} = ${values[index]}`).join(" ;; ")}`;
-          return `EM Multiples P/E ${headers.map((header, index) => `${header} ${values[index]}`).join(" ")}`;
+          return `EM Multiples ${rowLabel} ${unit} :: ${headers.map((header, index) => `${header} = ${values[index]}`).join(" ;; ")}`;
         }
       }
       return "";
@@ -3432,7 +3922,7 @@
       if (failedSteps.length) return `I couldn't complete ${failedSubjects.join(" and ")}.`;
       if (controls.length === 1 && !configured.length) return ({
         close: "Window closed.", focus: "On screen.", maximize: "Adjusted.", restore: "Adjusted.",
-        resize: "Adjusted.", move: "Adjusted.", export: "Export ready."
+        resize: "Adjusted.", move: "Adjusted.", export: "Export menu opened."
       })[controls[0].operation] ?? "Consider it done.";
       return configured.length ? "Updated." : "Done.";
     }
@@ -3445,7 +3935,7 @@
     return `${action}${failedSuffix}`;
   }
 
-  async function acknowledge(id, status, startedAt, error = null, message = "", steps = [], suppressSpokenFeedback = false) {
+  async function acknowledge(id, status, startedAt, error = null, message = "", steps = [], phases = {}, suppressSpokenFeedback = false) {
     if (!id) return;
     const response = await fetch(`${config.handoffUrl}/ack`, {
       method: "POST",
@@ -3453,11 +3943,71 @@
       body: JSON.stringify({
         id, client_id: clientId, executor_id: clientId, document_generation: documentGeneration,
         status, duration_ms: Date.now() - startedAt,
-        error: error?.message ?? "", message, steps, suppress_spoken_feedback: suppressSpokenFeedback
+        error: error?.message ?? "", message, steps, phases, suppress_spoken_feedback: suppressSpokenFeedback
       })
     });
     if (!response.ok) throw new Error(`acknowledgement returned ${response.status}`);
     return response.json();
+  }
+
+  async function workflowStatus(id) {
+    const response = await fetch(`${config.handoffUrl}/status?id=${encodeURIComponent(id)}&client=${encodeURIComponent(clientId)}`, {
+      cache: "no-store", headers: { Authorization: `Bearer ${config.secret}` }
+    });
+    if (!response.ok) throw new Error(`workflow status returned ${response.status}`);
+    return response.json();
+  }
+
+  async function acknowledgeCompletedWithReconciliation(id, startedAt, message, steps, phases,
+    suppressSpokenFeedback = false) {
+    let lastError = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const acknowledgement = await acknowledge(id, "completed", startedAt, null,
+          message, steps, phases, suppressSpokenFeedback);
+        if (acknowledgement?.cancel_requested === true || acknowledgement?.status === "cancelled") {
+          throw new CancelledError();
+        }
+        if (acknowledgement?.status === "completed") return acknowledgement;
+        lastError = new Error("server did not accept the completed workflow state");
+      } catch (error) {
+        if (error instanceof CancelledError) throw error;
+        lastError = error;
+      }
+
+      // A dropped HTTP response is ambiguous: the server may already have
+      // committed the idempotent acknowledgement. Observe the authoritative
+      // state before retrying; never re-run the DOM workflow.
+      let observed = null;
+      try { observed = await workflowStatus(id); }
+      catch (error) {
+        lastError = error;
+        if (attempt < 2) await pause(80 * (attempt + 1));
+        continue;
+      }
+      if (observed?.cancel_requested === true || observed?.status === "cancelled") {
+        throw new CancelledError();
+      }
+      if (observed?.status === "completed") {
+        // /status cannot prove whether the server already queued premium TTS.
+        // Mark recovered acknowledgements so the browser never adds a second
+        // local voice after an ambiguous lost ACK response.
+        return { ...observed, acknowledgement_reconciled: true };
+      }
+      if (["failed", "expired"].includes(observed?.status)) {
+        throw new Error(`workflow became terminal as ${observed.status}`);
+      }
+      if (observed?.status !== "inflight" || observed?.lease_owned !== true) {
+        throw new CancelledError("Workflow lease was lost before completion was recorded");
+      }
+      if (attempt < 2) {
+        // Keep the exact lease alive while reconciling, then retry only the
+        // idempotent ACK body. The already-completed DOM plan is never called.
+        await heartbeat(id);
+        await pause(80 * (attempt + 1));
+      }
+    }
+    throw lastError ?? new Error("completed workflow acknowledgement was not verified");
   }
 
   async function releaseForRetry(id, error) {
@@ -3481,9 +4031,9 @@
 
   async function eligibleExecutor() {
     // A focused top-level Godel document is necessarily the active tab in the
-    // focused browser window. Avoid waking the MV3 service worker on every
-    // 100 ms queue poll; that round trip was often slower than the command
-    // compiler itself and created visible start jitter.
+    // focused browser window. Check locally before opening the one bounded
+    // long-poll so an ineligible tab neither wakes the MV3 service worker nor
+    // holds a server-side delivery waiter.
     const identity = await executorIdentityReady;
     // A live Realtime session is already bound to this exact executor and
     // document generation. Keep the deterministic executor available while
@@ -3548,22 +4098,27 @@
   }
 
   async function poll() {
-    if (running || polling) return;
+    if (running || polling || nextLoopStopped) return "busy";
     polling = true;
     try {
       await lifecycleCleanup;
       const { executorId, documentGeneration: generation } = await executorIdentityReady;
-      if (!(await eligibleExecutor().catch(() => false))) return;
-      const response = await fetch(`${config.handoffUrl}/next?client=${encodeURIComponent(executorId)}&executor=${encodeURIComponent(executorId)}&generation=${encodeURIComponent(generation)}`, {
-        cache: "no-store", headers: { Authorization: `Bearer ${config.secret}` }
+      if (!(await eligibleExecutor().catch(() => false))) return "ineligible";
+      const controller = new AbortController();
+      nextRequestController = controller;
+      const response = await fetch(`${config.handoffUrl}/next?client=${encodeURIComponent(executorId)}&executor=${encodeURIComponent(executorId)}&generation=${encodeURIComponent(generation)}&wait_ms=${NEXT_WAIT_MS}`, {
+        cache: "no-store", headers: { Authorization: `Bearer ${config.secret}` }, signal: controller.signal
       });
-      if (response.status === 204) return;
+      if (nextRequestController === controller) nextRequestController = null;
+      if (response.status === 204) return "timeout";
       if (!response.ok) throw new Error(`handoff server returned ${response.status}`);
       const payload = await response.json();
       // A session-start event can arrive while /next is in flight. Rejoin the
       // serialized cleanup barrier before claiming the workspace so a stale
       // cleanup can never run behind this newly leased request.
+      const lifecycleBarrierStartedAt = Date.now();
       await lifecycleCleanup;
+      const lifecycleBarrierMs = Math.max(0, Date.now() - lifecycleBarrierStartedAt);
       running = true;
       const startedAt = Date.now();
       if (!payload.realtime) emitStartAcknowledgement(payload.premium_voice === true);
@@ -3578,27 +4133,35 @@
       }, heartbeatEvery);
       try {
         const result = await executePlan(payload.marker, payload.id);
+        // Close the cancellation race after the final DOM action and before
+        // any success acknowledgement. The periodic heartbeat may not have
+        // observed a server-side cancellation yet.
+        await ensureNotCancelled(payload.id);
         if (leaseLost) throw leaseLost;
-        let acknowledged = true;
         let acknowledgement = null;
-        // Realtime is already waiting in this page. Release its verified
-        // completion immediately; server acknowledgement is bookkeeping and
-        // must not add network latency before Jarvis can answer.
-        if (payload.realtime === true) {
-          emitCompletion({
-            id: payload.id, status: "completed", message: result.message,
-            durationMs: Date.now() - startedAt, acknowledged: true, premiumVoice: true
-          });
-          publishExecutorContext().catch(() => {});
+        const phases = { ...result.phases, lifecycle_barrier_ms: lifecycleBarrierMs };
+        try {
+          acknowledgement = await acknowledgeCompletedWithReconciliation(payload.id, startedAt,
+            result.message, result.steps, phases, payload.realtime === true);
+        } catch (error) {
+          if (error instanceof CancelledError) throw error;
+          // Local execution is not authoritative until the lease owner accepts
+          // the terminal state. In particular, a workflow cancelled during its
+          // final DOM action must never speak a late success.
+          const message = "Godel action finished, but its result could not be verified.";
+          toast(message, true);
+          emitCompletion({ id: payload.id, status: "failed", message,
+            durationMs: Date.now() - startedAt, acknowledged: false,
+            premiumVoice: payload.realtime === true });
+          return;
         }
-        try { acknowledgement = await acknowledge(payload.id, "completed", startedAt, null, result.message, result.steps, payload.realtime === true); }
-        catch { acknowledged = false; toast("Godel Voice completed, but status sync failed", true); }
-        if (payload.realtime !== true) {
-          emitCompletion({
-            id: payload.id, status: "completed", message: result.message, durationMs: Date.now() - startedAt, acknowledged,
-            premiumVoice: acknowledgement?.spoken_feedback_queued === true
-          });
-        }
+        emitCompletion({
+          id: payload.id, status: "completed", message: result.message,
+          durationMs: Date.now() - startedAt, acknowledged: true,
+          premiumVoice: payload.realtime === true || acknowledgement?.spoken_feedback_queued === true
+            || acknowledgement?.acknowledgement_reconciled === true
+        });
+        if (payload.realtime === true) publishExecutorContext().catch(() => {});
       } catch (error) {
         if (error instanceof ExtensionReloadError) {
           clearStartAcknowledgement(true);
@@ -3607,20 +4170,36 @@
           return;
         }
         const status = error instanceof CancelledError ? "cancelled" : "failed";
-        await acknowledge(payload.id, status, startedAt, error, "", error.stepTimings ?? [], payload.realtime === true).catch(() => {});
+        const phases = { ...(error.workflowPhases ?? {}), lifecycle_barrier_ms: lifecycleBarrierMs };
+        await acknowledge(payload.id, status, startedAt, error, "", error.stepTimings ?? [], phases, payload.realtime === true).catch(() => {});
         const message = status === "cancelled" ? "Godel Voice cancelled" : `Godel Voice stopped: ${error.message}`;
         toast(message, true);
         emitCompletion({ id: payload.id, status, message, durationMs: Date.now() - startedAt, premiumVoice: payload.realtime === true });
       }
       finally { clearInterval(heartbeatTimer); running = false; }
+      return "delivered";
     } catch (error) {
       // The local server is intentionally on-demand. Stay silent while it is
       // absent so an ordinary Godel session has no warnings or network noise.
+      return error?.name === "AbortError" ? "aborted" : "unavailable";
     }
-    finally { polling = false; }
+    finally { nextRequestController = null; polling = false; }
   }
 
-  setInterval(poll, 100);
+  async function runNextLoop() {
+    while (!nextLoopStopped) {
+      const outcome = await poll();
+      if (nextLoopStopped) break;
+      if (outcome === "ineligible") await pause(250);
+      else if (outcome === "unavailable") await pause(500);
+      else if (outcome === "busy") await pause(50);
+    }
+  }
+
+  function abortNextRequest() {
+    nextRequestController?.abort();
+    nextRequestController = null;
+  }
   let jarvisSessionEpoch = 0;
   let lifecycleCleanup = Promise.resolve();
   function pendingCleanupReceipts(requestId = null, createdBefore = null) {
@@ -3641,16 +4220,19 @@
         let lastCleanupError = null;
         for (let attempt = 0; attempt < 5; attempt += 1) {
           try {
-            await workspaceInternalAction("createScreen", { name: "Voice" });
-            await restoreBorrowedWindows();
-            await workspaceInternalAction("createScreen", { name: "Voice" });
-            await closeVoiceScreenPanels({ requestId, createdBefore });
+            await executeDurableWorkspaceReset({ requestId, createdBefore });
             lastCleanupError = null;
           } catch (error) { lastCleanupError = error; }
-          if (!pendingCleanupReceipts(requestId, createdBefore) && borrowedWindowReceipts.size === 0) break;
+          if (!pendingWorkspaceReset && !pendingCleanupReceipts(requestId, createdBefore)
+              && borrowedWindowReceipts.size === 0) break;
           if (attempt < 4) await pause(100 * (2 ** attempt));
         }
-        if (lastCleanupError && pendingCleanupReceipts(requestId, createdBefore)) throw lastCleanupError;
+        const incomplete = pendingWorkspaceReset
+          || pendingCleanupReceipts(requestId, createdBefore)
+          || borrowedWindowReceipts.size > 0;
+        if (incomplete) {
+          throw lastCleanupError ?? new Error("Retained Jarvis panel receipts remain after cleanup retries");
+        }
       } else {
         // Starting or reconnecting Jarvis must preserve the visible panels so
         // “make it bigger” and other conversational follow-ups retain context.
@@ -3659,8 +4241,11 @@
         await reconcileManagedWindows();
       }
       await publishExecutorContext();
-    }).catch(() => {
-      // Lifecycle cleanup is best-effort and never blocks a later retry.
+    }).catch(error => {
+      // Preserve the receipts for a later retry, but never report an incomplete
+      // cleanup as success. The user needs a visible, bounded failure instead
+      // of discovering a silently accumulating workspace later.
+      toast(`Godel Voice cleanup incomplete: ${String(error?.message ?? "unknown error").slice(0, 160)}`, true);
     });
   }
   window.addEventListener("godel-voice:session-started", () => {
@@ -3671,9 +4256,11 @@
   window.addEventListener("godel-voice:session-state", event => {
     jarvisRealtimeActive = event.detail?.active === true;
     if (jarvisRealtimeActive) publishExecutorContext().catch(() => {});
+    else if (document.visibilityState !== "visible" || !document.hasFocus()) abortNextRequest();
   });
   window.addEventListener("godel-voice:cleanup-request", event => {
     jarvisRealtimeActive = false;
+    if (document.visibilityState !== "visible" || !document.hasFocus()) abortNextRequest();
     if (event.detail?.explicit === true) {
       queueVoiceCleanup(jarvisSessionEpoch, {
         closeAll: true,
@@ -3686,9 +4273,21 @@
   // cadence avoids repeatedly scanning Godel's large dashboard DOM.
   setInterval(() => publishExecutorContext().catch(() => {}), 2_500);
   window.addEventListener("focus", () => publishExecutorContext().catch(() => {}));
+  window.addEventListener("blur", () => {
+    if (!jarvisRealtimeActive) abortNextRequest();
+  });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" || jarvisRealtimeActive) publishExecutorContext().catch(() => {});
+    else abortNextRequest();
   });
-  poll();
+  window.addEventListener("pagehide", () => {
+    nextLoopStopped = true;
+    abortNextRequest();
+  }, { once: true });
+  // A content-script reload must resume an interrupted reset before /next can
+  // lease new work. The persisted record carries the exact screen boundary;
+  // this path never authorizes adoption of a merely title-matching screen.
+  if (pendingWorkspaceReset) queueVoiceCleanup(jarvisSessionEpoch, { closeAll: true });
+  runNextLoop();
   publishExecutorContext().catch(() => {});
 })();

@@ -9,9 +9,10 @@
   const WORKFLOW_PREFIX = "GV2:";
   const COMMANDS = new Set("DES FA ERN EM SI GR ANR DVD QM FOCUS TAS HCP WEI WEIF IMAP HMAP GLCO FX MOST HDS N TOP TREND HALT ALLQ SECF WJI EQS OMON OVME CALC BROK AUM G HMS HP CF IPO TRAN HELP CHAT ACM PDF AL NOTE ENT CHANGE Q RES MAP CITADEL PAT PRT HLDR MOSO GF KELLY NI ERR".split(" "));
   const AUTOMATED = new Set(["G", "HMS", "GR", "GF", "HALT", "HMAP", "IMAP", "EM", "MOST", "HDS", "EQS", "SECF", "OMON", "N", "TRAN"]);
-  const CONTROL_OPERATIONS = new Set(["move", "resize", "maximize", "restore", "focus", "close", "export"]);
+  const CONTROL_OPERATIONS = new Set(["move", "resize", "maximize", "restore", "focus", "close", "export", "reset_workspace"]);
   const CONTROL_TARGET_MODES = new Set(["last", "focused", "command"]);
   const PLACEMENTS = new Set(["full", "left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right"]);
+  const G_LIVE_RESOLUTIONS = new Set(["1h"]);
   const EQS_RANGE_FIELDS = Object.freeze([
     "Market Cap (USD)", "P/E (Fwd)", "P/E (TTM)", "P/S (Fwd)", "P/S (TTM)",
     "P/B (Fwd)", "P/B (TTM)", "P/CF (Fwd)", "P/CF (TTM)", "EPS (Fwd 12mo)",
@@ -261,8 +262,8 @@
         throw new Error(`Invalid value for ${feature}`);
       }
       if (gFeature) {
-        if (operation !== "select" || String(action.value).trim().toLowerCase() !== "1h") {
-          throw new Error("G live executor permits only the independently proven 1h contextual resolution");
+        if (operation !== "select" || !G_LIVE_RESOLUTIONS.has(String(action.value).trim().toLowerCase())) {
+          throw new Error("G live executor: the only live-verified resolution is 1h");
         }
       } else if (plan.command === "HALT") {
         if (feature !== "tab" || operation !== "select") throw new Error("HALT only supports selecting a tab");
@@ -323,7 +324,7 @@
         feature: String(action.feature).toLowerCase(),
         operation: String(action.operation).toLowerCase(),
         value: plan.command === "G"
-          ? "1h"
+          ? String(action.value).trim().toLowerCase()
           : plan.command === "HALT"
           ? ({ all: "All", active: "Active", resumed: "Resumed" }[String(action.value).trim().toLowerCase()])
           : plan.command === "HMAP"

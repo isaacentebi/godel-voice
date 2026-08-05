@@ -108,16 +108,16 @@ test("compiles existing-panel configuration without reopening the command", () =
   assert.throws(() => buildWorkflowPlan({ kind: "configure", target: { mode: "last", command: "GF", security: null }, actions: [] }), /at least one action/);
 });
 
-test("allows only the live-proven contextual G one-hour resolution", () => {
+test("allows only the live-verified contextual G resolution", () => {
   const plan = buildWorkflowPlan({
     kind: "configure", target: { mode: "command", command: "G", security: "AAPL" },
     actions: [{ feature: "resolution", operation: "select", value: "1H" }]
   });
   assert.deepEqual(plan.steps[0].actions, [{ feature: "resolution", operation: "select", value: "1h" }]);
-  assert.throws(() => buildWorkflowPlan({
+  for (const value of ["1m", "5m", "15m", "30m", "1d", "4h"]) assert.throws(() => buildWorkflowPlan({
     kind: "configure", target: { mode: "command", command: "G", security: "AAPL" },
-    actions: [{ feature: "resolution", operation: "select", value: "1d" }]
-  }), /only the independently proven 1h/);
+    actions: [{ feature: "resolution", operation: "select", value }]
+  }), /only live-verified resolution is 1h/);
 });
 
 test("canonicalizes the live-verified EM metric selector and rejects other controls", () => {

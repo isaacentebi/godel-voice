@@ -52,14 +52,21 @@ test("CDP chart interval typing emits only trusted digit events", () => {
   assert.deepEqual(commands.filter(([, payload]) => payload.type === "char").map(([, payload]) => payload.text), ["6", "0"]);
 });
 
-test("G one-hour adapter authenticates popup and chart label before and after trusted input", () => {
+test("G resolution adapter has per-value trusted input and exact popup/chart-label proof", () => {
   const content = fs.readFileSync(new URL("../extension/content.js", import.meta.url), "utf8");
   assert.match(content, /function gChartFrameContext/);
   assert.match(content, /popupCandidates\.length !== 1 \|\| chartCandidates\.length !== 1/);
   assert.match(content, /chartInterval !== popup\.interval/);
-  assert.match(content, /await trustedType\("60"\)/);
-  assert.match(content, /current\?\.interval === "1h" && \/, 1 hour\$\/i/);
-  assert.match(content, /G live executor permits only the independently proven 1h contextual resolution/);
+  for (const [resolution, input, label] of [
+    ["1m", "1", "1 minute"], ["5m", "5", "5 minutes"], ["15m", "15", "15 minutes"],
+    ["30m", "30", "30 minutes"], ["1h", "60", "1 hour"], ["1d", "1D", "1 day"]
+  ]) {
+    assert.match(content, new RegExp(`"${resolution}": Object\\.freeze\\(\\{ input: "${input}", label: "${label}" \\}\\)`));
+  }
+  assert.match(content, /await trustedType\(proof\.input\)/);
+  assert.match(content, /current\?\.interval === resolution/);
+  assert.match(content, /current\.chartLabel\.toLowerCase\(\)\.endsWith\(`, \$\{proof\.label\}`\)/);
+  assert.match(content, /G resolution must be one of 1m, 5m, 15m, 30m, 1h, 1d/);
 });
 
 test("CDP exact input lookup safely embeds selectors and requires one editable element", () => {
@@ -173,14 +180,35 @@ test("GF period, layout, and currency use exact native controls with rendered po
   assert.match(mainWorldSource, /const panelRoot = root/);
   assert.match(mainWorldSource, /setGFRange\(panelRoot/);
   assert.match(mainWorldSource, /const props = reactPropsFor\(button\)/);
-  assert.match(mainWorldSource, /Date\.now\(\) - stableSince >= 900/);
+  assert.match(mainWorldSource, /return current && active\(current\) \? current : null/);
+  assert.match(mainWorldSource, /for \(let attempt = 1; attempt <= 5; attempt \+= 1\)/);
+  assert.match(mainWorldSource, /GF panel can replace its first range-button fiber/);
+  assert.doesNotMatch(mainWorldSource, /Date\.now\(\) - stableSince >= 900/);
   assert.match(mainWorldSource, /const liveScopedRoot = \(\) => scopedGFRoot/);
-  assert.match(mainWorldSource, /company series did not stabilize/);
+  assert.match(mainWorldSource, /loaded && addMetric/);
+  assert.doesNotMatch(mainWorldSource, /company series did not stabilize/);
   assert.match(mainWorldSource, /selectedMatches && renderedUnit/);
   assert.match(contentSource, /"setRange"/);
   assert.match(contentSource, /"setPeriodicity"/);
   assert.match(contentSource, /"setLayout"/);
   assert.match(contentSource, /"setDisplayCurrency"/);
+});
+
+test("GF comparison removes replay sleeps and records each native nested action", () => {
+  const mainWorldSource = fs.readFileSync(new URL("../extension/main-world.js", import.meta.url), "utf8");
+  const contentSource = fs.readFileSync(new URL("../extension/content.js", import.meta.url), "utf8");
+  const executeGFSource = contentSource.slice(contentSource.indexOf("async function measuredGFAction"),
+    contentSource.indexOf("async function executeHMS"));
+  assert.match(contentSource, /async function measuredGFAction/);
+  assert.match(contentSource, /panelNestedActionTimings\.set\(panel, nestedActionTimings\)/);
+  assert.match(contentSource, /nested_actions: panelNestedActionTimings\.get\(executedPanel\)/);
+  assert.match(contentSource, /error\.godelVoiceTiming = \{ phases, nested_actions: nestedActionTimings \}/);
+  assert.match(contentSource, /error\.godelVoiceTiming\?\.nested_actions/);
+  assert.match(contentSource, /return \[\.\.\.controls, \.\.\.companies, \.\.\.metrics\]/);
+  assert.doesNotMatch(contentSource, /return \[\.\.\.controls, \.\.\.metrics, \.\.\.companies, \.\.\.metrics\]/);
+  assert.doesNotMatch(executeGFSource, /await pause\(250\)/);
+  assert.match(mainWorldSource, /GF stale metric builder closed/);
+  assert.doesNotMatch(mainWorldSource, /setTimeout\(resolve, 180\)/);
 });
 
 test("GF contextual metrics use companies loaded in the native series rail", () => {
@@ -205,11 +233,14 @@ test("HALT adapter is panel-scoped, idempotent and asserts selected state", () =
 test("HMAP universe/view adapter is panel-scoped, enum-only, idempotent and verifies rendered state", () => {
   const content = fs.readFileSync(new URL("../extension/content.js", import.meta.url), "utf8");
   assert.match(content, /HMAP: \["MARKET HEATMAP", "HMAP"\]/);
-  assert.match(content, /panel\.querySelectorAll\("button,\[role='tab'\]"\)/);
+  assert.match(content, /const scope = nativeWindowRoot\(panel\) \?\? panel/);
+  assert.match(content, /scope\.querySelectorAll\("button,\[role='tab'\]"\)/);
   assert.match(content, /candidates\.length === 1/);
-  assert.match(content, /panel\.querySelectorAll\("table,\[role='table'\],\[role='grid'\]"\)/);
-  assert.match(content, /panel\.querySelectorAll\("canvas,svg,\[class\*='heatmap' i\],\[class\*='treemap' i\]"\)/);
+  assert.match(content, /scope\.querySelectorAll\("table,\[role='table'\],\[role='grid'\]"\)/);
+  assert.match(content, /scope\.querySelectorAll\("canvas,svg,\[class\*='heatmap' i\],\[class\*='treemap' i\]"\)/);
   assert.match(content, /if \(hmapViewMatches\(panel, canonical\)\) return/);
+  assert.match(content, /HMAP authoritative member count/);
+  assert.ok(content.indexOf("HMAP authoritative member count") < content.indexOf("if (hmapUniverseMatches(panel, canonical)) return"));
   assert.match(content, /if \(hmapUniverseMatches\(panel, canonical\)\) return/);
   assert.match(content, /count === 30/);
   assert.match(content, /count >= 500 && count <= 505/);
@@ -224,7 +255,8 @@ test("HDS adapter proves mutually exclusive Table Treemap and Bubble rendering",
   const bridge = fs.readFileSync(new URL("../extension/main-world.js", import.meta.url), "utf8");
   assert.match(content, /HDS: \["HOLDERS", "HDS"\]/);
   assert.match(content, /panelInternalAction\(panel, "HDS", "selectView"/);
-  assert.match(bridge, /registerAdapter\("HDS", \{ run: runHDS \}\)/);
+  assert.match(bridge, /registerAdapter\("HDS", \{ expandRoot: expandHDSRoot, run: runHDS \}\)/);
+  assert.match(bridge, /function expandHDSRoot\(root\)/);
   assert.match(bridge, /visibleCount !== 1/);
   assert.match(bridge, /table_visible: table/);
   assert.match(bridge, /treemap_visible: treemap/);
@@ -233,6 +265,14 @@ test("HDS adapter proves mutually exclusive Table Treemap and Bubble rendering",
   assert.match(content, /function detachedUniqueHDSPanel/);
   assert.match(content, /nearby\[1\]\.distance - nearby\[0\]\.distance < 80/);
   assert.match(content, /distance <= 360/);
+});
+
+test("EM adapter identifies valuation tables by exact schema without requiring a decorative heading", () => {
+  const bridge = fs.readFileSync(new URL("../extension/main-world.js", import.meta.url), "utf8");
+  assert.match(bridge, /headers\[0\] !== "Last 4Q" \|\| headers\[1\] !== "Next 4Q"/);
+  assert.match(bridge, /Expected one Godel EM \$\{rowLabel\} Multiples row/);
+  assert.doesNotMatch(bridge, /Godel EM Multiples heading is missing/);
+  assert.match(bridge, /registerAdapter\("EM", \{ expandRoot: expandEMRoot, run: runEM \}\)/);
 });
 
 test("News query adapter is exact, panel-scoped and render-verified", () => {
@@ -282,12 +322,14 @@ test("grounded ERN narration reads the exact forward P/E table column", () => {
 test("grounded EM narration requires the exact requested row, labelled horizons, and semantic units", () => {
   const content = fs.readFileSync(new URL("../extension/content.js", import.meta.url), "utf8");
   assert.match(content, /command === "EM"/);
+  assert.match(content, /if \(!requestedRow \|\| !semanticUnit\) return "";/,
+    "plain EM opens must not narrate an unrequested valuation row");
   assert.match(content, /headers\[0\] !== "Last 4Q" \|\| headers\[1\] !== "Next 4Q"/);
   assert.match(content, /cells\[0\] !== rowLabel/);
-  assert.match(content, /semanticUnit \?\? "Multiple"/);
+  assert.match(content, /const unit = semanticUnit;/);
   assert.match(content, /unit === "Percent"/);
   assert.match(content, /\[x×\]/);
-  assert.match(content, /EM Multiples P\/E/);
+  assert.match(content, /EM Multiples \$\{rowLabel\} \$\{unit\}/);
   assert.match(content, /const grounded = \[\]/);
   assert.match(content, /grounded\.push\(\{ step, panel \}\)/);
   assert.match(content, /completionMessage\(workflow, result\.grounded, result\.timings\)/);
@@ -298,7 +340,8 @@ test("main-world EM valuation reader enforces the allowlisted row, Multiples sec
   assert.match(bridge, /allowedRows = new Set\(\["P\/E"/);
   assert.match(bridge, /payload\.section !== "Multiples"/);
   assert.match(bridge, /rowLabel === "Dividend Yield" \? "Percent" : "Multiple"/);
-  assert.match(bridge, /compactElementText\(element\) === "Multiples"/);
+  assert.match(bridge, /headers\[0\] !== "Last 4Q" \|\| headers\[1\] !== "Next 4Q"/);
+  assert.match(bridge, /semanticUnit === "Multiple"/);
 });
 
 test("VoiceInk delivery contains no AppleScript or System Events automation", () => {

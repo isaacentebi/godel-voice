@@ -288,7 +288,10 @@ export function validateCases(cases) {
         const kind = stepKind(step);
         if (!["command", "control", "configure"].includes(kind)) throw new Error(`Invalid expected step kind for ${testCase.id} step ${index + 1}`);
         if (kind === "command" && !String(step.command ?? "").trim()) throw new Error(`Missing expected command for ${testCase.id} step ${index + 1}`);
-        if (kind === "control" && (!step.control_operation || !step.control_target?.mode)) throw new Error(`Invalid expected control for ${testCase.id} step ${index + 1}`);
+        if (kind === "control" && (!step.control_operation
+            || (step.control_operation !== "reset_workspace" && !step.control_target?.mode))) {
+          throw new Error(`Invalid expected control for ${testCase.id} step ${index + 1}`);
+        }
         if (kind === "configure" && (!step.configure_target?.mode || !step.configure_target?.command || !expectedActions(step).length)) throw new Error(`Invalid expected configure step for ${testCase.id} step ${index + 1}`);
       }
       if (testCase.context != null && (typeof testCase.context !== "object" || Array.isArray(testCase.context))) throw new Error(`Invalid context for ${testCase.id}`);

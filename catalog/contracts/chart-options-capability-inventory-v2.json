@@ -7,7 +7,7 @@
       "command": "G",
       "aliases": ["GIP", "GP"],
       "actions": [
-        {"feature":"resolution","operation":"select","values":["1m","5m","15m","30m","1h","1d"],"state":"documented-unbound","completion":"TradingView interval label matches"},
+        {"feature":"resolution","operation":"select","values":["1m","5m","15m","30m","1h","1d"],"state":"documented-unbound-except-1h","live_verified_values":["1h"],"pending_live_proof":["1m","5m","15m","30m","1d"],"completion":"one authenticated TradingView popup and the same iframe chart label independently match the requested resolution"},
         {"feature":"range","operation":"select","values":["5y","1y","6m","3m","1m","5d","1d","custom"],"state":"documented-unbound","completion":"range control and visible time axis agree"},
         {"feature":"style","operation":"select","values":["Candles","Bars","Line","Area","Baseline","Heikin Ashi","Hollow Candles","Renko","Kagi","Point & Figure","Line Break"],"state":"documented-unbound","completion":"chart style control and renderer type agree"},
         {"feature":"scale","operation":"select","values":["linear","percent","indexed","log"],"state":"documented-unbound","completion":"scale label and price-axis behavior agree"},
@@ -26,7 +26,7 @@
       "command": "GF",
       "actions": [
         {"feature":"add company","operation":"add","values":"verified US symbol","state":"source-verified-data-dependent","completion":"company series exists exactly once"},
-        {"feature":"range","operation":"select","values":["1Y","3Y","5Y","10Y","Max"],"state":"source-verified","completion":"native Range value matches"},
+        {"feature":"range","operation":"select","values":["1Y","3Y","5Y","10Y","Max"],"state":"source-verified","completion":"the re-resolved exact Range button has Godel's unique rendered selected state"},
         {"feature":"include consensus estimates","operation":"select","values":["on","off"],"state":"source-verified","completion":"native estimate boolean matches"},
         {"feature":"periodicity","operation":"select","values":["Quarterly","Annual"],"state":"source-verified","completion":"exact Quarterly/Annual selector has the unique rendered selected state"},
         {"feature":"layout","operation":"select","values":["Overlay","Split"],"state":"source-verified","completion":"exact Overlay/Split selector has the unique rendered selected state"},
@@ -84,5 +84,5 @@
     }
   ],
   "contextual_followup_module": "src/commands/chart-options-followup.mjs",
-  "integration_state": "partially integrated; OMON native strike depth is executable, while other candidates remain separated into source-verified, documented-unbound and blocked actions"
+  "integration_state": "partially integrated; G 1h and OMON native strike depth are executable. The other five G values have per-value trusted-input and exact postcondition definitions but remain disabled until Arc proof. Other candidates remain separated into source-verified, documented-unbound and blocked actions"
 }

@@ -42,19 +42,29 @@ function safeAuditText(value, maximum = 2_000) {
   return safeError(String(value ?? "").replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim()).slice(0, maximum);
 }
 
-function realtimeConversationMessage(value) {
+function realtimeConversationMessage(value, continuity = null) {
   const normalized = safeAuditText(value, 500).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   if (!normalized) return null;
+  if (/^(?:(?:okay|ok|and|so) )?(?:jarvis )?(?:what did you (?:open|do)|what(?:'s| is) on screen|what did that do)$/.test(normalized)) {
+    const outcome = continuity?.lastOutcome;
+    if (outcome?.message) return sanitizeCompletionMessage(outcome.message);
+    return "I don't have a verified completed action in this session yet.";
+  }
+  if (/^(?:(?:okay|ok|and|so) )?(?:jarvis )?(?:why not|what went wrong|why did that fail)$/.test(normalized)) {
+    const outcome = continuity?.lastOutcome;
+    if (outcome?.status === "failed" && outcome.message) return sanitizeCompletionMessage(outcome.message);
+    return "The last verified action did not report a failure.";
+  }
   if (/^(?:(?:ok|okay) )?(?:thanks|thank you|cheers|great thanks|perfect thanks)$/.test(normalized)
       || /^(?:the )?user (?:is )?acknowledg(?:es|ing)(?: with)? thanks(?: no action requested)?$/.test(normalized)) {
-    return "You're welcome. I'm still listening.";
+    return "Anytime.";
   }
   if (/^(?:hey )?(?:jarvis )?(?:are you (?:here|there|listening)|can you hear me|hello|hi)$/.test(normalized)
       || /^user asked if i am here$/.test(normalized)) {
-    return "Yes, I'm here and listening.";
+    return "I'm here.";
   }
   if (/^(?:(?:okay|ok|and|so) )?(?:jarvis )?(?:what else can you do|what can you do|help|give me some ideas)$/.test(normalized)) {
-    return "I can open and arrange Godel views, compare companies, screen equities, search earnings calls, read verified quotes, and export supported data.";
+    return "Try: compare Amazon and Meta revenue, screen U.S. technology above ten billion, search Meta earnings calls for AI agents, open the VIX chart, or build me a market desk.";
   }
   return null;
 }
@@ -145,10 +155,25 @@ export class HandoffStore {
     this.maxAttempts = maxAttempts;
     this.maxLogBytes = maxLogBytes;
     this.clock = clock;
+    this.changeListeners = new Set();
     this.entries = [];
     this.contexts = {};
     this.executorGenerations = {};
     this.load();
+  }
+
+  subscribeChanges(listener) {
+    if (typeof listener !== "function") throw new Error("change listener must be a function");
+    this.changeListeners.add(listener);
+    return () => this.changeListeners.delete(listener);
+  }
+
+  notifyChange(type) {
+    for (const listener of this.changeListeners) {
+      queueMicrotask(() => {
+        if (this.changeListeners.has(listener)) listener(type);
+      });
+    }
   }
 
   load() {
@@ -232,6 +257,7 @@ export class HandoffStore {
         delete entry.leased_to;
         delete entry.leased_executor_id;
         delete entry.leased_document_generation;
+        delete entry.delivery_lease_id;
         delete entry.lease_expires_at;
         entry.updated_at = now;
         changed = true;
@@ -246,7 +272,10 @@ export class HandoffStore {
         this.event("workflow_queue_expired", { id: entry.id });
       }
     }
-    if (changed) this.persist();
+    if (changed) {
+      this.persist();
+      this.notifyChange("lease_recovery");
+    }
   }
 
   enqueue(marker, requestedId = null, executorId = null, documentGeneration = null) {
@@ -285,6 +314,7 @@ export class HandoffStore {
     this.trim();
     this.persist();
     this.event("workflow_queued", { id: entry.id });
+    this.notifyChange("enqueue");
     return { entry, deduplicated: false };
   }
 
@@ -326,6 +356,7 @@ export class HandoffStore {
     entry.leased_to = clientId;
     entry.leased_executor_id = executor || null;
     entry.leased_document_generation = generation || null;
+    entry.delivery_lease_id = crypto.randomUUID();
     entry.lease_expires_at = now + this.leaseMs;
     entry.updated_at = now;
     this.persist();
@@ -333,6 +364,7 @@ export class HandoffStore {
       id: entry.id, client_id: clientId, executor_ref: executor ? markerDigest(executor).slice(0, 12) : undefined,
       attempt: entry.attempts
     });
+    this.notifyChange("lease");
     return entry;
   }
 
@@ -364,6 +396,13 @@ export class HandoffStore {
     if (!terminalStates.has(status)) throw new Error("invalid acknowledgement status");
     const entry = this.entries.find(candidate => candidate.id === id);
     if (!entry) return null;
+    if (terminalStates.has(entry.status)) {
+      if (status === "completed" && entry.status !== "completed") {
+        throw new Error(`${entry.status} workflow cannot be acknowledged as completed`);
+      }
+      this.event("workflow_acknowledgement_duplicated", { id, status: entry.status });
+      return entry;
+    }
     const executorId = safeOpaqueId(details.executor_id, "");
     if (entry.executor_id && (!executorId || entry.executor_id !== executorId)) {
       throw new Error("executor affinity mismatch");
@@ -374,10 +413,6 @@ export class HandoffStore {
     }
     if (entry.executor_id && this.hasArmedExecutor() && !this.isArmedExecutor(executorId, documentGeneration)) {
       throw new Error("executor is no longer armed");
-    }
-    if (terminalStates.has(entry.status)) {
-      this.event("workflow_acknowledgement_duplicated", { id, status: entry.status });
-      return entry;
     }
     if (entry.status !== "inflight") throw new Error("workflow is not leased");
     const clientId = safeOpaqueId(details.client_id, "");
@@ -395,15 +430,20 @@ export class HandoffStore {
     entry.error = status === "failed" ? safeError(details.error) : "";
     entry.message = status === "completed" ? sanitizeCompletionMessage(details.message) : "";
     entry.duration_ms = Number.isFinite(details.duration_ms) ? Math.max(0, Math.round(details.duration_ms)) : null;
+    entry.phases = sanitizeWorkflowPhases(details.phases);
     entry.steps = sanitizeStepTimings(details.steps);
     delete entry.marker;
     delete entry.leased_to;
     delete entry.leased_executor_id;
     delete entry.leased_document_generation;
+    delete entry.delivery_lease_id;
     delete entry.lease_expires_at;
     this.persist();
-    this.event("workflow_acknowledged", { id, status, duration_ms: entry.duration_ms, error: entry.error || undefined });
+    this.event("workflow_acknowledged", {
+      id, status, duration_ms: entry.duration_ms, phases: entry.phases, error: entry.error || undefined
+    });
     for (const step of entry.steps) this.event("workflow_step", { workflow_id: id, ...step });
+    this.notifyChange("acknowledge");
     return entry;
   }
 
@@ -412,14 +452,18 @@ export class HandoffStore {
     if (!entry || terminalStates.has(entry.status)) return entry ?? null;
     const now = this.clock();
     entry.cancel_requested = true;
+    entry.status = "cancelled";
     entry.updated_at = now;
-    if (entry.status === "queued") {
-      entry.status = "cancelled";
-      entry.finished_at = now;
-      delete entry.marker;
-    }
+    entry.finished_at = now;
+    delete entry.marker;
+    delete entry.leased_to;
+    delete entry.leased_executor_id;
+    delete entry.leased_document_generation;
+    delete entry.delivery_lease_id;
+    delete entry.lease_expires_at;
     this.persist();
     this.event("workflow_cancel_requested", { id, status: entry.status });
+    this.notifyChange("cancel");
     return entry;
   }
 
@@ -447,9 +491,34 @@ export class HandoffStore {
     delete entry.leased_to;
     delete entry.leased_executor_id;
     delete entry.leased_document_generation;
+    delete entry.delivery_lease_id;
     delete entry.lease_expires_at;
     this.persist();
     this.event("workflow_released", { id, status: entry.status, reason: safeError(reason) });
+    this.notifyChange("release");
+    return entry;
+  }
+
+  abandonDelivery(id, deliveryLeaseId) {
+    const entry = this.entries.find(candidate => candidate.id === id);
+    if (!entry || entry.status !== "inflight" || !deliveryLeaseId
+        || entry.delivery_lease_id !== deliveryLeaseId) return null;
+    const now = this.clock();
+    entry.status = entry.cancel_requested ? "cancelled" : "queued";
+    entry.attempts = Math.max(0, entry.attempts - 1);
+    entry.updated_at = now;
+    if (entry.status === "cancelled") {
+      entry.finished_at = now;
+      delete entry.marker;
+    }
+    delete entry.leased_to;
+    delete entry.leased_executor_id;
+    delete entry.leased_document_generation;
+    delete entry.delivery_lease_id;
+    delete entry.lease_expires_at;
+    this.persist();
+    this.event("workflow_delivery_abandoned", { id, status: entry.status, attempts: entry.attempts });
+    this.notifyChange("delivery_abandoned");
     return entry;
   }
 
@@ -466,6 +535,7 @@ export class HandoffStore {
       cancel_requested: Boolean(entry.cancel_requested),
       error: entry.error || "",
       message: entry.message || "",
+      phases: entry.phases ?? {},
       steps: entry.steps ?? []
     };
   }
@@ -495,8 +565,14 @@ export class HandoffStore {
       // Context publication is observational. While a Realtime session owns
       // the executor lease, another visible or background Godel tab must not
       // steal it merely by publishing its panel context.
-      if (!this.hasArmedExecutor() || this.armedPinned !== true
-          || this.isArmedExecutor(executorId, documentGeneration)) {
+      const isPinnedOwner = this.armedPinned === true
+        && this.armedExecutorId === executorId
+        && this.armedDocumentGeneration === documentGeneration;
+      if (isPinnedOwner) {
+        // Publishing fresh context is a heartbeat from the pinned owner, not
+        // an observational re-arm. Preserve the Realtime lease and refresh it.
+        this.armedAt = this.clock();
+      } else if (!this.hasArmedExecutor() || this.armedPinned !== true) {
         this.armExecutor(executorId, documentGeneration, false, { pinned: false });
       }
       this.lastExecutorId = executorId;
@@ -515,14 +591,16 @@ export class HandoffStore {
     executorId = safeOpaqueId(executorId, "");
     documentGeneration = safeOpaqueId(documentGeneration, "");
     if (!executorId || !documentGeneration) throw new Error("executor arm requires exact identity and document generation");
+    const ownershipChanged = this.armedExecutorId !== executorId
+      || this.armedDocumentGeneration !== documentGeneration
+      || this.armedPinned !== (pinned === true);
     const now = this.clock();
     for (const entry of this.entries) {
       if (!["queued", "inflight"].includes(entry.status) || !entry.executor_id) continue;
       if (entry.executor_id === executorId && entry.document_generation === documentGeneration) continue;
       if (entry.status === "inflight") {
-        entry.cancel_requested = true;
-        entry.updated_at = now;
-        this.event("workflow_executor_replaced", { id: entry.id, status: "cancelling" });
+        this.cancel(entry.id);
+        this.event("workflow_executor_replaced", { id: entry.id, status: "cancelled" });
       } else {
         entry.status = "failed";
         entry.error = entry.executor_id === executorId
@@ -534,6 +612,7 @@ export class HandoffStore {
         delete entry.leased_to;
         delete entry.leased_executor_id;
         delete entry.leased_document_generation;
+        delete entry.delivery_lease_id;
         delete entry.lease_expires_at;
         this.event("workflow_executor_replaced", { id: entry.id });
       }
@@ -545,12 +624,21 @@ export class HandoffStore {
     this.armedAt = now;
     this.armedPinned = pinned === true;
     if (persist) this.persist();
+    if (ownershipChanged) this.notifyChange("executor_armed");
     return { executor_id: executorId, document_generation: documentGeneration, armed_at: this.armedAt };
   }
 
   armedExecutor(maxAgeMs = 60 * 60_000) {
     if (!this.armedExecutorId || !this.armedDocumentGeneration) return null;
-    if (this.clock() - this.armedAt > maxAgeMs) return null;
+    if (this.clock() - this.armedAt > maxAgeMs) {
+      this.armedExecutorId = null;
+      this.armedDocumentGeneration = null;
+      this.armedAt = 0;
+      this.armedPinned = false;
+      this.persist();
+      this.notifyChange("executor_expired");
+      return null;
+    }
     return {
       executor_id: this.armedExecutorId,
       document_generation: this.armedDocumentGeneration,
@@ -558,8 +646,8 @@ export class HandoffStore {
     };
   }
 
-  hasArmedExecutor() {
-    return Boolean(this.armedExecutorId && this.armedDocumentGeneration);
+  hasArmedExecutor(maxAgeMs = 60 * 60_000) {
+    return Boolean(this.armedExecutor(maxAgeMs));
   }
 
   isArmedExecutor(executorId, documentGeneration, maxAgeMs = 60 * 60_000) {
@@ -576,6 +664,7 @@ export class HandoffStore {
     this.armedAt = 0;
     this.armedPinned = false;
     this.persist();
+    this.notifyChange("executor_disarmed");
     return true;
   }
 
@@ -695,9 +784,31 @@ function sanitizeStepTimings(value) {
         .map(name => [name, Math.max(0, Math.round(item.phases[name]))]));
       if (!Object.keys(safe.phases).length) delete safe.phases;
     }
+    if (Array.isArray(item?.nested_actions)) {
+      safe.nested_actions = item.nested_actions.slice(0, 32).map((action, actionIndex) => ({
+        index: actionIndex,
+        action: String(action?.action ?? "").replace(/[^A-Za-z]/g, "").slice(0, 24),
+        subject: String(action?.subject ?? "").replace(/[^A-Za-z0-9./:% _-]/g, "").slice(0, 48),
+        attempt: Math.max(1, Math.min(3, Number(action?.attempt) || 1)),
+        status: action?.status === "completed" ? "completed" : "failed",
+        duration_ms: Number.isFinite(action?.duration_ms)
+          ? Math.max(0, Math.round(action.duration_ms)) : null
+      })).filter(action => action.action && action.duration_ms != null);
+      if (!safe.nested_actions.length) delete safe.nested_actions;
+    }
     if (status !== "completed") safe.error = safeError(item?.error);
     return safe;
   });
+}
+
+function sanitizeWorkflowPhases(value) {
+  const phaseNames = [
+    "lifecycle_barrier_ms", "workspace_prepare_ms", "layout_ms", "reconcile_ms", "completion_fact_ms"
+  ];
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(phaseNames
+    .filter(name => Number.isFinite(value[name]))
+    .map(name => [name, Math.max(0, Math.round(value[name]))]));
 }
 
 function cors(response) {
@@ -768,9 +879,144 @@ export function createHandoffServer({
   const audit = (type, fields = {}) => {
     if (realtimeAuditEnabled) appendPrivateAudit(realtimeAuditPath, clock, type, fields);
   };
+  const nextWaiters = new Map();
+  let closing = false;
+  const deliverLeasedEntry = (request, response, entry) => {
+    const deliveryLeaseId = entry.delivery_lease_id;
+    let settled = false;
+    const cleanup = () => {
+      request.off("aborted", abandon);
+      response.off("close", abandon);
+      response.off("finish", confirm);
+    };
+    const abandon = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      store.abandonDelivery(entry.id, deliveryLeaseId);
+    };
+    const confirm = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      const progress = speaker && entry.realtime !== true && !entry.progress_queued
+        ? progressMessageForMarker(entry.marker) : null;
+      if (!progress) return;
+      entry.progress_queued = true;
+      store.persist();
+      queueMicrotask(() => speaker.speak(progress, `${entry.id}-progress`).catch(error => {
+        store.event("progress_voice_failed", { id: entry.id, error: safeError(error.message) });
+      }));
+    };
+    request.once("aborted", abandon);
+    response.once("close", abandon);
+    response.once("finish", confirm);
+    if (request.aborted || response.destroyed) {
+      abandon();
+      return;
+    }
+    respond(response, 200, {
+      id: entry.id, marker: entry.marker, attempt: entry.attempts, lease_ms: store.leaseMs,
+      premium_voice: Boolean(speaker), realtime: entry.realtime === true
+    });
+  };
+  const waitForNext = (request, response, { clientId, executorId, documentGeneration, waitMs }) => new Promise(resolve => {
+    const key = executorId || clientId;
+    let settled = false;
+    let timer = null;
+    const cleanup = () => {
+      if (timer) clearTimeout(timer);
+      if (nextWaiters.get(key) === waiter) nextWaiters.delete(key);
+      request.off("aborted", abort);
+      response.off("close", abort);
+    };
+    const finish = (entry = null, status = 204, value = null) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (!response.writableEnded && !response.destroyed) {
+        if (entry) deliverLeasedEntry(request, response, entry);
+        else respond(response, status, value);
+      } else if (entry) store.abandonDelivery(entry.id, entry.delivery_lease_id);
+      resolve();
+    };
+    const abort = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve();
+    };
+    const wake = (settleEmpty = true) => {
+      if (settled || closing) return finish();
+      try {
+        const entry = store.lease(clientId, executorId, documentGeneration);
+        if (entry) finish(entry);
+        else if (settleEmpty) finish();
+      } catch (error) {
+        finish(null, 400, { error: safeError(error.message) });
+      }
+    };
+    const waiter = { key, wake, finish };
+    const previous = nextWaiters.get(key);
+    if (previous) previous.finish();
+    nextWaiters.set(key, waiter);
+    request.once("aborted", abort);
+    response.once("close", abort);
+    timer = setTimeout(() => finish(), waitMs);
+    timer.unref?.();
+    // Close the enqueue/register race without ending a genuinely idle wait.
+    queueMicrotask(() => wake(false));
+  });
+  const wakeNextWaiters = () => {
+    for (const waiter of [...nextWaiters.values()]) waiter.wake(true);
+  };
+  const unsubscribeStoreChanges = typeof store.subscribeChanges === "function"
+    ? store.subscribeChanges(wakeNextWaiters) : () => {};
+  const sessionWorkflowResults = session => [
+    ...(session?.calls?.values?.() ?? []), ...(session?.preflights?.values?.() ?? [])
+  ];
+  const boundedMapSet = (map, key, value, limit = 96) => {
+    map.delete(key);
+    map.set(key, value);
+    while (map.size > limit) map.delete(map.keys().next().value);
+  };
+  const boundedSetAdd = (set, value, limit = 256) => {
+    set.delete(value);
+    set.add(value);
+    while (set.size > limit) set.delete(set.values().next().value);
+  };
+  const compileRealtimeOnce = async (session, lane, requestText, compile) => {
+    session.pendingCompilations ??= new Map();
+    // The lock key is a digest only. Natural-language requests must not be
+    // retained merely to coordinate concurrent compiler calls.
+    const key = `${lane}:${markerDigest(normalizedRealtimeRequest(requestText))}`;
+    const existing = session.pendingCompilations.get(key);
+    if (existing) return existing;
+    const pending = Promise.resolve().then(compile);
+    session.pendingCompilations.set(key, pending);
+    try { return await pending; }
+    finally {
+      if (session.pendingCompilations.get(key) === pending) session.pendingCompilations.delete(key);
+    }
+  };
+  const realtimeSessionCanQueue = (sessionId, session) =>
+    realtimeSessions.get(sessionId) === session && session?.closed !== true && session?.revoked !== true;
+  const cancelRealtimeSessionWork = (session, reason) => {
+    const ids = new Set(sessionWorkflowResults(session)
+      .filter(result => result?.kind === "execute" && result.id).map(result => result.id));
+    for (const id of ids) {
+      const status = store.status(id)?.status;
+      if (!terminalStates.has(status)) store.cancel(id);
+    }
+    if (ids.size) store.event("realtime_session_work_cancelled", { reason, workflows: ids.size });
+  };
   const pruneRealtimeSessions = () => {
     const cutoff = clock() - 60 * 60_000;
-    for (const [id, session] of realtimeSessions) if (session.createdAt < cutoff) realtimeSessions.delete(id);
+    for (const [id, session] of realtimeSessions) if (session.createdAt < cutoff) {
+      session.closed = true;
+      cancelRealtimeSessionWork(session, "session_expired");
+      realtimeSessions.delete(id);
+    }
   };
   const currentRealtimeContext = executorId => {
     const context = store.recentContext(15_000, 15 * 60_000, executorId);
@@ -778,6 +1024,19 @@ export function createHandoffServer({
     const transcriptActive = [context.focused_panel, context.last_panel, ...(context.panels ?? [])]
       .some(panel => panel?.command === "TRAN");
     if (!transcriptActive) delete context.research_session;
+    return context;
+  };
+  const sessionRealtimeContext = session => {
+    const context = currentRealtimeContext(session?.executor_id) ?? {
+      focused_panel: null, last_panel: null, panels: []
+    };
+    const outcome = session?.lastOutcome;
+    if (outcome) context.last_outcome = { ...outcome };
+    if (outcome?.command) {
+      const remembered = { command: outcome.command, security: outcome.security ?? null, connected: false };
+      context.last_panel ??= remembered;
+      context.focused_panel ??= remembered;
+    }
     return context;
   };
   const realtimeStateInstruction = context => {
@@ -800,7 +1059,7 @@ export function createHandoffServer({
       "# Reasoning\nFor direct commands, greetings, acknowledgements and short confirmations, respond immediately and do not reason. Use deeper reasoning only when a multi-step request genuinely requires it.",
       "# Verbosity\nSimple actions: at most twelve spoken words after completion. Research: at most two concise sentences. Clarification: exactly one question.",
       "# Actions\nYou are the low-latency audio layer, not the Godel planner. Local validated code handles every Godel action before asking you to speak. Never plan, claim, retry or improvise a Godel action. Never answer a financial or Godel factual question from memory. Speak only when the client supplies a verified result or an exact conversational response.",
-      "# Progress\nDo not speak a preamble for opening, closing, moving, resizing, arranging or configuring ordinary Godel panels; speak once after the client supplies the verified result. For transcript research or another genuine multi-second factual read, the client may supply a brief progress sentence such as 'I'm checking that now.' Never invent progress or say the terminal is rendering, loading or still working.",
+      "# Progress\nDo not speak a preamble for opening, closing, moving, resizing, arranging or configuring ordinary Godel panels; speak once after the client supplies the verified result. Only after a genuinely long research operation has already crossed the client's delay may it supply one brief progress sentence such as 'I'm checking that now.' Never invent progress or say the terminal is rendering, loading or still working.",
       "# Continuity\nRetain every successful godel_context result. Resolve it, that and this from the most recent successful result, then the focused panel, then the last operated panel. Ask one short question if still ambiguous.",
       "# Silence and background audio\nThe client filters silence, background noise, media and side conversation. Never respond unless the client explicitly asks you to speak.",
       "# Results and failures\nOn success, briefly say what changed and where it is. On failure, explain it in plain language without model, route, timeout, selector or API terminology, then wait. If interrupted, stop speaking and listen.",
@@ -869,25 +1128,47 @@ export function createHandoffServer({
         if (!upstream.ok) throw new Error(`Realtime session provider returned ${upstream.status}`);
         const answer = await upstream.text();
         if (!answer.startsWith("v=0")) throw new Error("Realtime session provider returned invalid SDP");
+        let continuity = null;
         if (executorId) {
           store.armExecutor(executorId, documentGeneration);
           for (const [existingId, existing] of realtimeSessions) {
-            if (existing.executor_id === executorId && existing.document_generation === documentGeneration) {
+            if (existing.executor_id === executorId) {
               // The new provider connection is already established, so it can
               // atomically supersede a leaked reconnect session. This avoids a
-              // permanent 429 loop when a keepalive close was lost.
+              // permanent 429 loop when a keepalive close was lost. Carry only
+              // bounded semantic memory; a document reload invalidates active
+              // work but must not make Jarvis forget the last verified result.
+              if (!continuity || existing.createdAt > continuity.createdAt) continuity = existing;
+              if (existing.document_generation !== documentGeneration) {
+                cancelRealtimeSessionWork(existing, "document_reloaded");
+              }
+              existing.closed = true;
               realtimeSessions.delete(existingId);
               store.event("realtime_session_superseded", { session_ref: markerDigest(existingId).slice(0, 12) });
               continue;
             }
             existing.revoked = true;
             existing.revokedAt = clock();
+            cancelRealtimeSessionWork(existing, "executor_revoked");
             store.event("realtime_session_revoked", { session_ref: markerDigest(existingId).slice(0, 12) });
           }
         }
         const sessionId = crypto.randomUUID();
+        const recentRequests = new Map([...(continuity?.requests?.entries?.() ?? [])]
+          .filter(([, item]) => item && clock() - Number(item.at) <= 10_000).slice(-32));
+        const carriedWorkflows = (continuity?.document_generation === documentGeneration
+          ? sessionWorkflowResults(continuity) : [])
+          .filter(result => result?.kind === "execute" && !terminalStates.has(store.status(result.id)?.status))
+          .slice(-4);
         realtimeSessions.set(sessionId, {
-          createdAt: clock(), calls: new Map(), requests: new Map(), responses: new Set(), costUsd: 0,
+          createdAt: clock(), calls: new Map(),
+          preflights: new Map(carriedWorkflows.map((result, index) => [`carried-${index}`, result])),
+          pendingCompilations: new Map(),
+          requests: recentRequests,
+          responses: new Set([...(continuity?.responses ?? [])].slice(-256)), costUsd: Number(continuity?.costUsd ?? 0),
+          lastOutcome: continuity?.lastOutcome ? { ...continuity.lastOutcome } : null,
+          recentOutcomes: [...(continuity?.recentOutcomes ?? [])].slice(-4),
+          lastPlan: continuity?.lastPlan ? { ...continuity.lastPlan } : null,
           executor_id: executorId || null, document_generation: documentGeneration || null
         });
         store.event("realtime_session_started", { session_ref: markerDigest(sessionId).slice(0, 12), model: realtimeModel });
@@ -927,14 +1208,14 @@ export function createHandoffServer({
         const recentRequest = session.requests.get(requestKey);
         if (recentRequest && clock() - recentRequest.at <= 1_500) {
           const duplicate = recentRequest.result;
-          session.calls.set(callId, duplicate);
+          boundedMapSet(session.calls, callId, duplicate);
           return respond(response, 200, duplicate);
         }
-        const conversationMessage = realtimeConversationMessage(requestText);
+        const conversationMessage = realtimeConversationMessage(requestText, session);
         if (conversationMessage) {
           const result = { kind: "conversation", message: conversationMessage };
-          session.calls.set(callId, result);
-          session.requests.set(requestKey, { at: clock(), result });
+          boundedMapSet(session.calls, callId, result);
+          boundedMapSet(session.requests, requestKey, { at: clock(), result }, 64);
           audit("tool_compiled", {
             session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(callId).slice(0, 12),
             request: safeAuditText(requestText), kind: result.kind, route: "local", duration_ms: 0
@@ -944,44 +1225,44 @@ export function createHandoffServer({
         const active = [...session.calls.values(), ...(session.preflights?.values() ?? [])]
           .find(item => item.kind === "execute" && !terminalStates.has(store.status(item.id)?.status));
         if (active) return respond(response, 200, { kind: "busy", message: "I'm still finishing the previous Godel request." });
-        const compileStartedAt = clock();
-        let compiled;
-        try {
-          compiled = await realtimeWorkflowCompiler(value.workflow, { context: currentRealtimeContext(session.executor_id) });
-        } catch (error) {
-          const result = { kind: "failed", message: "I couldn't safely prepare that Godel request." };
-          session.calls.set(callId, result);
-          session.requests.set(requestKey, { at: clock(), result });
-          audit("tool_compile_failed", {
+        const result = await compileRealtimeOnce(session, "workflow", requestText, async () => {
+          const compileStartedAt = clock();
+          let compiled;
+          try {
+            compiled = await realtimeWorkflowCompiler(value.workflow, { context: sessionRealtimeContext(session) });
+          } catch (error) {
+            audit("tool_compile_failed", {
+              session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(callId).slice(0, 12),
+              request: safeAuditText(requestText), duration_ms: Math.max(0, clock() - compileStartedAt), error: safeError(error.message)
+            });
+            return { kind: "failed", message: "I couldn't safely prepare that Godel request." };
+          }
+          audit("tool_compiled", {
             session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(callId).slice(0, 12),
-            request: safeAuditText(requestText), duration_ms: Math.max(0, clock() - compileStartedAt), error: safeError(error.message)
+            request: safeAuditText(requestText), kind: compiled.kind, route: compiled.route ?? null,
+            duration_ms: Math.max(0, clock() - compileStartedAt)
           });
-          return respond(response, 200, result);
-        }
-        audit("tool_compiled", {
-          session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(callId).slice(0, 12),
-          request: safeAuditText(requestText), kind: compiled.kind, route: compiled.route ?? null,
-          duration_ms: Math.max(0, clock() - compileStartedAt)
+          if (compiled.kind !== "execute") {
+            return { kind: compiled.kind, message: sanitizeCompletionMessage(compiled.message) };
+          }
+          if (!realtimeSessionCanQueue(sessionId, session)) {
+            return { kind: "failed", message: "That Jarvis session ended before the request could start." };
+          }
+          const requestId = `rt-${markerDigest(`${sessionId}:${callId}`).slice(0, 32)}`;
+          const queued = store.enqueue(compiled.marker, requestId, session.executor_id, session.document_generation);
+          queued.entry.realtime = true;
+          store.persist();
+          session.lastPlan = { marker: compiled.marker, request: safeAuditText(requestText, 1_000), at: clock() };
+          store.event("realtime_request_queued", { id: queued.entry.id, route: compiled.route });
+          return {
+            kind: "execute", id: queued.entry.id, route: compiled.route,
+            workflow_timeout_ms: realtimeWorkflowDeadlineMs(compiled.marker),
+            progress_message: progressMessageForMarker(compiled.marker) ?? undefined
+          };
         });
-        if (compiled.kind !== "execute") {
-          const result = { kind: compiled.kind, message: sanitizeCompletionMessage(compiled.message) };
-          session.calls.set(callId, result);
-          session.requests.set(requestKey, { at: clock(), result });
-          return respond(response, 200, result);
-        }
-        const requestId = `rt-${markerDigest(`${sessionId}:${callId}`).slice(0, 32)}`;
-        const queued = store.enqueue(compiled.marker, requestId, session.executor_id, session.document_generation);
-        queued.entry.realtime = true;
-        store.persist();
-        const result = {
-          kind: "execute", id: queued.entry.id, route: compiled.route,
-          workflow_timeout_ms: realtimeWorkflowDeadlineMs(compiled.marker),
-          progress_message: progressMessageForMarker(compiled.marker) ?? undefined
-        };
-        session.calls.set(callId, result);
-        session.requests.set(requestKey, { at: clock(), result });
-        store.event("realtime_request_queued", { id: queued.entry.id, route: compiled.route });
-        return respond(response, 202, result);
+        boundedMapSet(session.calls, callId, result);
+        boundedMapSet(session.requests, requestKey, { at: clock(), result }, 64);
+        return respond(response, result.kind === "execute" ? 202 : 200, result);
       }
       if (request.method === "POST" && url.pathname === "/realtime/preflight") {
         if (request.headers.origin !== realtimeOrigin) return respond(response, 403, { error: "invalid Realtime origin" });
@@ -1005,16 +1286,15 @@ export function createHandoffServer({
         if (session.executor_id && !store.isArmedExecutor(session.executor_id, session.document_generation)) {
           return respond(response, 409, { error: "Realtime executor is no longer active" });
         }
-        session.preflights ??= new Map();
         if (session.preflights.has(turnId)) return respond(response, 200, session.preflights.get(turnId));
         let requestText;
         try { requestText = safeAuditText(value.transcript, 1_000); normalizedRealtimeRequest(requestText); }
         catch { return respond(response, 200, { kind: "model" }); }
 
-        const conversationMessage = realtimeConversationMessage(requestText);
+        const conversationMessage = realtimeConversationMessage(requestText, session);
         if (conversationMessage) {
           const result = { kind: "conversation", message: conversationMessage };
-          session.preflights.set(turnId, result);
+          boundedMapSet(session.preflights, turnId, result);
           audit("tool_compiled", {
             session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
             request: requestText, kind: result.kind, route: "local_conversation", duration_ms: 0
@@ -1025,7 +1305,7 @@ export function createHandoffServer({
         const constraintMessage = realtimeConstraintMessage(requestText);
         if (constraintMessage) {
           const result = { kind: "clarify", message: constraintMessage };
-          session.preflights.set(turnId, result);
+          boundedMapSet(session.preflights, turnId, result);
           audit("tool_compiled", {
             session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
             request: requestText, kind: result.kind, route: "local_constraint", duration_ms: 0
@@ -1037,14 +1317,19 @@ export function createHandoffServer({
         // declines a genuine Godel request, the separately configured text
         // planner gets one bounded chance. Realtime is audio transport only;
         // it never improvises executable workflows.
-        let marker = null;
-        try { marker = encodeControlFollowup(requestText, currentRealtimeContext(session.executor_id)); }
-        catch {}
+        const normalizedTurn = requestText.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+        const retryPrevious = /^(?:(?:okay|ok|and|so) )?(?:jarvis )?(?:try (?:that|it) again|do that again|retry)$/.test(normalizedTurn);
+        let marker = retryPrevious ? session.lastPlan?.marker ?? null : null;
+        let continuityRoute = marker ? "local_retry" : null;
+        if (!marker) {
+          try { marker = encodeControlFollowup(requestText, sessionRealtimeContext(session)); }
+          catch {}
+        }
         const active = [...session.calls.values(), ...session.preflights.values()]
           .find(item => item.kind === "execute" && !terminalStates.has(store.status(item.id)?.status));
         if (!marker && !looksLikeIntentionalRealtimeSpeech(requestText)) {
           const result = { kind: "ignore" };
-          session.preflights.set(turnId, result);
+          boundedMapSet(session.preflights, turnId, result);
           audit("tool_compiled", {
             session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
             request: requestText, kind: result.kind, route: "ambient_filter", duration_ms: 0
@@ -1053,49 +1338,65 @@ export function createHandoffServer({
         }
         if (active) {
           const result = { kind: "busy", message: "I'm still finishing the previous Godel request." };
-          session.preflights.set(turnId, result);
+          boundedMapSet(session.preflights, turnId, result);
           return respond(response, 200, result);
         }
-        let compiled = null;
         if (!marker) {
-          const compileStartedAt = clock();
-          try {
-            compiled = await realtimeNaturalCompiler(requestText, { context: currentRealtimeContext(session.executor_id) });
-          } catch (error) {
-            const result = { kind: "failed", message: "I couldn't prepare that Godel request quickly enough." };
-            session.preflights.set(turnId, result);
-            audit("tool_compile_failed", {
-              session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
-              request: requestText, duration_ms: Math.max(0, clock() - compileStartedAt), error: safeError(error.message)
-            });
-            return respond(response, 200, result);
-          }
-          if (compiled.kind !== "execute") {
-            const result = {
-              kind: compiled.kind,
-              message: sanitizeCompletionMessage(compiled.message || "That request is not safely available in Godel yet.")
+          const result = await compileRealtimeOnce(session, "preflight", requestText, async () => {
+            const compileStartedAt = clock();
+            let compiled;
+            try {
+              compiled = await realtimeNaturalCompiler(requestText, { context: sessionRealtimeContext(session) });
+            } catch (error) {
+              audit("tool_compile_failed", {
+                session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
+                request: requestText, duration_ms: Math.max(0, clock() - compileStartedAt), error: safeError(error.message)
+              });
+              return { kind: "failed", message: "I couldn't prepare that Godel request quickly enough." };
+            }
+            if (compiled.kind !== "execute") {
+              const declined = {
+                kind: compiled.kind,
+                message: sanitizeCompletionMessage(compiled.message || "That request is not safely available in Godel yet.")
+              };
+              audit("tool_compiled", {
+                session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
+                request: requestText, kind: declined.kind, route: compiled.route ?? "text_planner",
+                duration_ms: Math.max(0, clock() - compileStartedAt)
+              });
+              return declined;
+            }
+            if (!realtimeSessionCanQueue(sessionId, session)) {
+              return { kind: "failed", message: "That Jarvis session ended before the request could start." };
+            }
+            const requestId = `rt-${markerDigest(`${sessionId}:preflight:${turnId}`).slice(0, 32)}`;
+            const queued = store.enqueue(compiled.marker, requestId, session.executor_id, session.document_generation);
+            queued.entry.realtime = true;
+            store.persist();
+            session.lastPlan = { marker: compiled.marker, request: requestText, at: clock() };
+            store.event("realtime_request_queued", { id: queued.entry.id, route: compiled.route });
+            return {
+              kind: "execute", id: queued.entry.id, route: compiled.route ?? "text_planner",
+              workflow_timeout_ms: realtimeWorkflowDeadlineMs(compiled.marker),
+              progress_message: progressMessageForMarker(compiled.marker) ?? undefined
             };
-            session.preflights.set(turnId, result);
-            audit("tool_compiled", {
-              session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
-              request: requestText, kind: result.kind, route: compiled.route ?? "text_planner",
-              duration_ms: Math.max(0, clock() - compileStartedAt)
-            });
-            return respond(response, 200, result);
-          }
-          marker = compiled.marker;
+          });
+          boundedMapSet(session.preflights, turnId, result);
+          boundedMapSet(session.requests, normalizedRealtimeRequest(requestText), { at: clock(), result }, 64);
+          return respond(response, result.kind === "execute" ? 202 : 200, result);
         }
         const requestId = `rt-${markerDigest(`${sessionId}:preflight:${turnId}`).slice(0, 32)}`;
         const queued = store.enqueue(marker, requestId, session.executor_id, session.document_generation);
         queued.entry.realtime = true;
         store.persist();
         const result = {
-          kind: "execute", id: queued.entry.id, route: compiled?.route ?? "local_preflight",
+          kind: "execute", id: queued.entry.id, route: continuityRoute ?? "local_preflight",
           workflow_timeout_ms: realtimeWorkflowDeadlineMs(marker),
           progress_message: progressMessageForMarker(marker) ?? undefined
         };
-        session.preflights.set(turnId, result);
-        session.requests.set(normalizedRealtimeRequest(requestText), { at: clock(), result });
+        boundedMapSet(session.preflights, turnId, result);
+        boundedMapSet(session.requests, normalizedRealtimeRequest(requestText), { at: clock(), result }, 64);
+        session.lastPlan = { marker, request: requestText, at: clock() };
         audit("tool_compiled", {
           session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
           request: requestText, kind: result.kind, route: result.route, duration_ms: 0
@@ -1110,7 +1411,7 @@ export function createHandoffServer({
         if (!session || !responseId) return respond(response, 404, { error: "Realtime session not found" });
         if (session.responses.has(responseId)) return respond(response, 200, { duplicate: true, session_cost_usd: session.costUsd });
         const estimate = estimateRealtimeResponseCost(realtimeModel, value.usage);
-        session.responses.add(responseId);
+        boundedSetAdd(session.responses, responseId);
         if (estimate.exact) session.costUsd = Number((session.costUsd + estimate.usd).toFixed(8));
         store.event("realtime_usage", { session_ref: markerDigest(value.session_id).slice(0, 12), exact: estimate.exact, cost_usd: estimate.usd });
         return respond(response, 200, { ...estimate, session_cost_usd: session.costUsd });
@@ -1125,7 +1426,7 @@ export function createHandoffServer({
         if (!session || !eventId || !allowedTypes.has(value.type)) return respond(response, 400, { error: "invalid Realtime audit event" });
         session.auditEvents ??= new Set();
         if (session.auditEvents.has(eventId)) return respond(response, 200, { duplicate: true });
-        session.auditEvents.add(eventId);
+        boundedSetAdd(session.auditEvents, eventId, 512);
         audit(value.type, {
           session_ref: markerDigest(sessionId).slice(0, 12), event_ref: markerDigest(eventId).slice(0, 12),
           text: safeAuditText(value.text), status: safeAuditText(value.status, 40) || undefined,
@@ -1139,6 +1440,8 @@ export function createHandoffServer({
         const sessionId = safeOpaqueId(value.session_id, "");
         const reason = safeAuditText(value.reason, 60) || "unspecified";
         const session = realtimeSessions.get(sessionId);
+        if (session) session.closed = true;
+        if (["manual_toggle", "pagehide"].includes(reason)) cancelRealtimeSessionWork(session, reason);
         realtimeSessions.delete(sessionId);
         if (reason === "manual_toggle" && session?.executor_id && !session.revoked) {
           store.disarmExecutor(session.executor_id, session.document_generation);
@@ -1148,22 +1451,16 @@ export function createHandoffServer({
         return respond(response, 200, { closed: true });
       }
       if (request.method === "GET" && url.pathname === "/next") {
-        const clientId = url.searchParams.get("client") || "anonymous";
-        const executorId = url.searchParams.get("executor") || clientId;
-        const documentGeneration = url.searchParams.get("generation") || null;
+        const clientId = safeOpaqueId(url.searchParams.get("client") || "anonymous");
+        const executorId = safeOpaqueId(url.searchParams.get("executor") || clientId);
+        const documentGeneration = safeOpaqueId(url.searchParams.get("generation"), "") || null;
+        const requestedWaitMs = Number(url.searchParams.get("wait_ms") ?? 0);
+        const waitMs = Number.isFinite(requestedWaitMs)
+          ? Math.max(0, Math.min(25_000, Math.trunc(requestedWaitMs))) : 0;
         const entry = store.lease(clientId, executorId, documentGeneration);
-        const progress = entry && speaker && entry.realtime !== true && !entry.progress_queued ? progressMessageForMarker(entry.marker) : null;
-        if (progress) {
-          entry.progress_queued = true;
-          store.persist();
-          queueMicrotask(() => speaker.speak(progress, `${entry.id}-progress`).catch(error => {
-            store.event("progress_voice_failed", { id: entry.id, error: safeError(error.message) });
-          }));
-        }
-        return entry ? respond(response, 200, {
-          id: entry.id, marker: entry.marker, attempt: entry.attempts, lease_ms: store.leaseMs,
-          premium_voice: Boolean(speaker), realtime: entry.realtime === true
-        }) : respond(response, 204);
+        if (entry) return deliverLeasedEntry(request, response, entry);
+        if (!waitMs || closing) return respond(response, 204);
+        return await waitForNext(request, response, { clientId, executorId, documentGeneration, waitMs });
       }
       if (request.method === "GET" && url.pathname === "/status") {
         const id = url.searchParams.get("id");
@@ -1219,12 +1516,35 @@ export function createHandoffServer({
       if (request.method === "POST" && url.pathname === "/ack") {
         const value = JSON.parse(await readBody(request));
         const previous = store.entries.find(candidate => candidate.id === value.id);
+        const previousMarker = previous?.marker;
         const shouldSpeak = Boolean(
           speaker && value.status === "completed" && previous && previous.status !== "completed" && !previous.feedback_queued
           && previous.realtime !== true && value.suppress_spoken_feedback !== true
         );
         const entry = store.acknowledge(value.id, value.status, value);
         if (!entry) return respond(response, 404, { error: "not found" });
+        if (previous?.realtime === true) {
+          let plan = null;
+          try { plan = previousMarker ? parseWorkflowMarker(previousMarker) : null; } catch {}
+          const steps = plan?.version === 2 ? plan.steps : plan ? [plan] : [];
+          const lastStep = [...steps].reverse().find(step =>
+            step.kind === "command" || step.kind === "configure" || step.kind === "control");
+          const target = lastStep?.target ?? null;
+          const outcome = {
+            request: null, status: entry.status,
+            message: sanitizeCompletionMessage(entry.message || entry.error || value.message || value.error || ""),
+            workflowId: entry.id, command: lastStep?.command ?? target?.command ?? null,
+            security: lastStep?.security_query ?? target?.security ?? null, at: clock()
+          };
+          for (const session of realtimeSessions.values()) {
+            const ownsWorkflow = sessionWorkflowResults(session).some(result => result?.id === entry.id);
+            if (!ownsWorkflow) continue;
+            outcome.request = [...session.requests.entries()].find(([, item]) => item?.result?.id === entry.id)?.[0]
+              ?? session.lastPlan?.request ?? null;
+            session.lastOutcome = { ...outcome };
+            session.recentOutcomes = [...(session.recentOutcomes ?? []), { ...outcome }].slice(-4);
+          }
+        }
         if (shouldSpeak) {
           const message = sanitizeCompletionMessage(value.message);
           if (message) {
@@ -1266,7 +1586,12 @@ export function createHandoffServer({
       server.once("error", reject);
       server.listen(port, host, () => resolve(server.address()));
     }),
-    close: () => new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+    close: () => {
+      closing = true;
+      unsubscribeStoreChanges();
+      for (const waiter of [...nextWaiters.values()]) waiter.finish();
+      return new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+    }
   };
 }
 

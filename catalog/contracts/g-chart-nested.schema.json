@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Godel G chart candidate action",
-  "description": "Strict planning schema. Contextual 1h resolution is live-verified; rejected inline CLI intervals and every other TradingView action remain runtime-disabled pending exact live proof. Layout save and alert creation are confirmation-gated.",
+  "description": "Strict planning schema. All six documented contextual resolutions are parsed and have per-value trusted TradingView input plus exact popup/chart-label proof definitions. Only 1h is live-verified and executable; 1m, 5m, 15m, 30m and 1d remain runtime-disabled until per-value Arc proof. Other TradingView actions remain runtime-disabled. Layout save and alert creation are confirmation-gated.",
   "type": "object",
   "additionalProperties": false,
   "required": ["feature", "operation", "value", "scope"],

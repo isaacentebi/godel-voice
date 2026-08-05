@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "name": "Godel authenticated live stress v1",
+  "cases": [
+    {
+      "id": "hmap-sp500-table",
+      "read_only": true,
+      "phrase": "open the S&P 500 market heatmap in table view",
+      "expected_semantics": {
+        "layout": { "mode": "preserve", "direction": "row", "gap_px": 12, "preset": "grid", "preserve_existing": false, "new_screen": false },
+        "postconditions": [
+          { "kind": "command", "command": "HMAP", "security": null, "terminal_command": "HMAP", "arguments": [], "actions": [
+            { "feature": "universe", "operation": "select", "value": "S&P 500" },
+            { "feature": "view", "operation": "select", "value": "Table" }
+          ], "placement": null }
+        ]
+      }
+    },
+    {
+      "id": "imap-dow-table",
+      "read_only": true,
+      "phrase": "open the Dow intraday map in table view",
+      "expected_semantics": {
+        "layout": { "mode": "preserve", "direction": "row", "gap_px": 12, "preset": "grid", "preserve_existing": false, "new_screen": false },
+        "postconditions": [
+          { "kind": "command", "command": "IMAP", "security": null, "terminal_command": "IMAP", "arguments": [], "actions": [
+            { "feature": "index", "operation": "select", "value": "DJIA" },
+            { "feature": "view", "operation": "select", "value": "Table" }
+          ], "placement": null }
+        ]
+      }
+    },
+    {
+      "id": "em-amazon-forward-pe",
+      "read_only": true,
+      "phrase": "open Amazon earnings matrix and read forward P E",
+      "expected_semantics": {
+        "layout": { "mode": "preserve", "direction": "row", "gap_px": 12, "preset": "grid", "preserve_existing": false, "new_screen": false },
+        "postconditions": [
+          { "kind": "command", "command": "EM", "security": "AMZN", "terminal_command": "AMZN EQ EM", "arguments": [], "actions": [
+            { "feature": "valuation", "operation": "read", "value": { "row": "P/E", "section": "Multiples", "semantic_unit": "Multiple" } }
+          ], "placement": null }
+        ]
+      }
+    },
+    {
+      "id": "gf-amazon-meta-five-year",
+      "read_only": true,
+      "phrase": "compare Amazon and Meta operating margin and revenue for five years",
+      "expected_semantics": {
+        "layout": { "mode": "tile", "direction": "row", "gap_px": 12, "preset": "comparison", "preserve_existing": false, "new_screen": false },
+        "postconditions": [
+          { "kind": "command", "command": "GF", "security": "AMZN", "terminal_command": "AMZN EQ GF", "arguments": [], "actions": [
+            { "feature": "range", "operation": "select", "value": "5Y" },
+            { "feature": "add company", "operation": "add", "value": "META" },
+            { "feature": "margin metric", "operation": "add", "value": "Operating Margin" },
+            { "feature": "add metric", "operation": "add", "value": "Revenue" }
+          ], "placement": "full" }
+        ]
+      }
+    },
+    {
+      "id": "hds-meta-bubble",
+      "read_only": true,
+      "phrase": "open Meta institutional holders as a bubble",
+      "expected_semantics": {
+        "layout": { "mode": "preserve", "direction": "row", "gap_px": 12, "preset": "grid", "preserve_existing": false, "new_screen": false },
+        "postconditions": [
+          { "kind": "command", "command": "HDS", "security": "META", "terminal_command": "META EQ HDS", "arguments": [], "actions": [
+            { "feature": "view", "operation": "select", "value": "Bubble" }
+          ], "placement": null }
+        ]
+      }
+    },
+    {
+      "id": "eqs-forward-pe-range",
+      "read_only": true,
+      "phrase": "open the equity screener with forward P E between 10 and 20 and run it",
+      "expected_semantics": {
+        "layout": { "mode": "tile", "direction": "row", "gap_px": 12, "preset": "focus", "preserve_existing": false, "new_screen": false },
+        "postconditions": [
+          { "kind": "command", "command": "EQS", "security": null, "terminal_command": "EQS", "arguments": [], "actions": [
+            { "feature": "range_filter", "operation": "add", "value": { "field": "P/E (Fwd)", "minimum": 10, "maximum": 20 } },
+            { "feature": "screen", "operation": "run", "value": null }
+          ], "placement": "full" }
+        ]
+      }
+    },
+    {
+      "id": "vix-one-hour-chart",
+      "read_only": true,
+      "phrase": "open the VIX one hour chart",
+      "expected_semantics": {
+        "layout": { "mode": "tile", "direction": "row", "gap_px": 12, "preset": "focus", "preserve_existing": false, "new_screen": false },
+        "postconditions": [
+          { "kind": "command", "command": "G", "security": "VIX", "terminal_command": "VIX CBOE IDX G 1h", "arguments": ["1h"], "actions": [], "placement": "full" }
+        ]
+      }
+    },
+    {
+      "id": "tran-amazon-four-call-research",
+      "read_only": true,
+      "timeout_ms": 120000,
+      "phrase": "search Amazon's latest four earnings calls for AWS growth and backlog and explain the trend",
+      "expected_semantics": {
+        "layout": { "mode": "tile", "direction": "row", "gap_px": 12, "preset": "focus", "preserve_existing": false, "new_screen": false },
+        "postconditions": [
+          { "kind": "command", "command": "TRAN", "security": "AMZN", "terminal_command": "AMZN EQ TRAN", "arguments": [], "actions": [
+            { "feature": "research", "operation": "summarize", "value": {
+              "periods": 4,
+              "topics": ["aws growth", "backlog"],
+              "question": "search amazon's latest four earnings calls for aws growth and backlog and explain the trend"
+            } }
+          ], "placement": "full" }
+        ]
+      }
+    },
+    {
+      "id": "window-heatmap-move-resize",
+      "read_only": true,
+      "phrase": "open the market heatmap then move it to the left and make it bigger",
+      "expected_semantics": {
+        "layout": { "mode": "preserve", "direction": "row", "gap_px": 12, "preset": "grid", "preserve_existing": false, "new_screen": false },
+        "postconditions": [
+          { "kind": "command", "command": "HMAP", "security": null, "terminal_command": "HMAP", "arguments": [], "actions": [], "placement": null },
+          { "kind": "control", "operation": "move", "target": { "mode": "command", "command": "HMAP", "security": null }, "value": "left" },
+          { "kind": "control", "operation": "resize", "target": { "mode": "command", "command": "HMAP", "security": null }, "value": "larger" }
+        ]
+      }
+    },
+    {
+      "id": "window-heatmap-open-close",
+      "read_only": true,
+      "phrase": "open the market heatmap then close the heatmap",
+      "expected_semantics": {
+        "layout": { "mode": "preserve", "direction": "row", "gap_px": 12, "preset": "grid", "preserve_existing": false, "new_screen": false },
+        "postconditions": [
+          { "kind": "command", "command": "HMAP", "security": null, "terminal_command": "HMAP", "arguments": [], "actions": [], "placement": null },
+          { "kind": "control", "operation": "close", "target": { "mode": "command", "command": "HMAP", "security": null }, "value": null }
+        ]
+      }
+    }
+  ]
+}

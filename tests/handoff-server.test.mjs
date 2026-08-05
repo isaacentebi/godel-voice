@@ -1,11 +1,42 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { createHandoffServer, HandoffStore, progressMessageForMarker } from "../src/handoff-server.mjs";
 
 const marker = `GV1:${JSON.stringify({ version: 1, command: "HMAP", arguments: [], actions: [] })}`;
+
+const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+async function waitUntil(predicate, timeoutMs = 1_000) {
+  const deadline = performance.now() + timeoutMs;
+  while (!predicate()) {
+    if (performance.now() >= deadline) throw new Error("condition did not become true before timeout");
+    await delay(2);
+  }
+}
+
+function delayNextResponseFinish(server, milliseconds = 75) {
+  server.prependListener("request", (request, response) => {
+    if (!request.url?.startsWith("/next?")) return;
+    const end = response.end.bind(response);
+    response.end = (...arguments_) => {
+      setTimeout(() => {
+        if (!response.destroyed) end(...arguments_);
+      }, milliseconds);
+      return response;
+    };
+  });
+}
+
+function openDisposableRequest(url, headers) {
+  const request = http.get(url, { headers });
+  request.on("response", response => response.resume());
+  request.on("error", () => {});
+  return request;
+}
 
 test("long transcript research gets a bounded deterministic progress phrase", () => {
   const research = `GV1:${JSON.stringify({
@@ -54,6 +85,58 @@ test("handoff store deduplicates, leases, acknowledges and records diagnostics",
   assert.doesNotMatch(log, /GV1:/);
 });
 
+test("handoff diagnostics retain bounded per-action GF latency", () => {
+  const store = new HandoffStore();
+  const entry = store.enqueue(marker).entry;
+  store.lease("arc-tab-a");
+  store.acknowledge(entry.id, "completed", {
+    client_id: "arc-tab-a",
+    steps: [{
+      step_id: "gf-comparison", kind: "command", command: "GF", status: "completed", duration_ms: 9300,
+      nested_actions: [
+        { action: "setRange", subject: "5Y", attempt: 1, status: "completed", duration_ms: 41.6 },
+        { action: "addCompany", subject: "META<script>", attempt: 9, status: "completed", duration_ms: 302.2 },
+        { action: "addMetric", subject: "META:operating_margin", attempt: 1, status: "completed", duration_ms: 411.8 }
+      ]
+    }]
+  });
+  assert.deepEqual(store.status(entry.id).steps[0].nested_actions, [
+    { index: 0, action: "setRange", subject: "5Y", attempt: 1, status: "completed", duration_ms: 42 },
+    { index: 1, action: "addCompany", subject: "METAscript", attempt: 3, status: "completed", duration_ms: 302 },
+    { index: 2, action: "addMetric", subject: "META:operating_margin", attempt: 1, status: "completed", duration_ms: 412 }
+  ]);
+});
+
+test("handoff diagnostics preserve only bounded workflow latency phases", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "godel-workflow-phases-"));
+  const logPath = path.join(directory, "events.jsonl");
+  const store = new HandoffStore({ logPath });
+  const entry = store.enqueue(marker).entry;
+  store.lease("arc-tab-a");
+  store.acknowledge(entry.id, "completed", {
+    client_id: "arc-tab-a",
+    phases: {
+      lifecycle_barrier_ms: 5123.6,
+      workspace_prepare_ms: 841.2,
+      layout_ms: -9,
+      reconcile_ms: 72.8,
+      completion_fact_ms: 4.4,
+      transcript: "never retain this",
+      api_key: "never retain this either"
+    }
+  });
+
+  assert.deepEqual(store.status(entry.id).phases, {
+    lifecycle_barrier_ms: 5124,
+    workspace_prepare_ms: 841,
+    layout_ms: 0,
+    reconcile_ms: 73,
+    completion_fact_ms: 4
+  });
+  const log = fs.readFileSync(logPath, "utf8");
+  assert.doesNotMatch(log, /never retain this|api_key|transcript/);
+});
+
 test("separate VoiceInk request IDs may intentionally repeat the same relative action", () => {
   const store = new HandoffStore({ dedupeMs: 10_000 });
   const first = store.enqueue(marker, "voice-request-one");
@@ -97,16 +180,39 @@ test("executor contexts remain separated while a tab keeps context across docume
   assert.equal(store.recentContext(15_000, 900_000, ownerB).focused_panel.security, "AMZN");
 });
 
-test("background context from another tab cannot steal a pinned Realtime executor", () => {
-  const store = new HandoffStore();
+test("a pinned Realtime executor stays pinned when it publishes fresh context", () => {
+  let now = 1_000;
+  const store = new HandoffStore({ clock: () => now });
+  store.setContext({ focused_panel: { command: "HMAP" } }, "gx-owner-a", "gd-a");
+  store.armExecutor("gx-owner-a", "gd-a");
+
+  now = 2_000;
+  store.setContext({ focused_panel: { command: "EM", security: "AMZN" } }, "gx-owner-a", "gd-a");
+
+  assert.equal(store.armedPinned, true);
+  assert.deepEqual(store.armedExecutor(), {
+    executor_id: "gx-owner-a", document_generation: "gd-a", armed_at: now
+  });
+});
+
+test("background context cannot steal a pinned executor after its owner publishes context", () => {
+  let now = 1_000;
+  const store = new HandoffStore({ clock: () => now });
   store.setContext({ focused_panel: { command: "HMAP" } }, "gx-owner-a", "gd-a");
   store.armExecutor("gx-owner-a", "gd-a");
   const entry = store.enqueue(marker, "pinned-owner", "gx-owner-a", "gd-a").entry;
   store.lease("gx-owner-a", "gx-owner-a", "gd-a");
+
+  now = 2_000;
+  store.setContext({ focused_panel: { command: "GF", security: "AMZN" } }, "gx-owner-a", "gd-a");
+  assert.equal(store.armedPinned, true);
+
+  now = 3_000;
   store.setContext({ focused_panel: { command: "EM", security: "META" } }, "gx-owner-b", "gd-b");
   assert.deepEqual(store.armedExecutor(), {
-    executor_id: "gx-owner-a", document_generation: "gd-a", armed_at: store.armedAt
+    executor_id: "gx-owner-a", document_generation: "gd-a", armed_at: 2_000
   });
+  assert.equal(store.armedPinned, true);
   assert.equal(store.status(entry.id).cancel_requested, false);
   assert.ok(store.heartbeat(entry.id, "gx-owner-a", "gx-owner-a", "gd-a"));
 });
@@ -138,15 +244,15 @@ test("arming a new owner revokes the previous owner's inflight authority", () =>
   const entry = store.enqueue(marker, "owner-revocation", "gx-owner-a", "gd-a").entry;
   store.lease("gx-owner-a", "gx-owner-a", "gd-a");
   store.armExecutor("gx-owner-b", "gd-b");
-  assert.equal(store.status(entry.id).status, "inflight");
+  assert.equal(store.status(entry.id).status, "cancelled");
   assert.equal(store.status(entry.id).cancel_requested, true);
-  assert.throws(() => store.heartbeat(entry.id, "gx-owner-a", "gx-owner-a", "gd-a"), /no longer armed/);
+  assert.equal(store.heartbeat(entry.id, "gx-owner-a", "gx-owner-a", "gd-a"), null);
   assert.throws(() => store.acknowledge(entry.id, "completed", {
     client_id: "gx-owner-a", executor_id: "gx-owner-a", document_generation: "gd-a"
-  }), /no longer armed/);
+  }), /cancelled workflow/);
 });
 
-test("armed ownership survives ordinary pauses and never falls back to unbound FIFO after session expiry", async t => {
+test("armed ownership survives ordinary pauses and an expired pin can be reclaimed", async t => {
   let now = 1_000;
   const store = new HandoffStore({ clock: () => now });
   store.setContext({ focused_panel: { command: "HMAP" } }, "gx-owner", "gd-document");
@@ -165,11 +271,14 @@ test("armed ownership survives ordinary pauses and never falls back to unbound F
   });
 
   now += 60 * 60_000 + 1;
-  const expired = await fetch(`http://127.0.0.1:${address.port}/plan`, {
+  assert.equal(store.armedExecutor(), null);
+  store.setContext({ focused_panel: { command: "HMAP" } }, "gx-new-owner", "gd-new-document");
+  const reclaimed = await fetch(`http://127.0.0.1:${address.port}/plan`, {
     method: "POST", headers: { Authorization: "Bearer test-secret" }, body: marker
   });
-  assert.equal(expired.status, 409);
-  assert.equal(store.entries.length, 1);
+  assert.equal(reclaimed.status, 202);
+  const reclaimedId = (await reclaimed.json()).id;
+  assert.equal(store.lease("gx-new-owner", "gx-new-owner", "gd-new-document").id, reclaimedId);
 });
 
 test("executor context is sanitized, persisted and expires", () => {
@@ -249,6 +358,20 @@ test("an executor can immediately release a lease for bounded recovery", () => {
   assert.equal(store.lease("fresh-extension").attempts, 2);
 });
 
+test("delivery abandonment can only return the exact transport lease", () => {
+  const store = new HandoffStore();
+  const entry = store.enqueue(marker).entry;
+  const first = store.lease("dead-client");
+  const deadDeliveryLeaseId = first.delivery_lease_id;
+  assert.equal(store.abandonDelivery(entry.id, deadDeliveryLeaseId).attempts, 0);
+
+  const replacement = store.lease("replacement-client");
+  assert.notEqual(replacement.delivery_lease_id, deadDeliveryLeaseId);
+  assert.equal(store.abandonDelivery(entry.id, deadDeliveryLeaseId), null);
+  assert.equal(store.status(entry.id).status, "inflight");
+  assert.equal(store.status(entry.id).attempts, 1);
+});
+
 test("expired work cannot be revived or acknowledged by its former lease owner", () => {
   let now = 10_000;
   const store = new HandoffStore({ clock: () => now, leaseMs: 100 });
@@ -261,16 +384,19 @@ test("expired work cannot be revived or acknowledged by its former lease owner",
   assert.equal(store.lease("new-owner").attempts, 2);
 });
 
-test("cancelled inflight work drops its private marker when the lease expires", () => {
+test("cancelled inflight work becomes terminal immediately and cannot revive as completed", () => {
   let now = 20_000;
   const store = new HandoffStore({ clock: () => now, leaseMs: 100 });
   const entry = store.enqueue(marker, "cancel-expiry").entry;
   store.lease("owner");
   store.cancel(entry.id);
-  now += 101;
   assert.equal(store.status(entry.id).status, "cancelled");
   assert.equal("marker" in store.entries[0], false);
   assert.equal(store.status(entry.id).finished_at, now);
+  assert.equal(store.heartbeat(entry.id, "owner"), null);
+  assert.throws(() => store.acknowledge(entry.id, "completed", { client_id: "owner" }), /cancelled workflow/);
+  assert.equal(store.acknowledge(entry.id, "cancelled", { client_id: "owner" }).status, "cancelled");
+  assert.equal(store.acknowledge(entry.id, "failed", { client_id: "owner" }).status, "cancelled");
 });
 
 test("arming a replacement executor retires queued work and cancels inflight work", () => {
@@ -280,11 +406,11 @@ test("arming a replacement executor retires queued work and cancels inflight wor
   const inflight = store.enqueue(marker, "inflight-a", "gx-owner-a", "gd-generation-a").entry;
   store.lease("gx-owner-a", "gx-owner-a", "gd-generation-a");
   store.armExecutor("gx-owner-b", "gd-generation-b");
-  assert.equal(store.status(queued.id).status, "inflight");
+  assert.equal(store.status(queued.id).status, "cancelled");
   assert.equal(store.status(queued.id).cancel_requested, true);
   assert.equal(store.status(inflight.id).status, "failed");
   assert.equal(store.counts().queued ?? 0, 0);
-  assert.equal(store.counts().inflight ?? 0, 1);
+  assert.equal(store.counts().inflight ?? 0, 0);
 });
 
 test("a disarmed old owner cannot leave targeted work behind after another owner starts", () => {
@@ -356,6 +482,156 @@ test("HTTP handoff exposes leased delivery, status, acknowledgement and cancella
   assert.equal((await cancelled.json()).status, "cancelled");
 });
 
+test("bounded long-poll leases newly queued work without waiting for a polling interval", async t => {
+  const store = new HandoffStore();
+  const handoff = createHandoffServer({ secret: "test-secret", store, port: 0 });
+  const address = await handoff.listen();
+  t.after(() => handoff.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const headers = { Authorization: "Bearer test-secret" };
+  const startedAt = performance.now();
+  const pending = fetch(`${base}/next?client=arc-long&wait_ms=1000`, { headers });
+  await new Promise(resolve => setTimeout(resolve, 15));
+  const queued = await (await fetch(`${base}/plan`, { method: "POST", headers, body: marker })).json();
+  const deliveryResponse = await pending;
+  const elapsedMs = performance.now() - startedAt;
+  assert.equal(deliveryResponse.status, 200);
+  assert.equal((await deliveryResponse.json()).id, queued.id);
+  assert.ok(elapsedMs < 250, `long-poll delivery took ${Math.round(elapsedMs)} ms`);
+});
+
+test("an immediate /next abort before response finish returns the exact lease without consuming an attempt", async t => {
+  const store = new HandoffStore();
+  const handoff = createHandoffServer({ secret: "test-secret", store, port: 0 });
+  delayNextResponseFinish(handoff.server);
+  const address = await handoff.listen();
+  t.after(() => handoff.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const headers = { Authorization: "Bearer test-secret" };
+  const queued = store.enqueue(marker, "immediate-dead-client").entry;
+
+  const deadClient = openDisposableRequest(`${base}/next?client=dead-immediate`, headers);
+  await waitUntil(() => store.entries.find(entry => entry.id === queued.id)?.leased_to === "dead-immediate");
+  deadClient.destroy();
+  await waitUntil(() => store.status(queued.id).status === "queued");
+  assert.equal(store.status(queued.id).attempts, 0);
+
+  const replacement = await fetch(`${base}/next?client=replacement-immediate`, { headers });
+  assert.equal(replacement.status, 200);
+  assert.deepEqual(await replacement.json(), {
+    id: queued.id, marker, attempt: 1, lease_ms: store.leaseMs,
+    premium_voice: false, realtime: false
+  });
+});
+
+test("destroy-socket/enqueue race requeues a long-poll lease and wakes its replacement immediately", async t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "godel-dead-delivery-"));
+  const logPath = path.join(directory, "events.jsonl");
+  const store = new HandoffStore({ logPath });
+  const handoff = createHandoffServer({ secret: "test-secret", store, port: 0 });
+  delayNextResponseFinish(handoff.server);
+  const address = await handoff.listen();
+  t.after(() => handoff.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const headers = { Authorization: "Bearer test-secret" };
+
+  const deadClient = openDisposableRequest(`${base}/next?client=dead-long&wait_ms=1000`, headers);
+  await delay(15);
+  const queued = store.enqueue(marker, "long-poll-dead-client").entry;
+  deadClient.destroy();
+  await waitUntil(() => store.status(queued.id).status === "queued"
+    && fs.readFileSync(logPath, "utf8").includes("workflow_delivery_abandoned"));
+
+  const replacementStartedAt = performance.now();
+  const response = await fetch(`${base}/next?client=replacement-long`, { headers });
+  const elapsedMs = performance.now() - replacementStartedAt;
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).id, queued.id);
+  assert.equal(store.status(queued.id).attempts, 1);
+  assert.equal(store.entries.find(entry => entry.id === queued.id)?.leased_to, "replacement-long");
+  assert.ok(elapsedMs < 350, `replacement lease took ${Math.round(elapsedMs)} ms`);
+  assert.match(fs.readFileSync(logPath, "utf8"), /workflow_delivery_abandoned/);
+});
+
+test("long-poll timeout and executor supersession return an empty 204 fallback", async t => {
+  const handoff = createHandoffServer({ secret: "test-secret", port: 0 });
+  const address = await handoff.listen();
+  t.after(() => handoff.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const headers = { Authorization: "Bearer test-secret" };
+  const timedOut = await fetch(`${base}/next?client=arc-timeout&wait_ms=15`, { headers });
+  assert.equal(timedOut.status, 204);
+
+  const first = fetch(`${base}/next?client=arc-one&executor=arc-one&wait_ms=1000`, { headers });
+  await new Promise(resolve => setTimeout(resolve, 10));
+  const second = fetch(`${base}/next?client=arc-one&executor=arc-one&wait_ms=1000`, { headers });
+  assert.equal((await first).status, 204);
+  await new Promise(resolve => setTimeout(resolve, 10));
+  const queued = await (await fetch(`${base}/plan`, { method: "POST", headers, body: marker })).json();
+  const replacement = await second;
+  assert.equal(replacement.status, 200);
+  assert.equal((await replacement.json()).id, queued.id);
+});
+
+test("ownership changes wake an ineligible long-poll and shutdown drains held requests", async t => {
+  const handoff = createHandoffServer({ secret: "test-secret", port: 0 });
+  const address = await handoff.listen();
+  let closed = false;
+  t.after(() => closed ? undefined : handoff.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const headers = { Authorization: "Bearer test-secret" };
+  const ownershipWait = fetch(`${base}/next?client=old-owner&executor=old-owner&generation=old-document&wait_ms=1000`, { headers });
+  await new Promise(resolve => setTimeout(resolve, 10));
+  const context = await fetch(`${base}/context`, {
+    method: "POST",
+    headers: {
+      ...headers, "Content-Type": "application/json",
+      "X-Godel-Executor-Id": "new-owner", "X-Godel-Document-Generation": "new-document"
+    },
+    body: JSON.stringify({ focused_panel: { command: "HMAP" } })
+  });
+  assert.equal(context.status, 200);
+  assert.equal((await ownershipWait).status, 204);
+
+  const shutdownWait = fetch(`${base}/next?client=new-owner&executor=new-owner&generation=new-document&wait_ms=25000`, { headers });
+  await new Promise(resolve => setTimeout(resolve, 10));
+  await handoff.close();
+  closed = true;
+  assert.equal((await shutdownWait).status, 204);
+});
+
+test("HTTP rejects a late completed acknowledgement after terminal failure", async t => {
+  const spoken = [];
+  const store = new HandoffStore();
+  const handoff = createHandoffServer({
+    secret: "test-secret", store, port: 0,
+    speaker: { speak: async (...args) => spoken.push(args) }
+  });
+  const address = await handoff.listen();
+  t.after(() => handoff.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const headers = { Authorization: "Bearer test-secret" };
+  const queued = await (await fetch(`${base}/plan`, { method: "POST", headers, body: marker })).json();
+  await fetch(`${base}/next?client=arc-failed`, { headers });
+  const failed = await fetch(`${base}/ack`, {
+    method: "POST", headers,
+    body: JSON.stringify({ id: queued.id, client_id: "arc-failed", status: "failed", error: "terminal failure" })
+  });
+  assert.equal(failed.status, 200);
+  assert.equal((await failed.json()).status, "failed");
+
+  const lateSuccess = await fetch(`${base}/ack`, {
+    method: "POST", headers,
+    body: JSON.stringify({ id: queued.id, client_id: "arc-failed", status: "completed", message: "late success" })
+  });
+  assert.equal(lateSuccess.ok, false);
+  assert.equal(lateSuccess.status, 400);
+  assert.match((await lateSuccess.json()).error, /failed workflow cannot be acknowledged as completed/);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(store.status(queued.id).status, "failed");
+  assert.deepEqual(spoken, []);
+});
+
 test("premium completion voice is queued once after a successful acknowledgement", async t => {
   const spoken = [];
   const speaker = { speak: async (message, id) => spoken.push({ message, id }) };
@@ -376,11 +652,12 @@ test("premium completion voice is queued once after a successful acknowledgement
   assert.deepEqual(spoken, [{ message: body.message, id: queued.id }]);
 });
 
-test("premium voice speaks transcript progress once when work is leased", async t => {
+test("premium voice speaks transcript progress only after the /next response finishes", async t => {
   const spoken = [];
   const speaker = { speak: async (message, id) => spoken.push({ message, id }) };
   const store = new HandoffStore();
   const handoff = createHandoffServer({ secret: "test-secret", store, speaker, port: 0 });
+  delayNextResponseFinish(handoff.server);
   const address = await handoff.listen();
   t.after(() => handoff.close());
   const base = `http://127.0.0.1:${address.port}`;
@@ -390,9 +667,36 @@ test("premium voice speaks transcript progress once when work is leased", async 
     actions: [{ feature: "research", operation: "summarize", value: { periods: 4 } }]
   })}`;
   const queued = await (await fetch(`${base}/plan`, { method: "POST", headers, body: research })).json();
-  await fetch(`${base}/next?client=arc-a`, { headers });
+  const delivery = fetch(`${base}/next?client=arc-a`, { headers });
+  await waitUntil(() => store.status(queued.id).status === "inflight");
+  assert.deepEqual(spoken, []);
+  assert.equal((await delivery).status, 200);
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(spoken, [{ message: "I'm checking the latest four earnings calls.", id: `${queued.id}-progress` }]);
+});
+
+test("aborted /next delivery never speaks transcript progress", async t => {
+  const spoken = [];
+  const speaker = { speak: async (message, id) => spoken.push({ message, id }) };
+  const store = new HandoffStore();
+  const handoff = createHandoffServer({ secret: "test-secret", store, speaker, port: 0 });
+  delayNextResponseFinish(handoff.server);
+  const address = await handoff.listen();
+  t.after(() => handoff.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const headers = { Authorization: "Bearer test-secret" };
+  const research = `GV1:${JSON.stringify({
+    version: 1, command: "TRAN", arguments: [],
+    actions: [{ feature: "research", operation: "summarize", value: { periods: 4 } }]
+  })}`;
+  const queued = store.enqueue(research, "aborted-progress").entry;
+  const deadClient = openDisposableRequest(`${base}/next?client=dead-progress`, headers);
+  await waitUntil(() => store.status(queued.id).status === "inflight");
+  deadClient.destroy();
+  await waitUntil(() => store.status(queued.id).status === "queued");
+  await delay(100);
+  assert.deepEqual(spoken, []);
+  assert.equal(store.entries.find(entry => entry.id === queued.id)?.progress_queued, undefined);
 });
 
 test("heartbeats extend leases and only the lease owner can complete or release work", () => {

@@ -77,30 +77,9 @@
             "maxItems": 12,
             "items": {
               "type": "object",
+              "description": "Structured actions are locally validated against their command. EQS uses range_filter, list_filter, boolean_filter, primary_listings, hide_no_trades and screen; SECF uses search.configure; MOST uses results, ranking, market_cap and sector.",
               "additionalProperties": false,
               "required": ["feature", "operation", "value"],
-              "allOf": [
-                {
-                  "if": {"properties": {"value": {"type": "object", "required": ["field", "minimum", "maximum"]}}},
-                  "then": {"properties": {"feature": {"const": "range_filter"}, "operation": {"const": "add"}}}
-                },
-                {
-                  "if": {"properties": {"value": {"type": "object", "required": ["items"]}}},
-                  "then": {"properties": {"feature": {"const": "list_filter"}, "operation": {"const": "add"}}}
-                },
-                {
-                  "if": {"properties": {"value": {"type": "object", "required": ["field", "value"]}}},
-                  "then": {"properties": {"feature": {"const": "boolean_filter"}, "operation": {"const": "add"}}}
-                },
-                {
-                  "if": {"properties": {"value": {"type": "object", "required": ["query", "tab", "max", "venues", "countries", "hide_no_trade"]}}},
-                  "then": {"properties": {"feature": {"const": "search"}, "operation": {"const": "configure"}}}
-                },
-                {
-                  "if": {"properties": {"value": {"type": "object", "required": ["minimum", "maximum"], "not": {"required": ["field"]}}}},
-                  "then": {"properties": {"feature": {"const": "market_cap"}, "operation": {"const": "set"}}}
-                }
-              ],
               "properties": {
                 "feature": {"type": "string"},
                 "operation": {"type": "string"},
@@ -131,7 +110,7 @@
                       "required": ["field", "items"],
                       "properties": {
                         "field": {"type": "string", "enum": ["Currency", "Venue", "HQ Country", "Sector", "Sub-Sector"]},
-                        "items": {"type": "array", "minItems": 1, "maxItems": 20, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 64}}
+                        "items": {"type": "array", "minItems": 1, "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 64}}
                       }
                     },
                     {
@@ -147,16 +126,12 @@
                       "type": "object",
                       "additionalProperties": false,
                       "required": ["query", "tab", "max", "venues", "countries", "hide_no_trade"],
-                      "allOf": [{
-                        "if": {"properties": {"tab": {"const": "People"}}, "required": ["tab"]},
-                        "then": {"properties": {"venues": {"maxItems": 0}, "countries": {"maxItems": 0}, "hide_no_trade": {"const": false}}}
-                      }],
                       "properties": {
                         "query": {"type": "string", "maxLength": 200},
                         "tab": {"type": "string", "enum": ["All", "Equities", "Corporate Bonds", "Options", "Sovereign Bonds", "Crypto", "Index", "Futures", "Forex", "People"]},
                         "max": {"type": "integer", "enum": [50, 100, 250, 500]},
-                        "venues": {"type": "array", "maxItems": 20, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 64}},
-                        "countries": {"type": "array", "maxItems": 20, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 64}},
+                        "venues": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 64}},
+                        "countries": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 64}},
                         "hide_no_trade": {"type": "boolean"}
                       }
                     },
@@ -178,36 +153,7 @@
           "placement": {
             "type": ["string", "null"],
             "enum": [null, "full", "left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right"]
-          },
-          "allOf": [
-            {
-              "if": {
-                "anyOf": [
-                  {"properties": {"step_kind": {"const": "command"}, "command": {"enum": ["EQS", "SECF", "MOST"]}}},
-                  {
-                    "properties": {
-                      "step_kind": {"const": "configure"},
-                      "configure_target": {
-                        "type": "object",
-                        "properties": {"command": {"enum": ["EQS", "SECF", "MOST"]}},
-                        "required": ["command"]
-                      }
-                    }
-                  }
-                ]
-              },
-              "then": {},
-              "else": {
-                "properties": {
-                  "post_open_actions": {
-                    "items": {
-                      "properties": {"value": {"type": ["string", "number", "boolean", "null"]}}
-                    }
-                  }
-                }
-              }
-            }
-          ]
+          }
         }
       }
     },

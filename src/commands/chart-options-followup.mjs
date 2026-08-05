@@ -91,8 +91,10 @@ function parseG(text, actions, blockers, context, original) {
   for (const item of candidate.actions) {
     actions.push(action(item.feature, item.operation, item.value,
       item.feature === "resolution" && item.value === "1h" ? "live-verified"
+        : item.feature === "resolution" ? "runtime-candidate-pending-live-proof"
         : item.feature === "alert" || item.feature === "layout save" ? "documented-unbound-confirmation-gated" : "documented-unbound",
       item.feature === "resolution" && item.value === "1h" ? "live-ui:2026-08-04; exact popup plus chart-image label"
+        : item.feature === "resolution" ? "G docs; trusted TradingView typing plus exact popup/chart-label postcondition; Arc proof pending"
         : item.feature === "snapshot" ? "G docs; artifact gate not wired" : "G docs"));
   }
   blockers.push(...candidate.blockers.filter(value => !/runtime-disabled pending live proof/.test(value)));

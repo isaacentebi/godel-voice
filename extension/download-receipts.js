@@ -7,6 +7,7 @@
 
   const GODEL_ORIGIN = "https://app.godelterminal.com";
   const DEFAULT_TTL_MS = 30_000;
+  const DEFAULT_COMPLETION_TTL_MS = 5 * 60_000;
   const MIME_BY_EXTENSION = Object.freeze({
     xlsx: Object.freeze([
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -38,6 +39,33 @@
   const clean = value => String(value ?? "").trim();
   const upper = value => clean(value).toUpperCase();
   const lower = value => clean(value).toLowerCase();
+
+  function normalizedMime(value) {
+    return lower(value).split(";", 1)[0].trim();
+  }
+
+  function displayFilename(value) {
+    const basename = clean(value).replace(/\\/g, "/").split("/").at(-1) ?? "";
+    return basename.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 160);
+  }
+
+  function exactGodelDownloadSource(item, origin = GODEL_ORIGIN) {
+    const candidates = [item?.url, item?.finalUrl].map(clean).filter(Boolean);
+    if (!candidates.length) return false;
+    return candidates.every(value => {
+      try {
+        if (value.startsWith("blob:")) return new URL(value.slice(5)).origin === origin;
+        return new URL(value).origin === origin;
+      } catch { return false; }
+    });
+  }
+
+  function verifiedDownloadMessage(receipt) {
+    if (receipt?.state !== "verified") return null;
+    const filename = displayFilename(receipt.filename);
+    if (!filename) return null;
+    return `Downloaded ${clean(receipt.artifact)} as ${filename}.`.replace(/\s+/g, " ").slice(0, 240);
+  }
 
   function extensionOf(filename) {
     const match = lower(filename).match(/\.([a-z0-9]+)$/);
@@ -85,18 +113,27 @@
     const now = options.now ?? (() => Date.now());
     const makeId = options.makeId ?? (() => crypto.randomUUID());
     const ttlMs = options.ttlMs ?? DEFAULT_TTL_MS;
+    const completionTtlMs = options.completionTtlMs ?? DEFAULT_COMPLETION_TTL_MS;
     const pending = new Map();
     const downloadToReceipt = new Map();
     const receipts = new Map();
 
+    function failExpired(receipt) {
+      receipt.state = "failed";
+      receipt.failure_reason = receipt.download_id == null
+        ? "download_not_created_before_deadline" : "download_not_completed_before_deadline";
+      receipt.finished_at = now();
+      pending.delete(receipt.receipt_id);
+      if (Number.isInteger(receipt.download_id)) downloadToReceipt.delete(receipt.download_id);
+    }
+
     function expire() {
-      const cutoff = now() - ttlMs;
-      for (const [id, receipt] of pending) {
-        if (receipt.registered_at >= cutoff) continue;
-        receipt.state = "failed";
-        receipt.failure_reason = "download_not_created_before_deadline";
-        receipt.finished_at = now();
-        pending.delete(id);
+      for (const receipt of receipts.values()) {
+        if (!["registered", "created"].includes(receipt.state)) continue;
+        const deadlineBase = receipt.state === "created" ? receipt.created_at : receipt.registered_at;
+        const deadline = receipt.state === "created" ? completionTtlMs : ttlMs;
+        if (Number.isFinite(deadlineBase) && now() - deadlineBase <= deadline) continue;
+        failExpired(receipt);
       }
     }
 
@@ -136,13 +173,18 @@
     function bindCreated(item) {
       expire();
       if (!item || !Number.isInteger(item.id) || !Number.isInteger(item.tabId)) return null;
-      const candidates = [...pending.values()].filter(receipt => receipt.tab_id === item.tabId);
+      const startedAt = Date.parse(clean(item.startTime));
+      const candidates = [...pending.values()].filter(receipt => receipt.tab_id === item.tabId
+        && Number.isFinite(startedAt) && startedAt >= receipt.registered_at - 1_000
+        && extensionOf(item.filename) === receipt.expected_format
+        && exactGodelDownloadSource(item, receipt.source_origin));
       if (candidates.length !== 1) return null;
       const receipt = candidates[0];
       if (downloadToReceipt.has(item.id)) throw new Error("Download ID is already bound to another workflow");
       pending.delete(receipt.receipt_id);
       receipt.state = "created";
       receipt.download_id = item.id;
+      receipt.created_at = now();
       downloadToReceipt.set(item.id, receipt.receipt_id);
       return structuredClone(receipt);
     }
@@ -157,12 +199,13 @@
     }
 
     function complete(item) {
+      expire();
       const receiptId = downloadToReceipt.get(item?.id);
       if (!receiptId) return null;
       const receipt = receipts.get(receiptId);
       if (receipt.state === "verified" || receipt.state === "failed") return structuredClone(receipt);
       const ext = extensionOf(item.filename);
-      const mime = lower(item.mime);
+      const mime = normalizedMime(item.mime);
       const size = Math.max(Number(item.fileSize) || 0, Number(item.totalBytes) || 0, Number(item.bytesReceived) || 0);
       let failure = null;
       if (item.state !== "complete") failure = item.error ? `browser:${item.error}` : "browser_download_not_complete";
@@ -181,6 +224,7 @@
     }
 
     function get(receiptId) {
+      expire();
       const value = receipts.get(clean(receiptId));
       return value ? structuredClone(value) : null;
     }
@@ -194,7 +238,13 @@
       if (!Array.isArray(values)) return;
       for (const stored of values) {
         if (!stored || typeof stored !== "object" || !clean(stored.receipt_id)) continue;
-        if (!surfaces[upper(stored.command)] || !["registered", "created", "verified", "failed"].includes(stored.state)) continue;
+        const surface = surfaces[upper(stored.command)];
+        if (!surface || !["registered", "created", "verified", "failed"].includes(stored.state)) continue;
+        try { validateProof(surface, upper(stored.command)); } catch { continue; }
+        if (!surface.formats.includes(lower(stored.expected_format))
+            || !surface.live_proof.formats.includes(lower(stored.expected_format))
+            || stored.source_origin !== GODEL_ORIGIN || !Number.isInteger(stored.tab_id)
+            || stored.overwrite_policy !== "uniquify") continue;
         const receipt = structuredClone(stored);
         receipts.set(receipt.receipt_id, receipt);
         if (receipt.state === "registered") pending.set(receipt.receipt_id, receipt);
@@ -210,10 +260,15 @@
 
   return {
     DOWNLOAD_SURFACES,
+    DEFAULT_COMPLETION_TTL_MS,
     GODEL_ORIGIN,
     MIME_BY_EXTENSION,
     createDownloadReceiptManager,
+    displayFilename,
+    exactGodelDownloadSource,
     extensionOf,
+    normalizedMime,
+    verifiedDownloadMessage,
     validateRegistration
   };
 });

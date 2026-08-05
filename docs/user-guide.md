@@ -51,6 +51,8 @@ This is the exact enabled nested-control list. It is checked against the runtime
 - HMS.comparison.configure
 <!-- enabled-controls:end -->
 
+Direct chart requests preserve Godel's six documented native CLI intervals: `1m`, `5m`, `15m`, `30m`, `1h`, and `1d`. They compile locally in ordinary spoken orders—“a five-minute Apple chart,” “Apple five-minute chart,” or “a chart for Apple, five-minute”—and are passed to `G` as explicit arguments. Jarvis never converts one of these requests into an interval-free chart.
+
 There are also three legacy runtime adapters not promoted into that newer contract snapshot. GF is authenticated-live for company/metric/range/estimates/periodicity/layout/currency; HALT is authenticated-live for All/Active/Resumed; and GR retains a partial legacy allowlist for legs, period and statistical controls but is marked `existing-runtime-unverified` by its newer strict compiler. The exact registry list above and this legacy distinction are both important: the first must never overclaim, while the second prevents proven working features from disappearing from the user guide.
 
 The machine-readable capability contracts in `catalog/` record completion conditions and current limitations for each action family.
@@ -101,9 +103,9 @@ Examples:
 - “Close the Meta earnings matrix, then open Meta's options chain on the right.”
 - “Keep my existing windows and add Nvidia news in the bottom right.”
 
-Supported placements are left, right, top, bottom, all four corners, and full screen. Presets are research, market, comparison, options, grid, and focus. The preset arranges windows created by that request; existing windows are preserved. Rearranging every pre-existing window in one instruction is not yet implemented.
+Supported placements are left, right, top, bottom, all four corners, and full screen. Presets are research, market, comparison, options, grid, and focus. The preset arranges windows created by that request. Panels outside the reserved Voice screen are preserved; an ordinary new request replaces prior safe Voice-screen panels unless you explicitly say “keep” or “alongside.” Rearranging every pre-existing window in one instruction is not yet implemented.
 
-When a new screen is requested, Jarvis reuses an empty Voice/Blank screen before creating another and can apply the requested name. Godel's eight-screen limit is respected. Some Godel panels are singletons: when one already exists on another screen, Jarvis can temporarily borrow that exact panel for a Voice workflow and then restore its original screen, order, focus, and geometry. Arbitrary user-directed transfers such as “move this chart to the Macro screen,” closing an entire screen, and duplicating a panel are not voice operations.
+When a new screen is requested, Jarvis reuses an empty Voice/Blank screen before creating another. The workspace keeps the reserved name **Voice**; arbitrary spoken screen names are not applied. Godel's eight-screen limit is respected. Some Godel panels are singletons: when one already exists on another screen, Jarvis can temporarily borrow that exact panel for a Voice workflow and then restore its original screen, order, focus, and geometry. Arbitrary user-directed transfers such as “move this chart to the Macro screen,” closing an entire screen, and duplicating a panel are not voice operations.
 
 ## Follow-up commands
 
@@ -135,7 +137,7 @@ The examples below are intentionally conservative. **Working open** means Jarvis
 | `Q` | “How is Nvidia trading after hours?” | Grounded timestamped quote header; no window opens |
 | `DES` | “Open Amazon's company overview.” | Working open |
 | `FOCUS` | “Put Bitcoin in a distraction-free quote window.” | Working open |
-| `G` | “Open a one-hour Nvidia chart.” | Working open + verified 1-hour nested interval |
+| `G` | “Open a five-minute Nvidia chart.” | Zero-model native CLI open for 1m, 5m, 15m, 30m, 1h and 1d; the interval is preserved across natural word orders |
 | `GF` | “Compare Amazon, Meta and Microsoft revenue for five years with estimates.” | Working + configured; data-dependent |
 | `EM` | “Open Microsoft's earnings matrix.” / “Show Meta P/E multiples.” | Working open + grounded next-four-quarter P/E narration |
 | `ERN` | “Show Nvidia earnings estimates.” | Working open |
@@ -241,7 +243,7 @@ Jarvis does not trade, connect or disconnect brokerages, alter billing, change s
 
 No voice download is enabled today: this is not yet a fully verified saved-file workflow. The nine modeled surfaces are FA XLSX/JSON, HP XLSX/JSON, EQS CSV/JSON, IPO XLSX, News article PDF, chart image, and unresolved-format ANR, HDS and GF exports. Export-looking controls in other panels are not treated as downloads.
 
-The receipt architecture must register the workflow, step, panel, command, requested format and source tab before activating a control. It then requires a completed non-empty file, matching extension/MIME and a unique filename; it never silently overwrites. Only a verified receipt may announce “downloaded” and name the file. The attempted IPO XLSX live proof failed to establish a trustworthy completed artifact, so IPO remains disabled along with the other eight surfaces.
+The receipt architecture must register the workflow, step, panel, command, requested format and source tab before activating a control. It binds only a post-registration download created by that exact tab from the Godel origin, forces Chromium's `uniquify` conflict policy, and requires a completed non-empty file with matching extension and MIME. Registrations and unfinished artifacts expire safely. Only a verified receipt may announce “downloaded,” and its spoken reply names only the file—not its absolute path. The attempted IPO XLSX live proof failed to establish a trustworthy completed artifact, so IPO remains disabled along with the other eight surfaces. A generic “download this data” request may open a verified native export menu, but Jarvis says “Export menu opened”; it never claims that a file was saved.
 
 ## VoiceInk and model setup
 
@@ -312,7 +314,7 @@ That is expected: all nine download surfaces are disabled until a command-specif
 
 ### The screen is crowded
 
-Say “create a new screen with…” or explicitly place panels in zones. Jarvis preserves existing windows by default and will not silently close them to make space.
+Say “create a new screen with…” or explicitly place panels in zones. Jarvis preserves panels outside its reserved Voice workspace. Inside Voice, say “keep” or “alongside” when you want existing Jarvis panels retained; otherwise an ordinary new request replaces them.
 
 ### Jarvis is silent
 

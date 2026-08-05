@@ -25,13 +25,19 @@ test("compiles a complex contextual chart followup without claiming execution", 
   assert.equal(result.executable_actions.length, 0);
 });
 
-test("enables only the independently proven contextual one-hour chart change", () => {
+test("enables only the proven one-hour resolution and keeps other implementations gated", () => {
   const hourly = compileChartOptionsFollowup({ command: "G", target: { mode: "focused", command: "G", security: "AAPL" } }, "uh make it hourly");
   assert.equal(hourly.ready_for_live_executor, true);
   assert.deepEqual(compact(hourly), [{ feature: "resolution", operation: "select", value: "1h" }]);
   assert.equal(hourly.actions[0].capability_state, "live-verified");
-  const daily = compileChartOptionsFollowup("G", "make it daily");
-  assert.equal(daily.ready_for_live_executor, false);
+  for (const [phrase, value] of [["one minute", "1m"], ["five minutes", "5m"], ["fifteen minutes", "15m"], ["thirty minutes", "30m"], ["daily", "1d"]]) {
+    const candidate = compileChartOptionsFollowup("G", `make it ${phrase}`);
+    assert.equal(candidate.ready_for_live_executor, false, phrase);
+    assert.deepEqual(compact(candidate), [{ feature: "resolution", operation: "select", value }]);
+    assert.equal(candidate.actions[0].capability_state, "runtime-candidate-pending-live-proof");
+    assert.match(candidate.actions[0].evidence, /Arc proof pending/);
+    assert.match(candidate.blockers.join(" "), /pending exact live proof/);
+  }
 });
 
 test("blocks guessed TradingView indicators", () => {
@@ -140,7 +146,7 @@ test("inventory and parser cover exactly the audited command families", () => {
     assert.ok(command.voice.length > 0, command.command);
     assert.ok(command.evidence.length > 0, command.command);
     for (const action of command.actions) {
-      assert.match(action.state, /source-verified|documented-unbound|live-observed|blocked-live/);
+      assert.match(action.state, /source-verified|documented-unbound|live-observed|blocked-live|runtime-candidate/);
       assert.match(action.completion, /\S/);
     }
   }

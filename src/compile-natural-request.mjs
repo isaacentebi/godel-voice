@@ -1,4 +1,4 @@
-import { encodeControlFollowup } from "./control-followup.mjs";
+import { deterministicClarification, encodeControlFollowup } from "./control-followup.mjs";
 import { compileVoiceWorkflow } from "./compiler.mjs";
 import { compileWorkflowWithValidatedFallback } from "./model-routing.mjs";
 import { encodeWorkflowPlan } from "./workflow-plan.mjs";
@@ -17,6 +17,8 @@ export async function compileNaturalRequest(value, {
   fallbackProviderOnly = process.env.VOICE_LLM_FALLBACK_PROVIDER_ONLY || process.env.OPENROUTER_PROVIDER_ONLY || null
 } = {}) {
   const request = cleanRequest(value);
+  const localClarification = deterministicClarification(request);
+  if (localClarification) return { kind: "clarify", message: localClarification, route: "local", inference: null };
   const fastMarker = encodeControlFollowup(request, context);
   if (fastMarker) return { kind: "execute", marker: fastMarker, route: "local", inference: null };
 
