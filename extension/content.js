@@ -23,6 +23,8 @@
     HALT: ["MARKET HALTS", "HALT"],
     TRAN: ["TRANSCRIPT HUB", "TRANSCRIPTS", "EARNINGS TRANSCRIPTS", "TRAN"],
     CF: ["COMPANY FILINGS", "SEC FILINGS", "FILINGS", "CF"],
+    ANR: ["ANALYST RATINGS"],
+    DVD: ["DIVIDEND YIELD"],
     MOST: ["MOST ACTIVE", "MOST"],
     WEI: ["WORLD EQUITY INDEX", "WEI"],
     WEIF: ["WORLD EQUITY INDEX FUTURES", "WEIF"],
@@ -35,7 +37,7 @@
     G: "CHART", N: "NEWS", OMON: "OPTION_MONITOR", EQS: "EQUITY_SCREENER",
     FA: "FINANCIAL_ANALYSIS", HALT: "MARKET_HALTS", TRAN: "TRANSCRIPTS", CF: "COMPANY_FILINGS",
     MOST: "MOST_ACTIVE", WEI: "WORLD_EQUITY_INDEX", WEIF: "WORLD_EQUITY_INDEX_FUTURES",
-    HDS: "HOLDERS", SECF: "SECURITIES_FINDER"
+    HDS: "HOLDERS", SECF: "SECURITIES_FINDER", ANR: "ANALYST_RATINGS", DVD: "DIVIDEND_YIELD"
   };
   const COMMAND_NAMES = {
     IMAP: "intraday market map",
@@ -44,7 +46,8 @@
     G: "price chart", N: "news", OMON: "options chain", EQS: "equity screener",
     FA: "financial analysis", HALT: "market halts", TRAN: "earnings transcripts",
     CF: "company filings", MOST: "most active stocks", WEI: "world equity indices",
-    WEIF: "world equity-index futures", HDS: "institutional holders", SECF: "securities finder"
+    WEIF: "world equity-index futures", HDS: "institutional holders", SECF: "securities finder",
+    ANR: "analyst ratings", DVD: "dividend yield"
   };
   const SECURITY_NAMES = { META: "Meta", AMZN: "Amazon", MSFT: "Microsoft", AAPL: "Apple", GOOG: "Google", GOOGL: "Google", QQQ: "QQQ", VIX: "VIX" };
   const mainWorldReady = runtimeMessage({ type: "godel-voice:inject-main" })
@@ -241,12 +244,9 @@
   function windowForCommand(command) {
     const roots = windowRoots();
     const typed = roots.filter(root =>
-      String(root.getAttribute("data-cy-command-type") ?? "").toUpperCase() === command);
-    const titles = PANEL_TITLES[command] ?? [];
-    const candidates = typed.length ? typed : roots.filter(root => {
-      const text = compactText(root.textContent).toUpperCase();
-      return titles.some(title => text.includes(title));
-    });
+      [command, COMMAND_WINDOW_TYPES[command]].includes(
+        String(root.getAttribute("data-cy-command-type") ?? "").toUpperCase()));
+    const candidates = typed.length ? typed : roots.filter(root => panelMatchesCommand(root, command));
     return candidates
       .sort((a, b) => (Number.parseInt(getComputedStyle(b).zIndex, 10) || 0)
         - (Number.parseInt(getComputedStyle(a).zIndex, 10) || 0))[0] ?? null;
@@ -255,8 +255,21 @@
   function panelMatchesCommand(panel, command) {
     const type = String(panel.getAttribute("data-cy-command-type") ?? "").toUpperCase();
     if (type === command || type === COMMAND_WINDOW_TYPES[command]) return true;
-    const text = compactText(panel.textContent).toUpperCase();
-    return (PANEL_TITLES[command] ?? []).some(title => text.includes(title));
+    return panelTitleNodes(command).some(title => {
+      const titleRoot = rootForTitle(title);
+      return panel === title || panel.contains(title) || titleRoot === panel
+        || (titleRoot && nativeWindowRoot(titleRoot) === panel);
+    });
+  }
+
+  function panelMatchesTerminalIdentity(panel, identity) {
+    if (!identity) return true;
+    const expected = `${identity.security} ${identity.venue}`;
+    if ([...panel.querySelectorAll("input")].some(input => visible(input)
+      && String(input.value ?? "").trim().toUpperCase() === expected)) return true;
+    const escapedSecurity = identity.security.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const escapedVenue = identity.venue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`\\b${escapedSecurity}\\s+${escapedVenue}\\b`, "i").test(compactText(panel.textContent));
   }
 
   function contextPanel(panel) {
@@ -1895,10 +1908,18 @@
           ...panelTitleNodes(plan.command).map(rootForTitle).filter(Boolean)
         ])];
         const exactReused = visibleCommandRoots.find(root => panelMatchesCommand(root, plan.command)
-          && [...root.querySelectorAll("input")].some(input => visible(input)
-            && String(input.value ?? "").trim().toUpperCase() === `${identity.security} ${identity.venue}`));
+          && panelMatchesTerminalIdentity(root, identity));
         if (exactReused) return exactReused;
+      } else {
+        // Several global Godel surfaces (notably HMAP) are singletons. Their
+        // command focuses the existing window without creating a node or
+        // reliably updating data-cy-active-window. Reuse only one exact native
+        // command match; ambiguity still fails closed.
+        const exactSingleton = windowRoots().filter(root => panelMatchesCommand(root, plan.command));
+        if (exactSingleton.length === 1) return exactSingleton[0];
       }
+      const activeReused = activeWindowForCommand(plan.command);
+      if (activeReused && panelMatchesTerminalIdentity(activeReused, identity)) return activeReused;
       // The first instance of a command may be mounted in a restored native
       // root. Once an instance already exists, accepting that old active root
       // would bind facts and geometry to the wrong window.
@@ -1962,27 +1983,30 @@
     await Promise.all(planned.placements.map(async placement => {
       const openedPanel = opened.find(item => item.step.id === placement.id);
       if (!openedPanel) return;
-      if (openedPanel.windowId) {
-        await workspaceInternalAction("setWindowGeometry", { id: openedPanel.windowId, rect: placement.rect });
-        return;
+      const identity = terminalPanelIdentity(openedPanel.step.terminal_command);
+      let candidates = windowRoots().filter(root => panelMatchesCommand(root, openedPanel.step.command));
+      if (identity) {
+        const exact = candidates.filter(root => panelMatchesTerminalIdentity(root, identity));
+        if (exact.length) candidates = exact;
       }
-      let livePanel = nativeWindowRoot(openedPanel.panel);
+      candidates.sort((a, b) => {
+        const activeA = a.getAttribute("data-cy-active-window") !== null
+          && a.getAttribute("data-cy-active-window") !== "false" ? 1 : 0;
+        const activeB = b.getAttribute("data-cy-active-window") !== null
+          && b.getAttribute("data-cy-active-window") !== "false" ? 1 : 0;
+        if (activeA !== activeB) return activeB - activeA;
+        const az = Number.parseInt(getComputedStyle(a).zIndex, 10) || 0;
+        const bz = Number.parseInt(getComputedStyle(b).zIndex, 10) || 0;
+        return bz - az;
+      });
+      let livePanel = candidates[0] ?? null;
       if (!livePanel) {
-        const identity = terminalPanelIdentity(openedPanel.step.terminal_command);
-        let candidates = windowRoots().filter(root => panelMatchesCommand(root, openedPanel.step.command));
-        if (identity) {
-          const exact = candidates.filter(root => [...root.querySelectorAll("input")].some(input => visible(input)
-            && String(input.value ?? "").trim().toUpperCase() === `${identity.security} ${identity.venue}`));
-          if (exact.length) candidates = exact;
-        }
-        candidates.sort((a, b) => {
-          const az = Number.parseInt(getComputedStyle(a).zIndex, 10) || 0;
-          const bz = Number.parseInt(getComputedStyle(b).zIndex, 10) || 0;
-          return bz - az;
-        });
-        livePanel = candidates[0] ?? null;
+        livePanel = nativeWindowRoot(openedPanel.panel);
       }
       if (!livePanel) throw new Error(`Godel ${openedPanel.step.command} live window is unavailable for layout`);
+      // Target the exact rendered native window. Godel's active-screen list can
+      // lag behind its DOM after opening or reusing a window, which caused a
+      // valid visible panel to be rejected as "not on the active screen".
       await panelInternalAction(livePanel, "LAYOUT", "setGeometry", placement.rect);
     }));
   }
@@ -2235,8 +2259,7 @@
         else {
           const panel = await executeCommandPlan(step, { capturePanel: true, announce: false });
           if (panel) {
-            const activeIds = await workspaceInternalAction("activeWindowIds").catch(() => []);
-            opened.push({ step, panel, windowId: activeIds[0] ?? null });
+            opened.push({ step, panel });
             grounded.push({ step, panel });
           }
         }

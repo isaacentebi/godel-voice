@@ -39,6 +39,18 @@ test("command and nested-action execution use rendered postconditions instead of
   assert.match(content, /panelInternalAction\(panel, "GF", "addCompany"/);
 });
 
+test("panel identity uses exact native types or exact rendered titles", () => {
+  const content = read("extension/content.js");
+  assert.match(content, /ANR: \["ANALYST RATINGS"\]/);
+  assert.match(content, /ANR: "ANALYST_RATINGS"/);
+  assert.match(content, /panelTitleNodes\(command\)\.some/);
+  assert.match(content, /panelMatchesTerminalIdentity\(root, identity\)/);
+  assert.match(content, /activeReused && panelMatchesTerminalIdentity\(activeReused, identity\)/);
+  assert.match(content, /const exactSingleton = windowRoots\(\)\.filter\(root => panelMatchesCommand\(root, plan\.command\)\)/);
+  assert.match(content, /if \(exactSingleton\.length === 1\) return exactSingleton\[0\]/);
+  assert.doesNotMatch(content, /titles\.some\(title => text\.includes\(title\)\)/);
+});
+
 test("page-world panel actions synchronize their exact DOM target across isolated worlds", () => {
   const content = read("extension/content.js");
   const mainWorld = read("extension/main-world.js");
@@ -71,9 +83,21 @@ test("workflow layout failures retain completed step timings and an exact layout
   assert.match(content, /operation: "layout"/);
   assert.match(content, /status: "skipped"/);
   assert.match(content, /I couldn't finish the requested placement/);
-  assert.match(content, /workspaceInternalAction\("setWindowGeometry"/);
+  assert.match(content, /panelInternalAction\(livePanel, "LAYOUT", "setGeometry"/);
   assert.match(content, /const root = windowRoots\(\)\[0\] \?\? document\.documentElement/);
   assert.match(mainWorld, /action === "setWindowGeometry"/);
+});
+
+test("workflow layout binds geometry to the exact panel returned by each command", () => {
+  const content = read("extension/content.js");
+  assert.match(content, /opened\.push\(\{ step, panel \}\)/);
+  assert.doesNotMatch(content, /windowId: activeIds\[0\]/);
+  assert.match(content, /candidates\.filter\(root => panelMatchesTerminalIdentity\(root, identity\)\)/);
+  assert.match(content, /windowRoots\(\)\.filter\(root => panelMatchesCommand\(root, openedPanel\.step\.command\)\)/);
+  assert.match(content, /let livePanel = candidates\[0\] \?\? null/);
+  assert.match(content, /if \(!livePanel\) \{\s*livePanel = nativeWindowRoot\(openedPanel\.panel\)/);
+  assert.doesNotMatch(content, /workspaceInternalAction\("setWindowGeometry"/);
+  assert.match(content, /panelInternalAction\(livePanel, "LAYOUT", "setGeometry", placement\.rect\)/);
 });
 
 test("workflow lease suppresses the browser start voice when premium speech is available", () => {

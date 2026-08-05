@@ -160,6 +160,10 @@ test("plain high-frequency opens compile locally without an LLM", () => {
   assert.deepEqual(pair.steps.map(step => step.terminal_command), ["HMAP", "AMZN US EQ EM"]);
   assert.equal(pair.layout.preset, "grid");
 
+  const ratingsDesk = parseControlFollowup("open the heatmap and Amazon analyst ratings");
+  assert.deepEqual(ratingsDesk.steps.map(step => step.terminal_command), ["HMAP", "AMZN US EQ ANR"]);
+  assert.equal(ratingsDesk.layout.preset, "grid");
+
   assert.equal(parseControlFollowup("open the heatmap and compare Amazon with Meta"), null);
 });
 

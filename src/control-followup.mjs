@@ -22,6 +22,7 @@ const targetCommands = [
   ["world venue map", "MAP"], ["world map", "MAP"],
   ["securities finder", "SECF"], ["security finder", "SECF"],
   ["company description", "DES"], ["company profile", "DES"],
+  ["analyst ratings", "ANR"], ["broker ratings", "ANR"],
   ["analyst estimates", "ERN"], ["earnings estimates", "ERN"],
   ["financials", "FA"], ["earnings transcript", "TRAN"], ["earnings calls", "TRAN"], ["earnings call", "TRAN"], ["transcript", "TRAN"], ["filings", "CF"]
   , ["institutional holders", "HDS"], ["holders window", "HDS"], ["ownership window", "HDS"]
@@ -46,7 +47,7 @@ const commonSecurities = [
   ["eli lilly", "LLY"], ["lilly", "LLY"], ["chipotle", "CMG"], ["unity", "U"],
   ["corsair", "CRSR"], ["sandisk", "SNDK"]
 ];
-const directSecurityOpen = new Set(["EM", "G", "DES", "ERN", "HDS", "OMON", "GF", "FA", "TRAN", "CF"]);
+const directSecurityOpen = new Set(["EM", "G", "DES", "ANR", "ERN", "HDS", "OMON", "GF", "FA", "TRAN", "CF"]);
 const directGlobalOpen = new Set(["HMAP", "HALT", "MOST", "WEI", "WEIF", "MAP", "EQS"]);
 const directOpenModifier = /\b(?:with|as|set|change|switch|compare|versus|vs|download|export|close|move|put|place|bigger|smaller|table|active|resumed|all|metric|multiple|revenue|ebit|ebitda|margin|growth)\b/;
 
