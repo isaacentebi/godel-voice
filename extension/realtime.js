@@ -491,6 +491,7 @@
 
   async function start({ reconnecting = false } = {}) {
     if (peer) return;
+    if (!reconnecting) window.dispatchEvent(new CustomEvent("godel-voice:session-started"));
     wantsActive = true;
     const runGeneration = ++generation;
     render("connecting", reconnecting ? `Reconnecting · ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}` : null);
@@ -576,6 +577,9 @@
     if (closingSession) api("/realtime/close", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: closingSession, reason })
     }).catch(() => {});
+    if (reason === "manual_toggle" && !preserveIntent) {
+      window.dispatchEvent(new CustomEvent("godel-voice:cleanup-request"));
+    }
     render(nextState, message);
   }
 

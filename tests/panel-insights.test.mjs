@@ -12,6 +12,18 @@ test("chart completion narrates only the exact Godel quote-header shape", () => 
   assert.equal(insights.extractChartQuote("CHART axis 593.20 500.00 400.00"), null);
 });
 
+test("Q completion requires Godel's full timestamped quote-header shape", () => {
+  const text = "AMZN US $277.94 -6.08 -2.14% Vol 69.7M B 277.80 x 359 / 278.00 x 1,310 A At: 17:59:53";
+  assert.deepEqual(insights.extractQuickQuote(text, "AMZN"), {
+    security: "AMZN", venue: "US", price: "$277.94", direction: "down", percent: "2.14%",
+    change: "-6.08", volume: "69.7M", bid: "277.80", bidSize: "359", ask: "278.00", askSize: "1,310", at: "17:59:53"
+  });
+  assert.equal(insights.extractQuickQuote(text, "META"), null);
+  assert.equal(insights.extractQuickQuote(text.replace("AMZN US", "AMZNUS"), "AMZN").venue, "US");
+  assert.equal(insights.completionFact("Q", text, "Amazon"), "Godel shows Amazon at $277.94, down 2.14%, as of 17:59:53.");
+  assert.equal(insights.extractQuickQuote("AMZN US $277.94 -6.08 -2.14% Vol 69.7M"), null);
+});
+
 test("EM completion reads exact Multiples rows with semantic units", () => {
   const text = "EM Multiples P/E Multiple :: Last 4Q = 22.6x ;; Next 4Q = 30.0x ;; FY 2026 = 23.2x";
   const multiple = insights.extractEMValuation(text);

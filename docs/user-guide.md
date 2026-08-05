@@ -132,7 +132,7 @@ The examples below are intentionally conservative. **Working open** means Jarvis
 
 | Command | Say something like | Status |
 |---|---|---|
-| `Q` | “Give me a quick quote for Nvidia.” | Working open |
+| `Q` | “How is Nvidia trading after hours?” | Grounded timestamped quote header; no window opens |
 | `DES` | “Open Amazon's company overview.” | Working open |
 | `FOCUS` | “Put Bitcoin in a distraction-free quote window.” | Working open |
 | `G` | “Open a one-hour Nvidia chart.” | Working open + verified 1-hour nested interval |

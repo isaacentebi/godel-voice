@@ -122,6 +122,18 @@ test("natural stock price questions use a grounded chart surface", () => {
   assert.equal(followup.steps[0].terminal_command, "META US EQ G");
 });
 
+test("after-hours and premarket questions use Godel's grounded Q header", () => {
+  for (const voice of [
+    "How is Amazon doing after hours? Can you check?",
+    "show me Meta's after-hours quote",
+    "tell me Microsoft's premarket price"
+  ]) {
+    const step = parseControlFollowup(voice).steps[0];
+    assert.equal(step.command, "Q", voice);
+    assert.match(step.terminal_command, /^(AMZN|META|MSFT) US EQ Q$/, voice);
+  }
+});
+
 test("VoiceInk forward-P/E variants route to the grounded earnings matrix", () => {
   for (const voice of [
     "now can we see forward p for meta",

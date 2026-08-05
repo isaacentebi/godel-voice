@@ -61,6 +61,23 @@ test("Jarvis replaces safe windows only inside its dedicated Voice screen", () =
   assert.doesNotMatch(content, /localStorage\.clear|sessionStorage\.clear/);
 });
 
+test("manual Jarvis shutdown cleans only its Voice-screen windows and aborts across a new session", () => {
+  const realtime = fs.readFileSync(new URL("../extension/realtime.js", import.meta.url), "utf8");
+  assert.match(realtime, /godel-voice:session-started/);
+  assert.match(realtime, /reason === "manual_toggle"[\s\S]{0,180}godel-voice:cleanup-request/);
+  assert.match(content, /const requestedEpoch = jarvisSessionEpoch/);
+  assert.match(content, /requestedEpoch !== jarvisSessionEpoch \|\| running/);
+  assert.match(content, /await closeVoiceScreenPanels\(\)/);
+});
+
+test("Q authenticates the strict quote signature across changing Godel header component boundaries", () => {
+  assert.match(content, /typeof panelInsights\.extractQuickQuote === "function"/);
+  assert.match(content, /quickQuoteFacts\(document\.body\?\.innerText, expectedSecurity\)/);
+  assert.match(content, /Arc can keep the previous/);
+  assert.match(content, /return header;/);
+  assert.doesNotMatch(content, /rememberManagedPanel\(header\)/);
+});
+
 test("empty-screen recovery never renames a named user screen", () => {
   assert.match(bridge, /tabs\.items\.find\(item => item\.title\.toLowerCase\(\) === title\.toLowerCase\(\)\)/);
   assert.match(bridge, /tabs\.items\.find\(item => item\.title\.toLowerCase\(\) === "blank"\)/);

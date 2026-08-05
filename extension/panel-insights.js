@@ -128,6 +128,32 @@
     };
   }
 
+  function extractQuickQuote(text, expectedSecurity = null) {
+    const source = clean(text);
+    // Q updates Godel's global quote header instead of creating a window. The
+    // full price/change/volume/bid/ask/timestamp shape is required so a watch
+    // list row or stale chart value can never be narrated as a fresh quote.
+    const match = /(?:^|\s)([A-Z][A-Z0-9.-]{0,9})\s*(US|LN|CN|AU|JP|GR|FP|IM|SM|SW|NA|BB|HK|CBOE|CME|GBL|FX1)\s+([$€£])?([0-9][0-9,]*(?:\.[0-9]+)?)\s*([+-])\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*([+-])\s*([0-9]+(?:\.[0-9]+)?)%\s*Vol\s+([0-9][0-9,.]*[KMBT]?)\s+B\s+([0-9][0-9,]*(?:\.[0-9]+)?)\s+x\s+([0-9][0-9,]*)\s*\/\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s+x\s+([0-9][0-9,]*)\s+A\s+At:\s*([0-9]{1,2}:[0-9]{2}:[0-9]{2})\b/i.exec(source);
+    if (!match) return null;
+    const security = match[1].toUpperCase();
+    if (expectedSecurity && security !== String(expectedSecurity).toUpperCase()) return null;
+    const price = number(match[4]);
+    const change = number(match[6]);
+    const percent = number(match[8]);
+    if (price == null || change == null || percent == null || price < 0 || percent > 1000) return null;
+    const currency = match[3] ?? "";
+    return {
+      security,
+      venue: match[2].toUpperCase(),
+      price: `${currency}${price.toLocaleString("en-US", { maximumFractionDigits: 8 })}`,
+      direction: match[7] === "-" ? "down" : "up",
+      percent: `${percent.toLocaleString("en-US", { maximumFractionDigits: 4 })}%`,
+      change: `${match[5] === "-" ? "-" : "+"}${change.toLocaleString("en-US", { maximumFractionDigits: 8 })}`,
+      volume: match[9],
+      bid: match[10], bidSize: match[11], ask: match[12], askSize: match[13], at: match[14]
+    };
+  }
+
   function extractTRANResearch(text) {
     const source = String(text ?? "");
     const prefix = "TRAN Research :: ";
@@ -198,6 +224,11 @@
       // has an independently verified freshness timestamp.
       return null;
     }
+    if (code === "Q") {
+      const quote = extractQuickQuote(text);
+      if (!quote) return null;
+      return `Godel shows ${label} at ${quote.price}, ${quote.direction} ${quote.percent}, as of ${quote.at}.`;
+    }
     if (code === "TRAN") {
       const research = extractTRANResearch(text);
       if (!research) return null;
@@ -222,5 +253,5 @@
     return null;
   }
 
-  return { clean, extractForwardPE, extractHaltCounts, extractDescriptionPE, extractEMPE, extractEMValuation, extractChartQuote, extractTRANResearch, completionFact };
+  return { clean, extractForwardPE, extractHaltCounts, extractDescriptionPE, extractEMPE, extractEMValuation, extractChartQuote, extractQuickQuote, extractTRANResearch, completionFact };
 });

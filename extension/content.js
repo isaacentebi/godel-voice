@@ -117,6 +117,40 @@
 
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+  function quickQuoteFacts(text, expectedSecurity = null) {
+    if (typeof panelInsights.extractQuickQuote === "function") {
+      const shared = panelInsights.extractQuickQuote(text, expectedSecurity);
+      if (shared) return shared;
+    }
+    // Backward-compatible rolling-update fallback. Arc can keep the previous
+    // isolated-world helper object alive briefly after reloading an unpacked
+    // extension even though the new executor script is active.
+    const source = compactText(text);
+    const match = /(?:^|\s)([A-Z][A-Z0-9.-]{0,9})\s*(US|LN|CN|AU|JP|GR|FP|IM|SM|SW|NA|BB|HK|CBOE|CME|GBL|FX1)\s+([$€£])?([0-9][0-9,]*(?:\.[0-9]+)?)\s*[+-]\s*[0-9][0-9,]*(?:\.[0-9]+)?\s*([+-])\s*([0-9]+(?:\.[0-9]+)?)%\s*Vol\s+[0-9][0-9,.]*[KMBT]?\s+B\s+[0-9][0-9,]*(?:\.[0-9]+)?\s+x\s+[0-9][0-9,]*\s*\/\s*[0-9][0-9,]*(?:\.[0-9]+)?\s+x\s+[0-9][0-9,]*\s+A\s+At:\s*([0-9]{1,2}:[0-9]{2}:[0-9]{2})\b/i.exec(source);
+    if (!match) return null;
+    const security = match[1].toUpperCase();
+    if (expectedSecurity && security !== String(expectedSecurity).toUpperCase()) return null;
+    return {
+      security, venue: match[2].toUpperCase(), price: `${match[3] ?? ""}${match[4]}`,
+      direction: match[5] === "-" ? "down" : "up", percent: `${match[6]}%`, at: match[7]
+    };
+  }
+
+  function quickQuoteHeader(expectedSecurity) {
+    const candidates = [...document.querySelectorAll("header,section,div")]
+      .filter(element => visible(element) && String(element.innerText ?? "").length <= 420)
+      .map(element => ({ element, quote: quickQuoteFacts(element.innerText, expectedSecurity) }))
+      .filter(item => item.quote)
+      .sort((left, right) => String(left.element.innerText).length - String(right.element.innerText).length);
+    if (candidates[0]?.element) return candidates[0].element;
+    // Some Godel releases split the symbol and market data across sibling
+    // React roots under the navigation shell. The full signature is strict
+    // enough to authenticate against the visible page without assuming that
+    // private component boundary.
+    return quickQuoteFacts(document.body?.innerText, expectedSecurity)
+      ? document.body : null;
+  }
+
   function persistManagedWindowIds() {
     sessionStorage.setItem(managedWindowStorageKey, JSON.stringify([...managedWindowIds].slice(-32)));
   }
@@ -1989,6 +2023,25 @@
     await press("Enter");
     markPhase("command_submit_ms", phaseStartedAt);
 
+    if (plan.command === "Q") {
+      phaseStartedAt = performance.now();
+      const security = terminalSecurity(terminalCommand);
+      let header;
+      try {
+        header = await waitUntil(() => quickQuoteHeader(security), `updated ${security ?? "security"} quote header`, 2000);
+      } catch (error) {
+        const pageText = compactText(document.body?.innerText);
+        const offset = Math.max(0, pageText.toUpperCase().indexOf(String(security ?? "").toUpperCase()));
+        const excerpt = pageText.slice(offset, offset + 240);
+        throw new Error(`${error.message}${excerpt ? ` (${excerpt})` : ""}`);
+      }
+      markPhase("quote_header_ms", phaseStartedAt);
+      phases.total_ms = Math.max(0, Math.round(performance.now() - commandStartedAt));
+      panelCommandTimings.set(header, phases);
+      if (announce) toast("Godel Voice: quote updated");
+      return header;
+    }
+
     phaseStartedAt = performance.now();
     let panel = await waitFor(() => {
       const newWindow = windowRoots().find(root => !existingWindows.has(windowId(root))
@@ -2362,7 +2415,7 @@
     const grounded = [];
     const failures = [];
     const timings = [];
-    const opensNewPanels = plan.steps.some(step => step.kind === "command");
+    const opensNewPanels = plan.steps.some(step => step.kind === "command" && step.command !== "Q");
     if (opensNewPanels && plan.layout.preserve_existing === false) {
       await ensureNotCancelled(requestId);
       await workspaceInternalAction("createScreen", { name: "Voice" });
@@ -2376,6 +2429,7 @@
       await ensureNotCancelled(requestId);
       toast(`Godel Voice: ${index + 1}/${plan.steps.length} ${step.kind === "control" ? step.operation : step.kind === "configure" ? `configuring ${step.target.command}` : `opening ${step.command}`}`);
       const stepStartedAt = Date.now();
+      let executedPanel = null;
       try {
         if (step.kind === "control") await executeControlStep(step);
         else if (step.kind === "configure") {
@@ -2385,7 +2439,11 @@
         else {
           const beforeWindowIds = await workspaceInternalAction("activeWindowIds").catch(() => []);
           const panel = await executeCommandPlan(step, { capturePanel: true, announce: false });
+          executedPanel = panel;
           if (panel) {
+            if (step.command === "Q") {
+              grounded.push({ step, panel });
+            } else {
             const native = nativeWindowRoot(panel);
             const nativeId = native ? String(windowId(native) ?? "") : "";
             let workspaceWindowError = null;
@@ -2406,13 +2464,14 @@
               ?? null;
             opened.push({ step, panel, workspaceWindowId, workspaceWindowError });
             grounded.push({ step, panel });
+            }
           }
         }
         timings.push({
           step_id: step.id, kind: step.kind, command: step.command ?? step.target?.command, operation: step.operation ?? (step.kind === "configure" ? "configure" : null),
           status: "completed", duration_ms: Date.now() - stepStartedAt,
-          ...(step.kind === "command" && opened.at(-1)?.step === step && panelCommandTimings.get(opened.at(-1).panel)
-            ? { phases: panelCommandTimings.get(opened.at(-1).panel) } : {})
+          ...(step.kind === "command" && executedPanel && panelCommandTimings.get(executedPanel)
+            ? { phases: panelCommandTimings.get(executedPanel) } : {})
         });
       } catch (error) {
         failures.push({ step, error });
@@ -2493,6 +2552,10 @@
       const command = item.step.command ?? item.step.target?.command;
       const security = terminalSecurity(item.step.terminal_command) ?? item.step.target?.security ?? null;
       const company = security ? (SECURITY_NAMES[security] ?? security) : "The company";
+      if (command === "Q") {
+        const quote = quickQuoteFacts(groundedPanelText(command, item.panel, item.step), security);
+        if (quote) return `Godel shows ${company} at ${quote.price}, ${quote.direction} ${quote.percent}, as of ${quote.at}.`;
+      }
       const fact = panelInsights.completionFact(command, groundedPanelText(command, item.panel, item.step), company);
       if (fact) return fact;
     }
@@ -2501,6 +2564,7 @@
 
   function groundedPanelText(command, panel, step = null) {
     if (command === "G") return panel.innerText;
+    if (command === "Q") return panel.innerText;
     if (command === "TRAN") {
       const result = panel.dataset.godelVoiceTranResult;
       return result ? `TRAN Research :: ${result}` : "";
@@ -2727,6 +2791,21 @@
   }
 
   setInterval(poll, 100);
+  let jarvisSessionEpoch = 0;
+  window.addEventListener("godel-voice:session-started", () => { jarvisSessionEpoch += 1; });
+  window.addEventListener("godel-voice:cleanup-request", async () => {
+    const requestedEpoch = jarvisSessionEpoch;
+    for (let attempt = 0; attempt < 700 && running; attempt += 1) await pause(50);
+    if (requestedEpoch !== jarvisSessionEpoch || running) return;
+    try {
+      await workspaceInternalAction("createScreen", { name: "Voice" });
+      await closeVoiceScreenPanels();
+      await publishExecutorContext();
+    } catch {
+      // Session cleanup is best-effort and limited to authenticated safe
+      // windows on the dedicated Voice screen. It must never block shutdown.
+    }
+  });
   // Context is also published immediately after Realtime work. A slower idle
   // cadence avoids repeatedly scanning Godel's large dashboard DOM.
   setInterval(() => publishExecutorContext().catch(() => {}), 2_500);

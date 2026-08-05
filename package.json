@@ -1,6 +1,6 @@
 {
   "name": "godel-voice",
-  "version": "0.11.2",
+  "version": "0.11.4",
   "description": "Voice-first Jarvis interface for Godel Terminal",
   "private": true,
   "license": "MIT",

@@ -81,7 +81,7 @@ const commonSecurities = [
   ["berkshire hathaway", "BRK.B"], ["berkshire", "BRK.B"], ["block", "XYZ"], ["square", "XYZ"]
 ];
 const directSecurityOpen = new Set([
-  "EM", "G", "DES", "ANR", "ERN", "HDS", "HLDR", "OMON", "GF", "FA", "TRAN", "CF",
+  "EM", "G", "Q", "DES", "ANR", "ERN", "HDS", "HLDR", "OMON", "GF", "FA", "TRAN", "CF",
   "SI", "DVD", "TAS", "HCP", "N", "RES", "HP", "PAT", "PRT", "CHAT", "NOTE"
 ]);
 const directGlobalOpen = new Set([
@@ -93,6 +93,11 @@ const directOpenModifier = /\b(?:with|as|set|change|switch|compare|versus|vs|dow
 
 function targetFor(text) {
   const security = commonSecurities.find(([name]) => new RegExp(`\\b${name}\\b`).test(text))?.[1] ?? null;
+  if (security
+      && /\b(?:after[ -]?hours?|pre[ -]?market|before the open)\b/.test(text)
+      && /\b(?:how|doing|trading|price|quote|check|show|tell)\b/.test(text)) {
+    return { mode: "command", command: "Q", security };
+  }
   if (/\btop\b.*\breuters\b.*\b(?:stories|headlines|news)\b/.test(text)
       || /\breuters\b.*\btop\b.*\b(?:stories|headlines|news)\b/.test(text)) {
     return { mode: "command", command: "TOP", security };
@@ -148,6 +153,15 @@ export function parseControlFollowup(transcript, context = null) {
     && /\b(?:show|find|what|who|how|which|every|upcoming|top|estimates?|dividends?|tape|historical|indices|indexes|futures|commodities|forex|rates|most active|owners?|holdings|reports?|trending|quotes?|chain|calculator|calendar|patterns?|sentiment|help|shortcuts|release|simulator|settings|alerts?|entitlements?|brokerage|account|bug report|description|profile|graph|note)\b/.test(openingText);
   const explicitlyOpening = /\b(open|create|build|launch|new|display)\b|\bpull(?: up)?\b|\bbring up\b/.test(openingText)
     || (!focusedPanel?.command && /\b(?:show me|latest)\b/.test(openingText)) || implicitSurfaceRequest;
+  // Session-qualified quote requests have a distinct native success surface:
+  // Q updates Godel's timestamped header instead of opening a chart window.
+  // Resolve it before the generic conversational stock-price chart route.
+  if (target.command === "Q" && target.security) {
+    return validateWorkflowPlan({
+      version: 2, failure_policy: "stop_on_any", layout: workflowLayout("focus"),
+      steps: [commandStep("Q", target.security)]
+    });
+  }
   if (!explicitlyOpening && focusedPanel?.command) {
     const focusedCommand = String(focusedPanel.command).toUpperCase();
     const focusedSecurity = focusedPanel.security ? String(focusedPanel.security).toUpperCase() : null;
@@ -311,10 +325,9 @@ export function parseControlFollowup(transcript, context = null) {
     });
   }
 
-  // A conversational quote question should return a surface whose displayed
-  // price can be grounded and narrated. Q is currently a non-window widget in
-  // Godel and cannot be authenticated reliably, while G exposes the same live
-  // price/change in a proper tracked panel.
+  // Ordinary stock-price questions open a chart because the user asked for a
+  // durable visual surface. Session-qualified after-hours/premarket questions
+  // have already routed to Q's authenticated timestamped header above.
   const asksPrice = /\b(?:what(?:'s| is)|tell me|give me|show me|how (?:is|are))\b.*\b(?:stock|share|price|trading|doing)\b|\b(?:stock|share) price\b/.test(text);
   if (security && asksPrice && !/\b(?:forward|target|fair)\b/.test(text) && !/\b(?:market\s+)?heat\s*map\b/.test(text)) {
     return validateWorkflowPlan({
