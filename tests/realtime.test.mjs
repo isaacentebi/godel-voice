@@ -61,6 +61,21 @@ test("Realtime directly validates the exact failed compound request without a se
   assert.throws(() => compileRealtimeWorkflow({ ...workflow, unexpected: true }), /unknown wrapper field/);
 });
 
+test("model output cannot retain old Jarvis windows unless the user explicitly asks", () => {
+  const ordinary = compileRealtimeWorkflow(structuredWorkflow("open the heatmap"));
+  assert.equal(parseWorkflowMarker(ordinary.marker).layout.preserve_existing, false);
+
+  const alongside = compileRealtimeWorkflow(structuredWorkflow("keep this open and show the heatmap alongside it"));
+  assert.equal(parseWorkflowMarker(alongside.marker).layout.preserve_existing, true);
+
+  const ignoredModelPreference = structuredWorkflow("show the heatmap");
+  ignoredModelPreference.workflow.layout.preserve_existing = true;
+  assert.equal(
+    parseWorkflowMarker(compileRealtimeWorkflow(ignoredModelPreference).marker).layout.preserve_existing,
+    false
+  );
+});
+
 test("Realtime cost accounting separates audio, text and cached categories", () => {
   const usage = {
     input_token_details: {
@@ -112,7 +127,7 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
   assert.match(upstreamSession, /Jarvis/);
   assert.match(upstreamSession, /\"effort\":\"low\"/);
   assert.match(upstreamSession, /\"tool_choice\":\"auto\"/);
-  assert.match(upstreamSession, /\"eagerness\":\"auto\"/);
+  assert.match(upstreamSession, /\"eagerness\":\"low\"/);
   assert.match(upstreamSession, /\"create_response\":false/);
   assert.match(upstreamSession, /\"gpt-4o-transcribe\"/);
   assert.match(upstreamSession, /\"wait_for_user\"/);

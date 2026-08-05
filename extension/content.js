@@ -2032,9 +2032,13 @@
       // created. Preserve that identity while its transcript body loads;
       // a global re-query can otherwise bind an older stacked TRAN window.
       const openedTRANPanel = panel;
-      panel = await waitUntil(() => openedTRANPanel?.isConnected
-        && tranEarningsRows(openedTRANPanel).length ? openedTRANPanel : null, "new exact TRAN panel root", 9000)
-        .catch(() => waitUntil(() => tranPanelForPlan(plan), "exact TRAN panel root", 9000));
+      phaseStartedAt = performance.now();
+      panel = await waitUntil(() => {
+        if (openedTRANPanel?.isConnected && tranEarningsRows(openedTRANPanel).length) return openedTRANPanel;
+        const resolved = tranPanelForPlan(plan);
+        return resolved?.isConnected && tranEarningsRows(resolved).length ? resolved : null;
+      }, "exact TRAN panel root", 4500);
+      markPhase("transcript_root_ms", phaseStartedAt);
     }
     rememberPanel(panel, plan.command, terminalSecurity(terminalCommand));
 

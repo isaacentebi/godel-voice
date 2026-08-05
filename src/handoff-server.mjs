@@ -407,7 +407,7 @@ function sanitizeExecutorContext(value, updatedAt = Date.now(), previousResearch
 }
 
 function sanitizeStepTimings(value) {
-  const phaseNames = ["command_bar_ms", "security_resolution_ms", "command_submit_ms", "panel_detection_ms", "nested_actions_ms", "total_ms"];
+  const phaseNames = ["command_bar_ms", "security_resolution_ms", "command_submit_ms", "panel_detection_ms", "transcript_root_ms", "nested_actions_ms", "total_ms"];
   if (!Array.isArray(value)) return [];
   return value.slice(0, 16).map((item, index) => {
     const kind = ["command", "control", "configure"].includes(item?.kind) ? item.kind : "command";
@@ -481,6 +481,7 @@ export function createHandoffServer({
   realtimeReasoningEffort = process.env.GODEL_VOICE_REALTIME_REASONING_EFFORT || "low",
   realtimeVoice = process.env.GODEL_VOICE_REALTIME_VOICE || "cedar",
   realtimeTranscriptionModel = process.env.GODEL_VOICE_REALTIME_TRANSCRIPTION_MODEL || "gpt-4o-transcribe",
+  realtimeVadEagerness = process.env.GODEL_VOICE_REALTIME_VAD_EAGERNESS || "low",
   realtimeAuditEnabled = String(process.env.GODEL_VOICE_REALTIME_AUDIT ?? "false").toLowerCase() === "true",
   realtimeAuditPath = process.env.GODEL_VOICE_REALTIME_AUDIT_PATH || path.join(projectDir, "logs", "jarvis-audit.jsonl")
 } = {}) {
@@ -493,6 +494,7 @@ export function createHandoffServer({
   const validRealtimeTranscriptionModels = new Set(["gpt-4o-transcribe", "gpt-4o-mini-transcribe"]);
   if (!validRealtimeTranscriptionModels.has(realtimeTranscriptionModel)) throw new Error("unsupported Realtime transcription model");
   if (!["minimal", "low", "medium", "high", "xhigh"].includes(realtimeReasoningEffort)) throw new Error("unsupported Realtime reasoning effort");
+  if (!["low", "medium", "high", "auto"].includes(realtimeVadEagerness)) throw new Error("unsupported Realtime VAD eagerness");
   const safetyIdentifier = crypto.createHash("sha256").update(`godel-voice:${secret}`).digest("hex");
   const audit = (type, fields = {}) => {
     if (realtimeAuditEnabled) appendPrivateAudit(realtimeAuditPath, clock, type, fields);
@@ -541,7 +543,7 @@ export function createHandoffServer({
         // grace period. This prevents a natural mid-sentence pause from
         // launching a tool call or spoken answer over the user.
         transcription: { model: realtimeTranscriptionModel, language: "en" },
-        turn_detection: { type: "semantic_vad", eagerness: "auto", create_response: false, interrupt_response: true }
+        turn_detection: { type: "semantic_vad", eagerness: realtimeVadEagerness, create_response: false, interrupt_response: true }
       },
       output: { voice: realtimeVoice }
     },

@@ -30,6 +30,12 @@ function normalizedTranscript(transcript) {
   return String(transcript ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+function explicitlyPreservesExisting(transcript) {
+  const normalized = normalizedTranscript(transcript);
+  return /\b(?:keep|retain|preserve)\b(?: [a-z0-9]+){0,8}\b(?:open|visible|screen|window|panel|it|this|that)\b/.test(normalized)
+    || /\b(?:alongside|side by side with what is open|without closing|do not close|don t close|dont close|leave (?:it|this|that|them) open)\b/.test(normalized);
+}
+
 function genericEarningsRequest(normalized) {
   if (!/\bearnings?\b/.test(normalized)) return false;
   return !/\b(?:earnings? )?(?:matrix|estimates?|transcripts?|calls?|hub|history|historicals?|calendar|date|report|release|preview|results?)\b/.test(normalized);
@@ -515,15 +521,20 @@ export function compileStructuredWorkflow(workflowInput, transcript, options = {
       };
     });
     const requestedLayout = workflow.layout ?? {};
+    // Workspace preservation is a destructive-retention exception, not a
+    // stylistic model choice. An ordinary open always replaces Jarvis's prior
+    // Voice-screen panels; only explicit user language may keep them.
+    const preserveExisting = requestedLayout.preserve_existing === true
+      && explicitlyPreservesExisting(transcript);
     try {
       plan = buildWorkflowPlan(requests, {
         failure_policy: "stop_on_required",
         layout: {
-          mode: requestedLayout.preserve_existing === true ? "preserve" : "tile",
+          mode: preserveExisting ? "preserve" : "tile",
           direction: "row",
           gap_px: 12,
           preset: requestedLayout.preset ?? "grid",
-          preserve_existing: requestedLayout.preserve_existing === true,
+          preserve_existing: preserveExisting,
           new_screen: requestedLayout.new_screen === true
         }
       });

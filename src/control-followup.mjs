@@ -44,7 +44,10 @@ const targetCommands = [
   ["citadel overview", "CITADEL"], ["kelly criterion", "KELLY"],
   ["godel help", "HELP"], ["release notes", "CHANGE"], ["changelog", "CHANGE"],
   ["earnings transcript", "TRAN"], ["earnings calls", "TRAN"], ["earnings call", "TRAN"], ["transcript", "TRAN"], ["filings", "CF"],
-  ["institutional holders", "HDS"], ["institutional owners", "HDS"], ["holders window", "HDS"], ["ownership window", "HDS"]
+  ["institutional holders", "HDS"], ["institutional owners", "HDS"], ["holders window", "HDS"], ["ownership window", "HDS"],
+  ["quick quote", "G"], ["ticker chat", "CHAT"], ["brokerage connection manager", "BROK"],
+  ["linked brokerage account value", "AUM"], ["account management", "ACM"], ["terminal settings", "PDF"],
+  ["existing alerts", "AL"], ["data entitlements", "ENT"], ["bug report form", "ERR"], ["company note", "NOTE"], ["note", "NOTE"]
 ];
 
 function clean(value) {
@@ -61,6 +64,7 @@ function clean(value) {
     .replace(/\btime and sails\b/g, "time and sales")
     .replace(/\bmarket holts\b/g, "market halts")
     .replace(/\bblack shoals\b/g, "black scholes")
+    .replace(/\borr? a cul\b/g, "oracle")
     .replace(/\binstitush(?:un|on)al\b/g, "institutional")
     .replace(/\bbub bull\b/g, "bubble")
     .replace(/\bsecurit(?:y|ies) (?:find her|find are)\b/g, "security finder")
@@ -73,15 +77,17 @@ const commonSecurities = [
   ["alphabet", "GOOG"], ["google", "GOOG"], ["reddit", "RDDT"], ["netflix", "NFLX"],
   ["service now", "NOW"], ["servicenow", "NOW"], ["palantir", "PLTR"], ["novo nordisk", "NVO"],
   ["eli lilly", "LLY"], ["lilly", "LLY"], ["chipotle", "CMG"], ["unity", "U"],
-  ["corsair", "CRSR"], ["sandisk", "SNDK"], ["coca cola", "KO"]
+  ["corsair", "CRSR"], ["sandisk", "SNDK"], ["coca cola", "KO"],
+  ["berkshire hathaway", "BRK.B"], ["berkshire", "BRK.B"], ["block", "XYZ"], ["square", "XYZ"]
 ];
 const directSecurityOpen = new Set([
   "EM", "G", "DES", "ANR", "ERN", "HDS", "HLDR", "OMON", "GF", "FA", "TRAN", "CF",
-  "SI", "DVD", "TAS", "HCP", "N", "RES", "HP", "OVME", "PAT", "PRT"
+  "SI", "DVD", "TAS", "HCP", "N", "RES", "HP", "PAT", "PRT", "CHAT", "NOTE"
 ]);
 const directGlobalOpen = new Set([
   "HMAP", "IMAP", "HALT", "MOST", "MOSO", "WEI", "WEIF", "MAP", "EQS", "QM", "GLCO", "FX",
-  "NI", "TOP", "TREND", "ALLQ", "SECF", "WJI", "IPO", "CALC", "CITADEL", "KELLY", "HELP", "CHANGE"
+  "NI", "TOP", "TREND", "ALLQ", "SECF", "WJI", "IPO", "CALC", "CITADEL", "KELLY", "HELP", "CHANGE",
+  "OVME", "BROK", "AUM", "ACM", "PDF", "AL", "ENT", "ERR"
 ]);
 const directOpenModifier = /\b(?:with|as|set|change|switch|compare|versus|vs|download|export|close|move|put|place|bigger|smaller|table|bubbles?|treemap|active|resumed|all|metric|multiple|revenue|ebit|ebitda|margin|growth|minutes?|hourly|candles?|ten k|ten q|eight k|forms?)\b/;
 
@@ -91,6 +97,12 @@ function targetFor(text) {
       || /\breuters\b.*\btop\b.*\b(?:stories|headlines|news)\b/.test(text)) {
     return { mode: "command", command: "TOP", security };
   }
+  if (/\b(?:what s|whats) new\b|\blatest (?:godel )?release\b/.test(text)) return { mode: "command", command: "CHANGE", security };
+  if (/\b(?:tickers?|securities)\b.*\btrending\b|\btrending\b.*\b(?:tickers?|securities)\b/.test(text)) return { mode: "command", command: "TREND", security };
+  if (/\bevery (?:listing|venue)\b.*\bquote\b|\ball (?:listings|venues)\b/.test(text)) return { mode: "command", command: "ALLQ", security };
+  if (/\bsimilar historical (?:price )?patterns?\b/.test(text)) return { mode: "command", command: "PAT", security };
+  if (/\bworld (?:venue|exchange opening) map\b/.test(text)) return { mode: "command", command: "MAP", security };
+  if (/\bcompany graph\b/.test(text)) return { mode: "command", command: "G", security };
   if (/\b(?:operating|gross|net) margin\b.*\b(?:graph|chart)\b|\b(?:graph|chart)\b.*\b(?:operating|gross|net) margin\b/.test(text)) {
     return { mode: "command", command: "GF", security };
   }
@@ -133,7 +145,7 @@ export function parseControlFollowup(transcript, context = null) {
   const implicitSurfaceRequest = !focusedPanel?.command && target.command && target.command !== "SECF"
     && !/\b(?:this|that|current|existing|window|panel|one)\b/.test(openingText)
     && !/\b(?:add|set|change|switch|make|run|clear|strikes?)\b/.test(openingText)
-    && /\b(?:show|find|what|who|how|which|every|upcoming|top|estimates?|dividends?|tape|historical|indices|indexes|futures|commodities|forex|rates|most active|owners?|holdings|reports?|trending|quotes?|chain|calculator|calendar|patterns?|sentiment|help|shortcuts|release)\b/.test(openingText);
+    && /\b(?:show|find|what|who|how|which|every|upcoming|top|estimates?|dividends?|tape|historical|indices|indexes|futures|commodities|forex|rates|most active|owners?|holdings|reports?|trending|quotes?|chain|calculator|calendar|patterns?|sentiment|help|shortcuts|release|simulator|settings|alerts?|entitlements?|brokerage|account|bug report|description|profile|graph|note)\b/.test(openingText);
   const explicitlyOpening = /\b(open|create|build|launch|new|display)\b|\bpull(?: up)?\b|\bbring up\b/.test(openingText)
     || (!focusedPanel?.command && /\b(?:show me|latest)\b/.test(openingText)) || implicitSurfaceRequest;
   if (!explicitlyOpening && focusedPanel?.command) {
@@ -178,6 +190,42 @@ export function parseControlFollowup(transcript, context = null) {
   }
 
   const security = commonSecurities.find(([name]) => new RegExp(`\\b${name}\\b`).test(text))?.[1] ?? null;
+
+  // Several account-adjacent surfaces are safe to open but contain buttons
+  // that could mutate external state. Their zero-model lane is therefore
+  // explicitly read-only: the utterance must prohibit the consequential
+  // action, and the resulting workflow only opens the native panel.
+  const readOnlyOpenGuards = {
+    BROK: /\b(?:do not|don t|dont|without)\s+(?:connect|link|change)|\bread[ -]?only\b/,
+    ACM: /\b(?:do not|don t|dont|without)\s+(?:change|edit|upgrade)|\bread[ -]?only\b/,
+    PDF: /\b(?:do not|don t|dont|without)\s+(?:change|edit)|\bread[ -]?only\b/,
+    AL: /\b(?:existing|current) alerts?\b.*\b(?:do not|don t|dont|without)\s+(?:create|add|change)|\bview (?:my )?(?:existing|current) alerts?\b/,
+    ENT: /\b(?:do not|don t|dont|without)\s+(?:subscribe|buy|change)|\b(?:view|show) (?:my )?current data entitlements?\b/,
+    ERR: /\b(?:do not|don t|dont|without)\s+(?:send|submit|post)|\bopen (?:the )?bug report form\b/,
+    CHAT: /\b(?:do not|don t|dont|without)\s+(?:post|send|write)|\bjust read\b/,
+    NOTE: /\b(?:do not|don t|dont|without)\s+(?:edit|change|write)|\bwithout editing\b/
+  };
+  if ((explicitlyOpening || /\b(?:open|show|view)\b/.test(text))
+      && target.command && readOnlyOpenGuards[target.command]?.test(text)
+      && (directGlobalOpen.has(target.command) || (directSecurityOpen.has(target.command) && security))) {
+    return validateWorkflowPlan({
+      version: 2, failure_policy: "stop_on_any", layout: null,
+      steps: [commandStep(target.command, directSecurityOpen.has(target.command) ? security : null)]
+    });
+  }
+
+  if (/\bquick quote\b/.test(text) && security) {
+    return validateWorkflowPlan({
+      version: 2, failure_policy: "stop_on_any", layout: workflowLayout("focus"),
+      steps: [exactTerminalStep("G", `${security} US EQ G`, "command-1", "full")]
+    });
+  }
+  if (target.command === "TREND" && /\b(?:what|which)\b.*\btrending\b/.test(text)) {
+    return validateWorkflowPlan({
+      version: 2, failure_policy: "stop_on_any", layout: null,
+      steps: [commandStep("TREND")]
+    });
+  }
 
   const deterministicDesk = compileDeterministicDesk({ transcript, text, security, explicitlyOpening });
   if (deterministicDesk) return validateWorkflowPlan(deterministicDesk);
@@ -368,7 +416,12 @@ export function parseControlFollowup(transcript, context = null) {
   // layout, export, or second operation falls through to the strict compiler.
   const describesOneSurface = (target.command === "SI" && /\bshort interest\b.*\bdays to cover\b/.test(text))
     || (target.command === "DVD" && /\bdividend\b.*\bpayment history\b/.test(text))
-    || (target.command === "FX" && /\bforex\b.*\bcurrency converter\b/.test(text));
+    || (target.command === "FX" && /\bforex\b.*\bcurrency converter\b/.test(text))
+    || (target.command === "TAS" && /\b(?:live tape|time and sales)\b/.test(text))
+    || (target.command === "HELP" && /\bhelp\b.*\bshortcuts\b/.test(text))
+    || (target.command === "IPO" && /\bipo\b.*\b(?:calendar|recent performance)\b/.test(text))
+    || (target.command === "MAP" && /\bworld (?:venue|exchange opening) map\b/.test(text))
+    || (target.command === "ALLQ" && /\bevery (?:listing|venue)\b.*\bquote\b/.test(text));
   const activeIsSurfaceName = ["MOST", "MOSO"].includes(target.command) && /\bmost active\b/.test(text);
   const hasOpenModifier = (/\b(?:and|then)\b/.test(text) && !describesOneSurface)
     || (directOpenModifier.test(text) && !activeIsSurfaceName);

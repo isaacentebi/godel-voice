@@ -409,3 +409,29 @@ test("compiles multi-quarter transcript research and contextual followups locall
   assert.deepEqual(followup.steps[0].actions[0].value.topics, ["margins"]);
   assert.equal(parseControlFollowup("what about margins?"), null);
 });
+
+test("read-only account-adjacent opens are deterministic but mutations remain gated", () => {
+  const cases = [
+    ["open the read only brokerage connection manager do not connect anything", "BROK", null],
+    ["open account management do not change my plan", "ACM", null],
+    ["open terminal settings dont change anything", "PDF", null],
+    ["show current data entitlements dont subscribe to anything", "ENT", null],
+    ["open the bug report form but dont send anything", "ERR", null],
+    ["open the tesla ticker chat just read it do not post", "CHAT", "TSLA"],
+    ["open my amazon company note without editing it", "NOTE", "AMZN"]
+  ];
+  for (const [voice, command, security] of cases) {
+    const step = parseControlFollowup(voice).steps[0];
+    assert.equal(step.command, command);
+    assert.equal(step.terminal_command, security ? `${security} US EQ ${command}` : command);
+  }
+  assert.equal(parseControlFollowup("connect my brokerage account"), null);
+  assert.equal(parseControlFollowup("post in the tesla ticker chat"), null);
+  assert.equal(parseControlFollowup("create an apple alert"), null);
+});
+
+test("noisy quick quote uses the authenticated chart surface", () => {
+  const step = parseControlFollowup("quick quote for orr a cul uh oracle please").steps[0];
+  assert.equal(step.command, "G");
+  assert.equal(step.terminal_command, "ORCL US EQ G");
+});

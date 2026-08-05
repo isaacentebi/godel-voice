@@ -54,7 +54,10 @@ test("TRAN executor proves exact Earnings rows and exact period reader before bo
   assert.match(source, /const openedTRANPanel = panel/);
   assert.match(source, /plan\.command === "TRAN"[\s\S]{0,80}tranPanelForPlan\(plan\)/);
   assert.match(source, /!existingWindows\.has\(windowId\(root\)\)[\s\S]{0,80}panelMatchesCommand\(root, plan\.command\)/);
-  assert.match(source, /tranEarningsRows\(openedTRANPanel\)\.length \? openedTRANPanel/);
+  assert.match(source, /if \(openedTRANPanel\?\.isConnected && tranEarningsRows\(openedTRANPanel\)\.length\) return openedTRANPanel/);
+  assert.match(source, /const resolved = tranPanelForPlan\(plan\)/);
+  assert.match(source, /markPhase\("transcript_root_ms", phaseStartedAt\)/);
+  assert.doesNotMatch(source, /"new exact TRAN panel root", 9000/);
   assert.match(source, /\$\{period\} Earnings Conference Call/);
   assert.match(source, /text\.length >= 2000/);
   assert.match(source, /text\.includes\("Final Transcript"\) && text\.includes\("Presentation"\)/);
