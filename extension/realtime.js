@@ -19,13 +19,16 @@
   let transcriptCompletedAt = 0;
   let responseRequestedAt = 0;
   let responseRequestKind = null;
+  let assistantSpeaking = false;
   let pendingTranscript = [];
   let activeWorkflow = null;
   let wantsActive = false;
   let reconnectTimer = null;
   let reconnectAttempts = 0;
   const recentAssistantAudits = new Map();
-  const TURN_GRACE_MS = 325;
+  const TURN_GRACE_MS = 180;
+  const WORKFLOW_POLL_MS = 160;
+  const PREFLIGHT_RETRY_MS = 120;
   const MAX_RECONNECT_ATTEMPTS = 3;
 
   const host = document.createElement("div");
@@ -82,7 +85,9 @@
     if (!response.ok) {
       let message = `Jarvis request failed (${response.status})`;
       try { message = (await response.json()).error || message; } catch {}
-      throw new Error(message);
+      const error = new Error(message);
+      error.status = response.status;
+      throw error;
     }
     return response;
   }
@@ -122,20 +127,78 @@
     return Math.max(0, Math.min(1, Math.exp(meanLogprob)));
   }
 
+  function normalizedWorkflowResult(value = {}) {
+    return {
+      id: String(value.id ?? ""),
+      status: String(value.status ?? "failed"),
+      message: String(value.message || value.error || "Godel request failed").slice(0, 600),
+      durationMs: Math.max(0, Number(value.durationMs ?? value.duration_ms) || 0)
+    };
+  }
+
   function waitForWorkflow(id, timeoutMs = 30_000) {
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
+      let settled = false;
+      let pollTimer = null;
+      const terminal = new Set(["completed", "failed", "cancelled"]);
+      function cleanup() {
+        clearTimeout(timer);
+        if (pollTimer) clearTimeout(pollTimer);
         window.removeEventListener("godel-voice:completion", complete);
+      }
+      function finish(value) {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(normalizedWorkflowResult(value));
+      }
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        cleanup();
         reject(new Error("Godel workflow timed out"));
       }, timeoutMs);
       function complete(event) {
         if (event.detail?.id !== id) return;
-        clearTimeout(timer);
-        window.removeEventListener("godel-voice:completion", complete);
-        resolve(event.detail);
+        finish(event.detail);
+      }
+      async function poll() {
+        if (settled) return;
+        try {
+          const response = await api(`/status?id=${encodeURIComponent(id)}`);
+          const value = await response.json();
+          if (terminal.has(value.status)) return finish(value);
+        } catch (error) {
+          // A transient status failure must not turn a healthy DOM completion
+          // into a false timeout. The completion event remains authoritative.
+          if (error?.status && error.status < 500 && error.status !== 404) {
+            audit("client_error", `${id}-status`, { text: String(error.message).slice(0, 240) });
+          }
+        }
+        pollTimer = setTimeout(poll, WORKFLOW_POLL_MS);
       }
       window.addEventListener("godel-voice:completion", complete);
+      pollTimer = setTimeout(poll, 0);
     });
+  }
+
+  function wait(milliseconds) {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
+  }
+
+  async function preflight(transcript, turnId) {
+    const options = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, turn_id: turnId, transcript })
+    };
+    try {
+      return await api("/realtime/preflight", options);
+    } catch (error) {
+      if (error?.status && error.status < 500) throw error;
+      await wait(PREFLIGHT_RETRY_MS);
+      return api("/realtime/preflight", options);
+    }
   }
 
   function clearResponseTimer() {
@@ -159,6 +222,7 @@
       message: String(output?.message ?? "").slice(0, 600),
       duration_ms: Math.max(0, Number(output?.duration_ms) || 0)
     });
+    if (audio) audio.muted = false;
     send({
       type: "response.create",
       response: {
@@ -174,10 +238,11 @@
   function createConversationResponse(message, kind = "conversation") {
     const exact = String(message ?? "").replace(/\s+/g, " ").trim().slice(0, 240);
     if (!exact) return;
+    if (audio) audio.muted = false;
     send({
       type: "response.create",
       response: {
-        tools: [], tool_choice: "none", max_output_tokens: 64,
+        tools: [], tool_choice: "none", max_output_tokens: 128,
         instructions: `Say exactly this sentence and nothing else: ${JSON.stringify(exact)}`
       }
     });
@@ -213,11 +278,7 @@
     if (runGeneration !== generation || channel?.readyState !== "open") return;
     try {
       const preflightStartedAt = Date.now();
-      const response = await api("/realtime/preflight", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, turn_id: turnId, transcript })
-      });
+      const response = await preflight(transcript, turnId);
       const request = await response.json();
       audit("turn_timing", `${turnId}-preflight`, {
         status: `preflight_${request.kind ?? "unknown"}`,
@@ -241,7 +302,9 @@
     } catch (error) {
       audit("client_error", `${turnId}-preflight-error`, { text: String(error?.message ?? error).slice(0, 240) });
     }
-    createConversationResponse("I couldn't reach the local Godel planner. Please try that once more.");
+    if (runGeneration === generation && channel?.readyState === "open" && !speechActive) {
+      createConversationResponse("I couldn't reach the local Godel planner. Please try that once more.");
+    }
   }
 
   function scheduleTranscript(transcript, turnId, runGeneration) {
@@ -275,8 +338,15 @@
     let event;
     try { event = JSON.parse(raw); } catch { return; }
     if (runGeneration !== generation) return;
-    if (event.type === "session.created" || event.type === "session.updated") render("listening");
+    if (event.type === "session.created") {
+      assistantSpeaking = false;
+      render("listening");
+    }
+    else if (event.type === "session.updated") render("listening");
     else if (event.type === "input_audio_buffer.speech_started") {
+      if (assistantSpeaking) audit("turn_timing", event.event_id ?? `speech-${Date.now()}-interrupt`, {
+        status: "user_interrupted_assistant", duration_ms: 0
+      });
       speechActive = true;
       speechStartedAt = Date.now();
       clearResponseTimer();
@@ -291,6 +361,15 @@
       render("thinking");
     }
     else if (event.type === "output_audio_buffer.started") {
+      assistantSpeaking = true;
+      if (!responseRequestedAt) {
+        if (audio) audio.muted = true;
+        audit("client_error", event.event_id ?? `audio-${Date.now()}-unsolicited`, {
+          text: "Suppressed unsolicited Realtime audio"
+        });
+        try { send({ type: "response.cancel" }); } catch {}
+        return;
+      }
       if (responseRequestedAt) audit("turn_timing", `${event.event_id ?? `audio-${Date.now()}`}-first-audio`, {
         status: `${responseRequestKind ?? "response"}_first_audio`, duration_ms: Date.now() - responseRequestedAt
       });
@@ -301,7 +380,14 @@
       });
       render("speaking");
     }
-    else if (event.type === "output_audio_buffer.stopped") render("listening");
+    else if (event.type === "output_audio_buffer.stopped") {
+      if (audio) audio.muted = false;
+      assistantSpeaking = false;
+      if (activeWorkflow) render("working", "Operating Godel directly");
+      else if (speechActive) render("listening", "I hear you");
+      else if (pendingTranscript.length) render("thinking");
+      else render("listening");
+    }
     else if (event.type === "error") render("error", "Realtime voice reported an error");
     if (event.type === "conversation.item.input_audio_transcription.completed" && event.transcript) {
       transcriptCompletedAt = Date.now();
@@ -324,6 +410,7 @@
       render("error", "I couldn't transcribe that · please say it again");
     }
     if (event.type === "response.done") {
+      assistantSpeaking = false;
       recordUsage(event);
       for (const item of event.response?.output ?? []) {
         const groundedTranscript = (item?.content ?? [])

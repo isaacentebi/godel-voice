@@ -75,6 +75,59 @@ test("close-all plus a supported comparison compiles atomically", () => {
   assert.equal(plan.steps[2].command, "GF");
 });
 
+test("open-a-chart comparing grammar keeps cleanup and the full GF comparison", () => {
+  const context = { panels: [
+    { command: "G", security: "MSFT", connected: true },
+    { command: "HMAP", connected: true }
+  ] };
+  const plan = parseControlFollowup(
+    "Close all other windows, then open a chart comparing Amazon and Meta operating margin and revenue over the last five years.",
+    context
+  );
+  assert.deepEqual(plan.steps.map(step => step.kind), ["control", "control", "command"]);
+  assert.deepEqual(plan.steps.slice(0, 2).map(step => step.operation), ["close", "close"]);
+  assert.deepEqual(plan.steps.slice(0, 2).map(step => step.failure_policy), ["continue", "continue"]);
+  assert.equal(plan.steps[2].terminal_command, "AMZN US EQ GF");
+  assert.deepEqual(plan.steps[2].actions, [
+    { feature: "range", operation: "select", value: "5Y" },
+    { feature: "add company", operation: "add", value: "META" },
+    { feature: "margin metric", operation: "add", value: "Operating Margin" },
+    { feature: "add metric", operation: "add", value: "Revenue" }
+  ]);
+});
+
+test("close-all then open stays local when the Voice screen is already empty", () => {
+  const plan = parseControlFollowup(
+    "Close all other windows, then open a chart comparing Amazon and Meta operating margin and revenue over the last five years.",
+    { panels: [] }
+  );
+  assert.deepEqual(plan.steps.map(step => step.kind), ["command"]);
+  assert.equal(plan.steps[0].terminal_command, "AMZN US EQ GF");
+  assert.deepEqual(plan.steps[0].actions.map(action => action.value), ["5Y", "META", "Operating Margin", "Revenue"]);
+});
+
+test("spoken comparison variants stay on the same zero-model GF route", () => {
+  const variants = [
+    "open a graph com pairing Amazon and Meta operation margin and revenue for five years",
+    "chart Amazon compared with Meta operating margins and revenues over 5Y",
+    "compare Amazon verses Meta operating margin and revenue for the last five years"
+  ];
+  for (const voice of variants) {
+    const plan = parseControlFollowup(voice);
+    assert.equal(plan.steps[0].command, "GF", voice);
+    assert.equal(plan.steps[0].terminal_command, "AMZN US EQ GF", voice);
+    assert.deepEqual(plan.steps[0].actions.map(action => action.value), ["5Y", "META", "Operating Margin", "Revenue"], voice);
+  }
+});
+
+test("operating income is not silently substituted for operating margin", () => {
+  const context = { panels: [{ command: "HMAP", connected: true }] };
+  assert.equal(parseControlFollowup(
+    "Close all other windows, then open a chart comparing Amazon and Meta operating income and revenue over the last five years.",
+    context
+  ), null);
+});
+
 test("close-all plus an unsupported comparison declines before closing anything", () => {
   const context = { panels: [{ command: "HMAP", connected: true }] };
   assert.equal(parseControlFollowup(

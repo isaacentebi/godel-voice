@@ -101,8 +101,13 @@ export function compileDeterministicDesk({ transcript, text, security, explicitl
   }
 
   const companies = mentionedSecurities(text);
-  const comparisonIntent = /\b(?:compare|comparison|versus|vs|against)\b/.test(text);
-  const fundamentalMetric = /\b(?:revenue|sales|ebitda|ebit|nopat|margin|p\s*\/?\s*e|valuation|fundamental)\b/.test(text);
+  // “Comparing” is the natural form after “open a chart”, and VoiceInk may
+  // split or soften the word. Keep this bounded by the requirement for at
+  // least two exact known companies below.
+  const comparisonIntent = /\b(?:compare|compared|comparing|compairing|comparison|versus|verses|vs|against)\b|\bcom pairing\b/.test(text);
+  const fundamentalMetric = /\b(?:revenues?|sales|ebitda|ebit|nopat|margins?|operation margins?|p\s*\/?\s*e|valuation|fundamental)\b/.test(text);
+  const unsupportedGFMetric = /\b(?:operating income|operating profit|nopat|ebitda|ebit)\b/.test(text);
+  if (companies.length >= 2 && comparisonIntent && unsupportedGFMetric) return null;
   if (companies.length >= 2 && comparisonIntent && fundamentalMetric && !heatmap) {
     const [base, ...peers] = companies;
     const gf = compileChartOptionsFollowup({

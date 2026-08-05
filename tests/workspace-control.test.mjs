@@ -49,7 +49,7 @@ test("content executor acknowledges leased work and checks cancellation between 
 
 test("Jarvis replaces safe windows only inside its dedicated Voice screen", () => {
   assert.match(content, /godel-voice-managed-window-ids-v1/);
-  assert.match(content, /if \(opensNewPanels && plan\.layout\.preserve_existing === false\)/);
+  assert.match(content, /if \(replacesVoiceWorkspace\)/);
   assert.match(content, /await workspaceInternalAction\("createScreen", \{ name: "Voice" \}\)/);
   assert.match(content, /await closeVoiceScreenPanels\(\)/);
   assert.match(content, /await workspaceInternalAction\("nameActiveScreen", \{ name: "Voice" \}\)/);
@@ -59,6 +59,13 @@ test("Jarvis replaces safe windows only inside its dedicated Voice screen", () =
   assert.match(content, /CHAT\|NOTE\|ACCOUNT\|BROK\|ORDER\|TRADE\|MESSAGE\|ALERT/);
   assert.match(content, /destructive or blocking failure/);
   assert.doesNotMatch(content, /localStorage\.clear|sessionStorage\.clear/);
+});
+
+test("top-level quote requests also clear stale Jarvis panels", () => {
+  assert.match(content, /const replacesVoiceWorkspace = plan\.layout\.preserve_existing === false/);
+  assert.match(content, /plan\.steps\.some\(step => step\.kind === "command"\)/);
+  assert.match(content, /if \(replacesVoiceWorkspace\)/);
+  assert.match(content, /const opensNewPanels = plan\.steps\.some\(step => step\.kind === "command" && step\.command !== "Q"\)/);
 });
 
 test("manual Jarvis shutdown cleans only its Voice-screen windows and aborts across a new session", () => {
@@ -116,7 +123,8 @@ test("singleton panels borrowed from another screen are restored instead of clos
 test("compound commands wait for Godel's bounded layout commit before opening another panel", () => {
   assert.match(content, /element\.textContent\.trim\(\)\.toUpperCase\(\) === "COMMANDS"/);
   assert.match(content, /if \(commandMenuOpen\(\)\)/);
-  assert.match(content, /await waitUntil\(\(\) => !commandMenuOpen\(\), "closed Godel command bar", 1000\)/);
+  assert.match(content, /await press\("Escape"\);[\s\S]*await waitUntil\(\(\) => !commandMenuOpen\(\), "closed Godel command bar", 600\)/);
+  assert.match(content, /catch \{[\s\S]*await press\("Backquote"\);[\s\S]*"closed Godel command bar", 1000/);
   assert.match(content, /await waitUntil\(commandMenuOpen, "open Godel command menu", 3000\)/);
   assert.match(content, /plan\.steps\[index \+ 1\]\?\.kind === "command"/);
   assert.match(content, /await pause\(250\)/);

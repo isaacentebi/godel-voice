@@ -181,15 +181,21 @@ export function parseControlFollowup(transcript, context = null) {
     const panels = Array.isArray(context?.panels) ? context.panels.filter(panel =>
       panel?.connected !== false && typeof panel?.command === "string"
       && !unsafe.has(String(panel.command).toUpperCase())).slice(0, 12) : [];
-    if (!panels.length) return null;
     const continuation = /\b(?:and\s+then|then)\b[\s,:-]*(.+)$/.exec(text)?.[1]?.trim() ?? "";
     const nextPlan = continuation && /\b(?:open|show|pull|bring|build|create|compare)\b/.test(continuation)
       ? parseControlFollowup(continuation, context) : null;
     if (continuation && !nextPlan) return null;
+    // “Close everything, then open …” is still a complete request on an
+    // already-clean Voice screen. Do not fall through to a model simply
+    // because idempotent cleanup has no current targets.
+    if (!panels.length) return nextPlan;
     const cleanupSteps = panels.map((panel, index) => ({
       id: `cleanup-${index + 1}`, kind: "control", operation: "close",
       target: { mode: "command", command: String(panel.command).toUpperCase(), security: panel.security ? String(panel.security).toUpperCase() : null },
-      value: null, required: false
+      // The Voice-workspace transaction may have already removed this exact
+      // panel before ordered steps begin. Treat an already-closed target as
+      // idempotent cleanup, never as a reason to abort the requested open.
+      value: null, required: false, failure_policy: "continue"
     }));
     if (nextPlan) {
       return validateWorkflowPlan({

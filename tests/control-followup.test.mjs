@@ -52,6 +52,7 @@ test("bulk close uses only exact current non-consequential panel context", () =>
   assert.deepEqual(plan.steps.map(step => [step.operation, step.target.command, step.target.security, step.required]), [
     ["close", "G", "AMZN", false], ["close", "HMAP", null, false]
   ]);
+  assert.deepEqual(plan.steps.map(step => step.failure_policy), ["continue", "continue"]);
   assert.equal(parseControlFollowup("close these windows well please", {
     panels: [{ command: "WEI", connected: true }, { command: "WEIF", connected: true }, { command: "G", security: "VIX", connected: true }]
   }).steps.length, 3);
@@ -394,8 +395,13 @@ test("fast-paths verified GF period, layout, and currency controls", () => {
   ]);
 });
 
-test("does not confuse opening a GF window with configuring an existing one", () => {
-  assert.equal(parseControlFollowup("open a fundamentals graph comparing Meta and Microsoft revenue"), null);
+test("opens an explicit multi-company GF comparison instead of treating it as a focused followup", () => {
+  const plan = parseControlFollowup("open a fundamentals graph comparing Meta and Microsoft revenue");
+  assert.equal(plan.steps[0].terminal_command, "META US EQ GF");
+  assert.deepEqual(plan.steps[0].actions, [
+    { feature: "add company", operation: "add", value: "MSFT" },
+    { feature: "add metric", operation: "add", value: "Revenue" }
+  ]);
 });
 
 test("opens an explicit Dow index map as a table without the LLM", () => {

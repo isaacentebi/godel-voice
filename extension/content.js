@@ -665,8 +665,16 @@
     // opened. Toggle that instance closed, prove it unmounted, then open a
     // fresh palette bound to the current layout.
     if (commandMenuOpen()) {
-      await press("Backquote");
-      await waitUntil(() => !commandMenuOpen(), "closed Godel command bar", 1000);
+      // Godel 4.5.8 may mount the palette as its default empty-screen state;
+      // Backquote does not close that variant, while Escape does. Prefer the
+      // semantic close key and retain Backquote only as a bounded fallback.
+      await press("Escape");
+      try {
+        await waitUntil(() => !commandMenuOpen(), "closed Godel command bar", 600);
+      } catch {
+        await press("Backquote");
+        await waitUntil(() => !commandMenuOpen(), "closed Godel command bar", 1000);
+      }
     }
     await press("Escape");
     await press("Backquote");
@@ -2487,9 +2495,11 @@
     const transactionWindowIds = new Set();
     const transactionBorrowedIds = new Set();
     const opensNewPanels = plan.steps.some(step => step.kind === "command" && step.command !== "Q");
+    const replacesVoiceWorkspace = plan.layout.preserve_existing === false
+      && plan.steps.some(step => step.kind === "command");
     let workflowScreenId = null;
     try {
-    if (opensNewPanels && plan.layout.preserve_existing === false) {
+    if (replacesVoiceWorkspace) {
       await ensureNotCancelled(requestId);
       await workspaceInternalAction("createScreen", { name: "Voice" });
       const voiceScreen = await workspaceInternalAction("activeScreenInfo");

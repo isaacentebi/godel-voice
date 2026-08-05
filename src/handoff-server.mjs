@@ -52,6 +52,25 @@ function realtimeConversationMessage(value) {
       || /^user asked if i am here$/.test(normalized)) {
     return "Yes, I'm here and listening.";
   }
+  if (/^(?:(?:okay|ok|and|so) )?(?:jarvis )?(?:what else can you do|what can you do|help|give me some ideas)$/.test(normalized)) {
+    return "I can open and arrange Godel views, compare companies, screen equities, search earnings calls, read verified quotes, and export supported data.";
+  }
+  return null;
+}
+
+function realtimeConstraintMessage(value) {
+  const normalized = safeAuditText(value, 1_000).toLowerCase().replace(/[^a-z0-9/]+/g, " ").trim();
+  const comparison = /\b(?:compare|compared|comparing|compairing|comparison|versus|verses|vs|against)\b|\bcom pairing\b/.test(normalized);
+  if (comparison && /\b(?:operating income|operating profit)\b/.test(normalized)) {
+    return "Godel's fundamentals graph does not expose operating income. Shall I compare revenue and operating margin instead?";
+  }
+  if (comparison && /\b(?:nopat|ebitda|ebit)\b/.test(normalized)) {
+    return "That metric is not available in Godel's comparison graph. Shall I use revenue and operating margin instead?";
+  }
+  if (/\b(?:forward|fwd)\s*(?:p\s*\/?\s*e|pe)\b/.test(normalized)
+      && /\b(?:compare|comparison|graph|chart)\b/.test(normalized)) {
+    return "Godel does not label the fundamentals-chart P/E as forward. I can open the forward multiples in Earnings Matrix instead.";
+  }
   return null;
 }
 
@@ -708,6 +727,17 @@ export function createHandoffServer({
           audit("tool_compiled", {
             session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
             request: requestText, kind: result.kind, route: "local_conversation", duration_ms: 0
+          });
+          return respond(response, 200, result);
+        }
+
+        const constraintMessage = realtimeConstraintMessage(requestText);
+        if (constraintMessage) {
+          const result = { kind: "clarify", message: constraintMessage };
+          session.preflights.set(turnId, result);
+          audit("tool_compiled", {
+            session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
+            request: requestText, kind: result.kind, route: "local_constraint", duration_ms: 0
           });
           return respond(response, 200, result);
         }

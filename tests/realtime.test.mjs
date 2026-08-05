@@ -243,6 +243,28 @@ test("Realtime deterministic preflight executes common commands without a model 
   })).json();
   assert.deepEqual(checkIn, { kind: "conversation", message: "Yes, I'm here and listening." });
 
+  const capabilities = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, turn_id: "turn-capabilities", transcript: "What else can you do?" })
+  })).json();
+  assert.deepEqual(capabilities, {
+    kind: "conversation",
+    message: "I can open and arrange Godel views, compare companies, screen equities, search earnings calls, read verified quotes, and export supported data."
+  });
+
+  const unsupportedComparison = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      session_id: sessionId,
+      turn_id: "turn-operating-income",
+      transcript: "Close everything and open a chart comparing Amazon and Meta operating income and revenue for five years"
+    })
+  })).json();
+  assert.deepEqual(unsupportedComparison, {
+    kind: "clarify",
+    message: "Godel's fundamentals graph does not expose operating income. Shall I compare revenue and operating margin instead?"
+  });
+
   const ambiguous = await (await fetch(`${base}/realtime/preflight`, {
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
     body: JSON.stringify({ session_id: sessionId, turn_id: "turn-2", transcript: "what should I look at next?" })
@@ -282,7 +304,14 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /tool_result/);
   assert.match(source, /track\.enabled = enabled/);
   assert.match(source, /\/realtime\/preflight/);
-  assert.match(source, /TURN_GRACE_MS = 325/);
+  assert.match(source, /TURN_GRACE_MS = 180/);
+  assert.match(source, /WORKFLOW_POLL_MS = 160/);
+  assert.match(source, /PREFLIGHT_RETRY_MS = 120/);
+  assert.match(source, /\/status\?id=/);
+  assert.match(source, /new Set\(\["completed", "failed", "cancelled"\]\)/);
+  assert.match(source, /Suppressed unsolicited Realtime audio/);
+  assert.match(source, /audio\.muted = true/);
+  assert.match(source, /type: "response\.cancel"/);
   assert.doesNotMatch(source, /wait_for_user/);
   assert.match(source, /auditAssistantTranscript/);
   assert.match(source, /createConversationResponse/);
@@ -302,4 +331,7 @@ test("verified successes are spoken exactly and first-audio latency is audited s
   assert.match(source, /createConversationResponse\(exact, "grounded_result"\)/);
   assert.match(source, /responseRequestKind \?\? "response"/);
   assert.match(source, /Date\.now\(\) - responseRequestedAt/);
+  assert.match(source, /max_output_tokens: 128/);
+  assert.match(source, /return await api\("\/realtime\/preflight", options\)/);
+  assert.match(source, /error\?\.status && error\.status < 500/);
 });
