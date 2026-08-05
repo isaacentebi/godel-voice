@@ -111,7 +111,8 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
   assert.match(upstreamSession, /run_godel_workflow/);
   assert.match(upstreamSession, /Jarvis/);
   assert.match(upstreamSession, /\"effort\":\"low\"/);
-  assert.match(upstreamSession, /\"tool_choice\":\"required\"/);
+  assert.match(upstreamSession, /\"tool_choice\":\"auto\"/);
+  assert.match(upstreamSession, /\"eagerness\":\"low\"/);
 
   const tool = await fetch(`${base}/realtime/request`, {
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
@@ -169,7 +170,8 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /getUserMedia/);
   assert.match(source, /track\.stop\(\)/);
   assert.match(source, /run_godel_workflow/);
-  assert.match(source, /Jarvis online/);
+  assert.doesNotMatch(source, /Jarvis online/);
+  assert.match(source, /Ready when you are/);
   assert.match(source, /function_call_output/);
   assert.match(source, /tool_choice: "none"/);
   assert.match(source, /12_000/);

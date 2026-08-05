@@ -222,7 +222,10 @@
       render("thinking");
       armToolWatchdog(runGeneration);
     }
-    else if (event.type === "output_audio_buffer.started") render("speaking");
+    else if (event.type === "output_audio_buffer.started") {
+      clearToolWatchdog();
+      render("speaking");
+    }
     else if (event.type === "output_audio_buffer.stopped") render("listening");
     else if (event.type === "error") render("error", "Realtime voice reported an error");
     if (event.type === "conversation.item.input_audio_transcription.completed" && event.transcript) {
@@ -274,14 +277,7 @@
       channel = peer.createDataChannel("oai-events");
       channel.addEventListener("message", event => handleEvent(event.data, runGeneration));
       channel.addEventListener("open", () => {
-        if (runGeneration !== generation) return;
-        send({
-          type: "response.create",
-          response: {
-            instructions: "Say exactly: Jarvis online. Do not add anything else.",
-            tools: [], tool_choice: "none", max_output_tokens: 20
-          }
-        });
+        if (runGeneration === generation) render("listening", "Ready when you are");
       }, { once: true });
       channel.addEventListener("close", () => { if (runGeneration === generation && peer) teardown("error", "Voice connection closed", "connection_closed"); });
       const offer = await peer.createOffer();

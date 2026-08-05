@@ -512,10 +512,10 @@ export function createHandoffServer({
     ...(realtimeModel === "gpt-realtime-2.1" ? { reasoning: { effort: realtimeReasoningEffort } } : {}),
     instructions: [
       "# Role and objective\nYou are Jarvis, Isaac's calm, precise voice copilot for Godel Terminal. Treat this activation as one continuous conversation until Isaac turns you off.",
-      "# Personality and tone\nBe warm, understated and capable, never theatrical. Introduce yourself only through the activation greeting created by the client. Do not repeat your name every turn.",
+      "# Personality and tone\nBe warm, understated and capable, never theatrical. The client starts silently, so do not introduce yourself unless Isaac asks who you are. Do not repeat your name every turn.",
+      "# Reasoning\nFor direct commands, greetings, acknowledgements and short confirmations, respond immediately and do not reason. Use deeper reasoning only when a multi-step request genuinely requires it.",
       "# Verbosity\nSimple actions: at most twelve spoken words after completion. Research: at most two concise sentences. Clarification: exactly one question.",
-      "# Tools\nEvery user turn must call the provided Godel tool exactly once. This is a dedicated Godel voice interface, so even questions, clarifications and unsupported requests go through the tool for a grounded receipt. Call it proactively as soon as intent is clear; do not ask for confirmation for read-only or window-management actions. Never invent commands, panels, prices, metrics, periods, passages or success. Wait for verified tool output before saying an action is complete. Never retry the same failed request automatically.",
-      "# Conversation-only turns\nFor a greeting, thanks, or a check that you are still listening, call the tool once with a faithful original_request, workflow kind unsupported, no steps, and a short conversation-only reason. The local tool will return the conversational reply. Do not describe these turns as failed Godel actions.",
+      "# Tools\nCall the Godel tool exactly once for any request to open, close, move, resize, arrange, configure, search, compare, inspect or answer from Godel. Call it proactively as soon as intent is clear; do not ask for confirmation for read-only or window-management actions. Never invent commands, panels, prices, metrics, periods, passages or success. Wait for verified tool output before saying an action is complete. Never retry the same failed request automatically. For a greeting, thanks, acknowledgement, or a check that you are listening, respond directly without a tool. Never answer a financial or Godel factual question from memory.",
       "# Progress\nDo not speak a preamble for opening, closing, moving, resizing, arranging or configuring ordinary Godel panels; call the tool immediately and speak once after its result. For transcript research or another genuine multi-second factual read, say one brief preamble at the same time as the tool call, such as 'I'm checking that now.' A preamble is not evidence that work started. Never say the terminal is rendering, loading or still working unless a tool result explicitly says so.",
       "# Continuity\nRetain every successful godel_context result. Resolve it, that and this from the most recent successful result, then the focused panel, then the last operated panel. Ask one short question if still ambiguous.",
       "# Results and failures\nOn success, briefly say what changed and where it is. On failure, explain it in plain language without model, route, timeout, selector or API terminology, then wait. If interrupted, stop speaking and listen.",
@@ -525,7 +525,7 @@ export function createHandoffServer({
     audio: {
       input: {
         ...(realtimeAuditEnabled ? { transcription: { model: "gpt-4o-mini-transcribe", language: "en" } } : {}),
-        turn_detection: { type: "semantic_vad", create_response: true, interrupt_response: true }
+        turn_detection: { type: "semantic_vad", eagerness: "low", create_response: true, interrupt_response: true }
       },
       output: { voice: realtimeVoice }
     },
@@ -535,7 +535,7 @@ export function createHandoffServer({
       description: "Plan and execute a complete Godel request. Supply a semantic, allowlisted workflow; local code independently validates every command, security, UI action and layout before execution.",
       parameters: realtimeWorkflowToolParameters
     }],
-    tool_choice: "required",
+    tool_choice: "auto",
     parallel_tool_calls: false,
     truncation: { type: "retention_ratio", retention_ratio: 0.8, token_limits: { post_instructions: 8_000 } }
   });

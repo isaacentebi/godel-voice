@@ -53,7 +53,7 @@ This is the exact enabled nested-control list. It is checked against the runtime
 
 There are also three legacy runtime adapters not promoted into that newer contract snapshot. GF is authenticated-live for company/metric/range/estimates/periodicity/layout/currency; HALT is authenticated-live for All/Active/Resumed; and GR retains a partial legacy allowlist for legs, period and statistical controls but is marked `existing-runtime-unverified` by its newer strict compiler. The exact registry list above and this legacy distinction are both important: the first must never overclaim, while the second prevents proven working features from disappearing from the user guide.
 
-The machine-readable capability contracts in `data/` record completion conditions and current limitations for each action family.
+The machine-readable capability contracts in `catalog/` record completion conditions and current limitations for each action family.
 
 ## Best things to try now
 
