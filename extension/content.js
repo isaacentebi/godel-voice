@@ -163,7 +163,7 @@
   }
 
   function persistManagedWindowIds() {
-    sessionStorage.setItem(managedWindowStorageKey, JSON.stringify([...managedWindowIds].slice(-32)));
+    sessionStorage.setItem(managedWindowStorageKey, JSON.stringify([...managedWindowIds].slice(-512)));
   }
 
   function persistBorrowedWindows() {
@@ -234,6 +234,18 @@
         // housekeeping into a destructive or blocking failure.
       }
     }
+    // Native close callbacks are ideal for ordinary layouts because they let
+    // Godel release each mounted widget normally. Crashed or older Jarvis
+    // sessions can leave layout records without a usable DOM root, though.
+    // The dedicated Voice screen is the durable ownership boundary, so prune
+    // those stale records in one native layout transaction after restoring any
+    // temporarily borrowed user panels. This prevents unbounded window buildup
+    // and repairs workspaces that can no longer render every leaked widget.
+    const cleanup = await workspaceInternalAction("clearVoiceScreen", {
+      preserve_ids: [...borrowedWindowReceipts.keys()],
+      ...(onlyIds ? { only_ids: [...onlyIds].map(String) } : {})
+    });
+    for (const id of cleanup?.removed_ids ?? []) managedWindowIds.delete(String(id));
     persistManagedWindowIds();
   }
 
@@ -2865,6 +2877,10 @@
       if (response.status === 204) return;
       if (!response.ok) throw new Error(`handoff server returned ${response.status}`);
       const payload = await response.json();
+      // A session-start event can arrive while /next is in flight. Rejoin the
+      // serialized cleanup barrier before claiming the workspace so a stale
+      // cleanup can never run behind this newly leased request.
+      await lifecycleCleanup;
       running = true;
       const startedAt = Date.now();
       if (!payload.realtime) emitStartAcknowledgement(payload.premium_voice === true);
@@ -2924,11 +2940,9 @@
   setInterval(poll, 100);
   let jarvisSessionEpoch = 0;
   let lifecycleCleanup = Promise.resolve();
-  function queueVoiceCleanup(requestedEpoch, waitForWorkflow = false) {
+  function queueVoiceCleanup(requestedEpoch) {
     lifecycleCleanup = lifecycleCleanup.then(async () => {
-      if (waitForWorkflow) {
-        for (let attempt = 0; attempt < 700 && running; attempt += 1) await pause(50);
-      }
+      for (let attempt = 0; attempt < 700 && running; attempt += 1) await pause(50);
       if (requestedEpoch !== jarvisSessionEpoch || running) return;
       await workspaceInternalAction("createScreen", { name: "Voice" });
       await restoreBorrowedWindows();
@@ -2944,7 +2958,7 @@
     queueVoiceCleanup(jarvisSessionEpoch);
   });
   window.addEventListener("godel-voice:cleanup-request", () => {
-    queueVoiceCleanup(jarvisSessionEpoch, true);
+    queueVoiceCleanup(jarvisSessionEpoch);
   });
   // Context is also published immediately after Realtime work. A slower idle
   // cadence avoids repeatedly scanning Godel's large dashboard DOM.

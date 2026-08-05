@@ -1027,6 +1027,10 @@
     return type;
   }
 
+  function consequentialWindowType(type) {
+    return /CHAT|NOTE|ACCOUNT|BROK|ORDER|TRADE|MESSAGE|ALERT/.test(String(type ?? "").toUpperCase());
+  }
+
   function nativeClose(root) {
     const controls = [...root.querySelectorAll('[data-cy-close-window="true"]')];
     if (controls.length !== 1) throw new Error("Godel native close control unavailable");
@@ -1034,7 +1038,7 @@
     if (props?.["data-cy-close-window"] !== true || typeof props.onClick !== "function") {
       throw new Error("Godel native close callback shape changed");
     }
-    const unsafe = /CHAT|NOTE|ACCOUNT|BROK|ORDER|TRADE|MESSAGE|ALERT/.test(commandTypeFor(root));
+    const unsafe = consequentialWindowType(commandTypeFor(root));
     if (unsafe) throw new Error("This Godel window may contain unsaved or consequential state and cannot be closed by voice");
     props.onClick();
   }
@@ -1136,6 +1140,79 @@
     }
     const context = workspaceContextFor(contextRoot ?? root);
     const current = assertLayoutShape(context.layout);
+    if (action === "workspaceInventory") {
+      return {
+        active_screen_id: String(current.activeScreenId),
+        total_windows: current.screenIds.reduce((total, id) => total + current.screens[id].windowIds.length, 0),
+        screens: current.screenIds.map(id => ({
+          id: String(id), title: current.screens[id].title,
+          active: String(id) === String(current.activeScreenId),
+          active_window_id: current.screens[id].activeWindowId == null ? null : String(current.screens[id].activeWindowId),
+          window_ids: current.screens[id].windowIds.map(String)
+        }))
+      };
+    }
+    if (action === "clearVoiceScreen") {
+      const voiceScreens = current.screenIds.map(id => current.screens[id])
+        .filter(screen => screen.title.trim().toLowerCase() === "voice");
+      if (voiceScreens.length !== 1) throw new Error(`Expected one dedicated Voice screen, found ${voiceScreens.length}`);
+      const voice = voiceScreens[0];
+      const preserveIds = new Set((Array.isArray(payload.preserve_ids) ? payload.preserve_ids : []).map(String));
+      const onlyIds = Array.isArray(payload.only_ids) ? new Set(payload.only_ids.map(String)) : null;
+      for (const id of [...preserveIds, ...(onlyIds ?? [])]) {
+        if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) throw new Error("Invalid Godel cleanup window id");
+      }
+      const duplicateIds = voice.windowIds.map(String).filter(id => current.screenIds.some(screenId =>
+        String(screenId) !== String(voice.id) && current.screens[screenId].windowIds.some(candidate => String(candidate) === id)));
+      if (duplicateIds.length) throw new Error("Godel layout contains windows assigned to more than one screen");
+      const blockedIds = new Set();
+      for (const rawId of voice.windowIds.map(String)) {
+        const nativeRoot = document.getElementById(`${rawId}-window`);
+        if (nativeRoot instanceof HTMLElement) {
+          try { if (consequentialWindowType(commandTypeFor(nativeRoot))) blockedIds.add(rawId); }
+          catch { blockedIds.add(rawId); }
+        }
+      }
+      const removeIds = new Set(voice.windowIds.map(String).filter(id =>
+        !preserveIds.has(id) && !blockedIds.has(id) && (!onlyIds || onlyIds.has(id))));
+      if (!removeIds.size) {
+        return { removed_ids: [], preserved_ids: [...preserveIds], blocked_ids: [...blockedIds] };
+      }
+      let rejected = null;
+      context.setLayout(layoutValue => {
+        let layout;
+        try { layout = assertLayoutShape(layoutValue); }
+        catch (error) { rejected = error; return layoutValue; }
+        const liveVoice = layout.screens[voice.id];
+        if (!liveVoice || [...removeIds].some(id => !liveVoice.windowIds.some(candidate => String(candidate) === id))) {
+          rejected = new Error("Godel Voice workspace changed during cleanup");
+          return layoutValue;
+        }
+        const remainingIds = liveVoice.windowIds.filter(id => !removeIds.has(String(id)));
+        const windows = { ...layout.windows };
+        for (const id of removeIds) delete windows[id];
+        return {
+          ...layout,
+          windows,
+          screens: {
+            ...layout.screens,
+            [voice.id]: {
+              ...liveVoice,
+              windowIds: remainingIds,
+              activeWindowId: remainingIds.some(id => String(id) === String(liveVoice.activeWindowId))
+                ? liveVoice.activeWindowId : (remainingIds.at(-1) ?? null)
+            }
+          }
+        };
+      });
+      await waitForElement(() => {
+        if (rejected) throw rejected;
+        const layout = assertLayoutShape(workspaceContextFor(document.documentElement).layout);
+        const screen = layout.screens[voice.id];
+        return screen && [...removeIds].every(id => !screen.windowIds.some(candidate => String(candidate) === id));
+      }, "Voice workspace cleanup", 3000);
+      return { removed_ids: [...removeIds], preserved_ids: [...preserveIds], blocked_ids: [...blockedIds] };
+    }
     if (action === "activeWindowIds") {
       const screen = current.screens[current.activeScreenId];
       if (!screen) throw new Error("Godel active screen is unavailable");

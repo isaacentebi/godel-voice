@@ -69,6 +69,8 @@ test("manual Jarvis shutdown cleans only its Voice-screen windows and aborts acr
   assert.match(content, /queueVoiceCleanup\(jarvisSessionEpoch\)/);
   assert.match(content, /requestedEpoch !== jarvisSessionEpoch \|\| running/);
   assert.match(content, /await lifecycleCleanup/);
+  assert.match(content, /const payload = await response\.json\(\);[\s\S]{0,320}await lifecycleCleanup;[\s\S]{0,80}running = true/);
+  assert.match(content, /for \(let attempt = 0; attempt < 700 && running/);
   assert.match(content, /await closeVoiceScreenPanels\(\)/);
 });
 
@@ -79,6 +81,22 @@ test("failed workflows roll back only newly opened safe Voice windows", () => {
   assert.match(content, /closeVoiceScreenPanels\(\{ onlyIds: transactionWindowIds \}\)/);
   assert.match(content, /if \(plan\.layout\.preserve_existing === false\) await closeVoiceScreenPanels\(\)/);
   assert.match(content, /const allowedIds = onlyIds \? new Set/);
+});
+
+test("Voice workspace cleanup atomically prunes stale Jarvis layout records", () => {
+  assert.match(bridge, /action === "clearVoiceScreen"/);
+  assert.match(bridge, /Expected one dedicated Voice screen/);
+  assert.match(bridge, /const windows = \{ \.\.\.layout\.windows \}/);
+  assert.match(bridge, /delete windows\[id\]/);
+  assert.match(bridge, /consequentialWindowType/);
+  assert.match(content, /workspaceInternalAction\("clearVoiceScreen"/);
+  assert.match(content, /preserve_ids: \[\.\.\.borrowedWindowReceipts\.keys\(\)\]/);
+});
+
+test("workspace inventory exposes bounded state needed for recovery diagnostics", () => {
+  assert.match(bridge, /action === "workspaceInventory"/);
+  assert.match(bridge, /total_windows:/);
+  assert.match(bridge, /window_ids: current\.screens\[id\]\.windowIds\.map\(String\)/);
 });
 
 test("singleton panels borrowed from another screen are restored instead of closed", () => {
