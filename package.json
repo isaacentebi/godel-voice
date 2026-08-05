@@ -34,7 +34,7 @@
   ],
   "scripts": {
     "build": "node src/build.mjs",
-    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
+    "test": "node --test --test-concurrency=1 --test-force-exit tests/*.test.mjs",
     "compile": "node --env-file-if-exists=.env src/compiler.mjs",
     "compile:plain": "node src/compiler.mjs",
     "eval:noisy": "node --env-file-if-exists=.env src/evaluate-noisy.mjs",

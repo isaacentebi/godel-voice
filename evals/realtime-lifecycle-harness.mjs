@@ -163,7 +163,6 @@ export async function runRealtimeLifecycleHarness({
   let host;
   let stopped = false;
   let disconnectedOnce = false;
-  let observer = null;
   let acknowledgedMessage = "";
   let spokenTranscript = "";
   let providerResponseCounter = 0;
@@ -341,11 +340,18 @@ export async function runRealtimeLifecycleHarness({
       message: "Jarvis control mount"
     });
     const shadow = host.shadowRootForHarness;
-    observer = setInterval(() => {
-      const latest = { at: Date.now(), state: shadow.shell.dataset.state, label: shadow.label.textContent, detail: shadow.detail.textContent };
-      const previous = renderTrace.at(-1);
-      if (!previous || previous.state !== latest.state || previous.detail !== latest.detail) renderTrace.push(latest);
-    }, 2);
+    const observedDataset = shadow.shell.dataset;
+    shadow.shell.dataset = new Proxy(observedDataset, {
+      set(target, property, value) {
+        Reflect.set(target, property, value);
+        if (property === "state") {
+          const latest = { at: Date.now(), state: value, label: shadow.label.textContent, detail: shadow.detail.textContent };
+          const previous = renderTrace.at(-1);
+          if (!previous || previous.state !== latest.state) renderTrace.push(latest);
+        }
+        return true;
+      }
+    });
     stamps.activation = Date.now();
     shadow.button.dispatchEvent(new Event("click"));
     await waitFor(() => channel?.readyState === "open", { message: "Realtime data channel" });
@@ -372,7 +378,6 @@ export async function runRealtimeLifecycleHarness({
       message: "grounded spoken completion"
     });
     await sleep(30);
-    clearInterval(observer);
 
     assert.equal(lease?.marker?.startsWith("GV"), true, "transcript must compile into a validated workflow marker");
     const expectedSpokenResponses = Number.isFinite(workflowProgressDelayMs) && executionMs > workflowProgressDelayMs ? 2 : 1;
@@ -448,7 +453,6 @@ export async function runRealtimeLifecycleHarness({
     return report;
   } finally {
     stopped = true;
-    if (observer) clearInterval(observer);
     executorAbort.abort();
     await Promise.allSettled([executor, ...providerTasks]);
     await server.close();
