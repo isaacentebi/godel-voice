@@ -156,6 +156,19 @@
   if (!config || !realtimeState || location.origin !== "https://app.godelterminal.com") return;
   const ACTIVE_INTENT_KEY = "godel-voice:jarvis-active-v1";
   const intentStore = realtimeState.createIntentStore(globalThis.sessionStorage, ACTIVE_INTENT_KEY);
+  let executorId = null;
+  let documentGeneration = null;
+  const executorIdentityReady = chrome.runtime.sendMessage({ type: "godel-voice:executor-identity" }).then(response => {
+    const value = String(response?.executor_id ?? "");
+    const generation = String(response?.document_generation ?? "");
+    if (!response?.ok || !/^gx-[A-Za-z0-9_-]{40,96}$/.test(value)
+        || !/^gd-[A-Za-z0-9_-]{40,96}$/.test(generation)) {
+      throw new Error("Godel executor identity is unavailable");
+    }
+    executorId = value;
+    documentGeneration = generation;
+    return { executorId: value, documentGeneration: generation };
+  });
 
   let peer = null;
   let channel = null;
@@ -376,7 +389,10 @@
     const options = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: sessionId, turn_id: turnId, transcript })
+      body: JSON.stringify({
+        session_id: sessionId, turn_id: turnId, transcript,
+        executor_id: executorId, document_generation: documentGeneration
+      })
     };
     try {
       return await api("/realtime/preflight", options);
@@ -530,6 +546,11 @@
       }
     } catch (error) {
       audit("client_error", `${turnId}-preflight-error`, { text: String(error?.message ?? error).slice(0, 240) });
+      if (error?.status === 409 && /another Godel tab|no longer active/i.test(String(error.message))) {
+        intentStore.deactivate();
+        teardown("error", "Jarvis is active in another Godel tab", "executor_revoked");
+        return;
+      }
       if (error?.status === 404 && runGeneration === generation && wantsActive) {
         coordinator.enqueueTurn({ transcript, turnId }, { front: true });
         scheduleReconnect(runGeneration, "local_session_lost");
@@ -741,6 +762,7 @@
     const runGeneration = ++generation;
     render("connecting", reconnecting ? `Reconnecting · ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}` : null);
     try {
+      const identity = await executorIdentityReady;
       const liveMicrophone = microphone?.getAudioTracks?.().some(track => track.readyState === "live");
       if (!liveMicrophone) {
         microphone = await navigator.mediaDevices.getUserMedia({
@@ -776,7 +798,10 @@
       await peer.setLocalDescription(offer);
       const response = await api("/realtime/session", {
         method: "POST",
-        headers: { "Content-Type": "application/sdp" },
+        headers: {
+          "Content-Type": "application/sdp", "X-Godel-Executor-Id": identity.executorId,
+          "X-Godel-Document-Generation": identity.documentGeneration
+        },
         body: offer.sdp
       });
       sessionId = response.headers.get("X-Godel-Realtime-Session");
@@ -836,7 +861,8 @@
     if (audio) { audio.srcObject = null; audio.remove(); }
     audio = null;
     if (closingSession) api("/realtime/close", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: closingSession, reason }),
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: closingSession, reason, executor_id: executorId, document_generation: documentGeneration }),
       keepalive: reason === "pagehide"
     }).catch(() => {});
     if (!preserveIntent && reason !== "pagehide") {

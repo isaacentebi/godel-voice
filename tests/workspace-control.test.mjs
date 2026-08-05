@@ -140,8 +140,13 @@ test("fresh rendered windows wait for Godel's layout store before transfer", () 
 });
 
 test("compound commands wait for Godel's bounded layout commit before opening another panel", () => {
+  assert.match(content, /function elementExposed\(element\)/);
+  assert.match(content, /document\.elementFromPoint\(x, y\)/);
+  assert.match(content, /visible\(element\) && elementExposed\(element\)/);
+  assert.match(content, /const input = topCommandInput\(\);[\s\S]*if \(!input\) return false/);
   assert.match(content, /element\.textContent\.trim\(\)\.toUpperCase\(\) === "COMMANDS"/);
   assert.match(content, /if \(commandMenuOpen\(\)\)/);
+  assert.match(content, /const staleInput = topCommandInput\(\);[\s\S]*await click\(staleInput\)/);
   assert.match(content, /await press\("Escape"\);[\s\S]*await waitUntil\(\(\) => !commandMenuOpen\(\), "closed Godel command bar", 600\)/);
   assert.match(content, /catch \{[\s\S]*await press\("Backquote"\);[\s\S]*"closed Godel command bar", 1000/);
   assert.match(content, /await waitUntil\(commandMenuOpen, "open Godel command menu", 3000\)/);
@@ -174,11 +179,16 @@ test("contextual controls target last, focused, or remembered command windows", 
   assert.match(content, /workspaceWindowId/);
   assert.match(content, /beforeWindowIds/);
   assert.match(content, /activeIds\.find\(id => !beforeWindowIds\.includes\(id\)\)/);
+  assert.doesNotMatch(content, /\?\? activeIds\[0\]/);
   assert.match(content, /attempt < 20/);
   assert.match(content, /await pause\(25\)/);
   assert.match(content, /workspaceInternalAction\("setWindowGeometry"/);
   assert.match(content, /document\.getElementById\("godel-voice-workspace-anchor"\)/);
   assert.match(content, /panelForControl\(step\.target, await activeScreenRoots\(\)\)/);
+  assert.match(content, /uniqueVisiblePanelForControl\(step\.target\)/);
+  assert.match(content, /titles\.length !== 1/);
+  assert.match(content, /panelExposureScore\(native\) < 1/);
+  assert.match(content, /panelContainsSecurity\(shell, target\.security\)/);
   assert.match(content, /roots\.filter\(root => panelMatchesCommand\(root, target\.command\)\)/);
   assert.match(bridge, /screen\.activeWindowId == null/);
   assert.match(content, /ids\.map\(id => roots\.find\(root => windowId\(root\) === String\(id\)\)\)/);

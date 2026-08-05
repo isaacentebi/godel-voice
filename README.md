@@ -28,6 +28,8 @@ Try:
 
 You do not need to click Godel's command field. Keep the Godel tab visible and speak.
 
+Jarvis is bound to the exact Godel tab where you start it. Starting Jarvis in a different Godel tab transfers control there and safely stops the old session.
+
 ## Models and voices
 
 | Option | What it does | Recommended choice |

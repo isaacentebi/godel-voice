@@ -6,11 +6,26 @@ Godel Voice is a local voice layer for Godel Terminal. It keeps provider credent
 
 1. OpenAI Realtime or VoiceInk captures the request.
 2. Deterministic parsers handle common commands and follow-ups immediately.
-3. A configured language model handles requests that need broader intent understanding.
+3. A configured language model gets one bounded attempt only when the local parser cannot resolve the intent.
 4. The local compiler produces a small, typed workflow.
 5. Independent validators reject unknown commands, ambiguous targets, unsafe actions, and unsupported panel controls.
-6. The Arc extension executes approved operations through Godel's command interface and allow-listed panel adapters.
-7. Jarvis speaks only after Godel returns a verified completion result.
+6. The workflow is bound to one background-minted Godel-tab owner and one document generation.
+7. Only that exact Arc document may lease, execute, heartbeat, or acknowledge the workflow.
+8. The extension operates through Godel's command interface and allow-listed panel adapters, then verifies rendered postconditions.
+9. Jarvis speaks only after the exact executor returns a verified completion result.
+
+## Reliability model
+
+Jarvis has one armed Godel owner at a time. Starting it in another Godel tab revokes the old session instead of allowing two tabs to race for a global queue. Context is private to that owner, survives a normal reload, and cannot be used by a stale document generation. A request with no valid owner fails closed rather than waiting for whichever tab becomes focused next.
+
+Every completed voice turn crosses four independent gates:
+
+1. transcription completed;
+2. a typed workflow passed local validation;
+3. the exact Godel executor verified its visible result;
+4. one grounded spoken response was requested.
+
+The lifecycle benchmark reports each stage separately. Simulated provider audio or a simulated Godel executor is labelled as such and is never counted as live end-to-end proof.
 
 ## Repository map
 

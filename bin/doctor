@@ -125,6 +125,7 @@ else
 fi
 
 if [[ -f "$HOME/Library/LaunchAgents/com.godelvoice.handoff.plist" ]]; then
+  runtime_dir="$HOME/Library/Application Support/GodelVoice"
   runtime_secret="$HOME/Library/Application Support/GodelVoice/.godel-voice-secret"
   if [[ -f "$runtime_secret" ]] && [[ "$(<"$runtime_secret")" == "$secret" ]]; then
     runtime_mode="$(/usr/bin/stat -f '%Lp' "$runtime_secret")"
@@ -132,6 +133,15 @@ if [[ -f "$HOME/Library/LaunchAgents/com.godelvoice.handoff.plist" ]]; then
   else
     fail "installed service secret is stale; run: npm run service:restart"
   fi
+  runtime_server="$runtime_dir/src/handoff-server.mjs"
+  if [[ -f "$runtime_server" ]] && /usr/bin/env node --env-file-if-exists="$runtime_dir/.env" -e '
+const { pathToFileURL } = require("node:url");
+import(pathToFileURL(process.argv[2]).href).catch(() => process.exit(1));' godel-voice-import-smoke "$runtime_server" >/dev/null 2>&1; then
+    pass "installed runtime dependency graph loads cleanly"
+  else
+    fail "installed runtime is incomplete; run: npm run service:restart"
+  fi
+  pass "live telemetry: $runtime_dir/logs"
 fi
 
 queue_path="$project_dir/.godel-voice-queue.json"

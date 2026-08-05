@@ -287,6 +287,72 @@ test("Realtime deterministic preflight executes common commands without a model 
   assert.deepEqual(addressed, { kind: "unsupported", message: "That is not a Godel request." });
 });
 
+test("Realtime sessions and preflights retain exact executor and document affinity", async t => {
+  const owner = "gx-realtime-owner";
+  const generation = "gd-realtime-document";
+  const store = new HandoffStore();
+  store.setContext({ focused_panel: { command: "GF", security: "META" } }, owner, generation);
+  const server = createHandoffServer({
+    secret, store, port: 0, realtimeEnabled: true, openaiApiKey: "private-openai-key",
+    realtimeFetch: async () => new Response(answer, { status: 200, headers: { "Content-Type": "application/sdp" } })
+  });
+  const address = await server.listen();
+  t.after(() => server.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const sessionResponse = await fetch(`${base}/realtime/session`, {
+    method: "POST",
+    headers: {
+      ...auth, "Content-Type": "application/sdp",
+      "X-Godel-Executor-Id": owner, "X-Godel-Document-Generation": generation
+    },
+    body: offer
+  });
+  assert.equal(sessionResponse.status, 200);
+  const sessionId = sessionResponse.headers.get("x-godel-realtime-session");
+  const request = {
+    session_id: sessionId, turn_id: "affinity-turn", transcript: "open the market heatmap",
+    executor_id: owner, document_generation: generation
+  };
+
+  const stale = await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ ...request, document_generation: "gd-stale-document" })
+  });
+  assert.equal(stale.status, 409);
+
+  const prepared = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" }, body: JSON.stringify(request)
+  })).json();
+  assert.equal(prepared.kind, "execute");
+  assert.equal((await fetch(`${base}/next?client=gx-other-owner&executor=gx-other-owner&generation=gd-other`, {
+    headers: auth
+  })).status, 204);
+  const leased = await (await fetch(`${base}/next?client=${owner}&executor=${owner}&generation=${generation}`, {
+    headers: auth
+  })).json();
+  assert.equal(leased.id, prepared.id);
+
+  const ownerB = "gx-realtime-owner-b";
+  const generationB = "gd-realtime-document-b";
+  const secondSession = await fetch(`${base}/realtime/session`, {
+    method: "POST",
+    headers: {
+      ...auth, "Content-Type": "application/sdp",
+      "X-Godel-Executor-Id": ownerB, "X-Godel-Document-Generation": generationB
+    },
+    body: offer
+  });
+  assert.equal(secondSession.status, 200);
+  assert.equal(store.armedExecutor().executor_id, ownerB);
+  const oldOwnerRetry = await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ ...request, turn_id: "old-owner-retry" })
+  });
+  assert.equal(oldOwnerRetry.status, 409);
+  assert.match((await oldOwnerRetry.json()).error, /another Godel tab/);
+  assert.equal(store.armedExecutor().executor_id, ownerB);
+});
+
 test("Realtime browser surface contains no provider credential and has bounded teardown", () => {
   const source = fs.readFileSync(new URL("../extension/realtime.js", import.meta.url), "utf8");
   const manifest = JSON.parse(fs.readFileSync(new URL("../extension/manifest.json", import.meta.url), "utf8"));

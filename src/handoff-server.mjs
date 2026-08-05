@@ -145,6 +145,8 @@ export class HandoffStore {
     this.maxLogBytes = maxLogBytes;
     this.clock = clock;
     this.entries = [];
+    this.contexts = {};
+    this.executorGenerations = {};
     this.load();
   }
 
@@ -154,6 +156,21 @@ export class HandoffStore {
       const value = JSON.parse(fs.readFileSync(this.statePath, "utf8"));
       if (Array.isArray(value.entries)) this.entries = value.entries;
       if (value.context && typeof value.context === "object") this.context = value.context;
+      if (value.contexts && typeof value.contexts === "object" && !Array.isArray(value.contexts)) {
+        this.contexts = Object.fromEntries(Object.entries(value.contexts)
+          .filter(([executorId, context]) => safeOpaqueId(executorId, "") === executorId && context && typeof context === "object")
+          .slice(-16));
+      }
+      if (value.executor_generations && typeof value.executor_generations === "object" && !Array.isArray(value.executor_generations)) {
+        this.executorGenerations = Object.fromEntries(Object.entries(value.executor_generations)
+          .filter(([executorId, generation]) => safeOpaqueId(executorId, "") === executorId
+            && safeOpaqueId(generation, "") === generation)
+          .slice(-16));
+      }
+      this.lastExecutorId = safeOpaqueId(value.last_executor_id, "") || null;
+      this.armedExecutorId = safeOpaqueId(value.armed_executor_id, "") || null;
+      this.armedDocumentGeneration = safeOpaqueId(value.armed_document_generation, "") || null;
+      this.armedAt = Number.isFinite(value.armed_at) ? value.armed_at : 0;
       this.recoverExpiredLeases();
     } catch (error) {
       if (error.code !== "ENOENT") this.event("state_load_failed", { error: safeError(error.message) });
@@ -164,7 +181,14 @@ export class HandoffStore {
     if (!this.statePath) return;
     fs.mkdirSync(path.dirname(this.statePath), { recursive: true });
     const temporary = `${this.statePath}.${process.pid}.tmp`;
-    fs.writeFileSync(temporary, JSON.stringify({ version: 2, entries: this.entries, context: this.context ?? null }), { mode: 0o600 });
+    fs.writeFileSync(temporary, JSON.stringify({
+      version: 3, entries: this.entries, context: this.context ?? null,
+      contexts: this.contexts, executor_generations: this.executorGenerations,
+      last_executor_id: this.lastExecutorId ?? null,
+      armed_executor_id: this.armedExecutorId ?? null,
+      armed_document_generation: this.armedDocumentGeneration ?? null,
+      armed_at: this.armedAt ?? 0
+    }), { mode: 0o600 });
     fs.renameSync(temporary, this.statePath);
     try { fs.chmodSync(this.statePath, 0o600); } catch {}
   }
@@ -203,6 +227,8 @@ export class HandoffStore {
           this.event("workflow_retry_exhausted", { id: entry.id, attempts: entry.attempts });
         }
         delete entry.leased_to;
+        delete entry.leased_executor_id;
+        delete entry.leased_document_generation;
         delete entry.lease_expires_at;
         entry.updated_at = now;
         changed = true;
@@ -211,11 +237,13 @@ export class HandoffStore {
     if (changed) this.persist();
   }
 
-  enqueue(marker, requestedId = null) {
+  enqueue(marker, requestedId = null, executorId = null, documentGeneration = null) {
     this.recoverExpiredLeases();
     const now = this.clock();
     const digest = markerDigest(marker);
     const safeRequestedId = requestedId ? safeOpaqueId(requestedId, "") : null;
+    const targetExecutor = safeOpaqueId(executorId, "") || null;
+    const targetGeneration = safeOpaqueId(documentGeneration, "") || null;
     // A delivery request ID is the idempotency key. Two separate VoiceInk
     // invocations may intentionally compile to the same relative action
     // (for example "smaller" twice), so their equal marker digests must not
@@ -239,6 +267,8 @@ export class HandoffStore {
       updated_at: now,
       cancel_requested: false
     };
+    if (targetExecutor) entry.executor_id = targetExecutor;
+    if (targetGeneration) entry.document_generation = targetGeneration;
     this.entries.push(entry);
     this.trim();
     this.persist();
@@ -255,27 +285,60 @@ export class HandoffStore {
     }
   }
 
-  lease(clientId) {
+  lease(clientId, executorId = null, documentGeneration = null) {
     this.recoverExpiredLeases();
     clientId = safeOpaqueId(clientId);
-    const entry = this.entries.find(candidate => candidate.status === "queued");
-    if (!entry) return null;
+    const executor = safeOpaqueId(executorId ?? clientId, "");
+    const generation = safeOpaqueId(documentGeneration, "");
+    if (this.hasArmedExecutor() && !this.isArmedExecutor(executor, generation)) return null;
     const now = this.clock();
+    let staleChanged = false;
+    for (const candidate of this.entries) {
+      if (candidate.status !== "queued" || !candidate.executor_id || candidate.executor_id !== executor
+          || !candidate.document_generation || candidate.document_generation === generation) continue;
+      candidate.status = "failed";
+      candidate.error = "executor document changed before delivery";
+      candidate.updated_at = now;
+      candidate.finished_at = now;
+      delete candidate.marker;
+      staleChanged = true;
+      this.event("workflow_stale_document_rejected", { id: candidate.id });
+    }
+    if (staleChanged) this.persist();
+    const entry = this.entries.find(candidate => candidate.status === "queued"
+      && (!candidate.executor_id || candidate.executor_id === executor)
+      && (!candidate.document_generation || candidate.document_generation === generation));
+    if (!entry) return null;
     entry.status = "inflight";
     entry.attempts += 1;
     entry.leased_to = clientId;
+    entry.leased_executor_id = executor || null;
+    entry.leased_document_generation = generation || null;
     entry.lease_expires_at = now + this.leaseMs;
     entry.updated_at = now;
     this.persist();
-    this.event("workflow_leased", { id: entry.id, client_id: clientId, attempt: entry.attempts });
+    this.event("workflow_leased", {
+      id: entry.id, client_id: clientId, executor_ref: executor ? markerDigest(executor).slice(0, 12) : undefined,
+      attempt: entry.attempts
+    });
     return entry;
   }
 
-  heartbeat(id, clientId) {
+  heartbeat(id, clientId, executorId = null, documentGeneration = null) {
     const entry = this.entries.find(candidate => candidate.id === id);
     if (!entry || entry.status !== "inflight") return null;
     clientId = safeOpaqueId(clientId, "");
     if (!clientId || entry.leased_to !== clientId) throw new Error("lease owner mismatch");
+    executorId = safeOpaqueId(executorId ?? clientId, "");
+    if (entry.executor_id && (entry.executor_id !== executorId || entry.leased_executor_id !== executorId)) {
+      throw new Error("executor affinity mismatch");
+    }
+    documentGeneration = safeOpaqueId(documentGeneration, "");
+    if (entry.document_generation && (entry.document_generation !== documentGeneration
+        || entry.leased_document_generation !== documentGeneration)) throw new Error("stale executor document");
+    if (entry.executor_id && this.hasArmedExecutor() && !this.isArmedExecutor(executorId, documentGeneration)) {
+      throw new Error("executor is no longer armed");
+    }
     const now = this.clock();
     entry.lease_expires_at = now + this.leaseMs;
     entry.updated_at = now;
@@ -287,6 +350,17 @@ export class HandoffStore {
     if (!terminalStates.has(status)) throw new Error("invalid acknowledgement status");
     const entry = this.entries.find(candidate => candidate.id === id);
     if (!entry) return null;
+    const executorId = safeOpaqueId(details.executor_id, "");
+    if (entry.executor_id && (!executorId || entry.executor_id !== executorId)) {
+      throw new Error("executor affinity mismatch");
+    }
+    const documentGeneration = safeOpaqueId(details.document_generation, "");
+    if (entry.document_generation && entry.document_generation !== documentGeneration) {
+      throw new Error("stale executor document");
+    }
+    if (entry.executor_id && this.hasArmedExecutor() && !this.isArmedExecutor(executorId, documentGeneration)) {
+      throw new Error("executor is no longer armed");
+    }
     if (terminalStates.has(entry.status)) {
       this.event("workflow_acknowledgement_duplicated", { id, status: entry.status });
       return entry;
@@ -294,6 +368,12 @@ export class HandoffStore {
     if (entry.status !== "inflight") throw new Error("workflow is not leased");
     const clientId = safeOpaqueId(details.client_id, "");
     if (!clientId || entry.leased_to !== clientId) throw new Error("lease owner mismatch");
+    if (entry.executor_id && (!executorId || entry.executor_id !== executorId || entry.leased_executor_id !== executorId)) {
+      throw new Error("executor affinity mismatch");
+    }
+    if (entry.document_generation && entry.leased_document_generation !== documentGeneration) {
+      throw new Error("stale executor document");
+    }
     const now = this.clock();
     entry.status = status;
     entry.updated_at = now;
@@ -304,6 +384,8 @@ export class HandoffStore {
     entry.steps = sanitizeStepTimings(details.steps);
     delete entry.marker;
     delete entry.leased_to;
+    delete entry.leased_executor_id;
+    delete entry.leased_document_generation;
     delete entry.lease_expires_at;
     this.persist();
     this.event("workflow_acknowledged", { id, status, duration_ms: entry.duration_ms, error: entry.error || undefined });
@@ -327,11 +409,18 @@ export class HandoffStore {
     return entry;
   }
 
-  release(id, reason = "executor requested retry", clientId = null) {
+  release(id, reason = "executor requested retry", clientId = null, executorId = null, documentGeneration = null) {
     const entry = this.entries.find(candidate => candidate.id === id);
     if (!entry || terminalStates.has(entry.status)) return entry ?? null;
     clientId = safeOpaqueId(clientId, "");
     if (entry.status === "inflight" && (!clientId || entry.leased_to !== clientId)) throw new Error("lease owner mismatch");
+    executorId = safeOpaqueId(executorId ?? clientId, "");
+    if (entry.executor_id && entry.executor_id !== executorId) throw new Error("executor affinity mismatch");
+    documentGeneration = safeOpaqueId(documentGeneration, "");
+    if (entry.document_generation && entry.document_generation !== documentGeneration) throw new Error("stale executor document");
+    if (entry.executor_id && this.hasArmedExecutor() && !this.isArmedExecutor(executorId, documentGeneration)) {
+      throw new Error("executor is no longer armed");
+    }
     const now = this.clock();
     entry.status = entry.cancel_requested ? "cancelled" : entry.attempts >= this.maxAttempts ? "failed" : "queued";
     entry.updated_at = now;
@@ -341,6 +430,8 @@ export class HandoffStore {
       if (entry.status === "failed") entry.error = "executor retry limit reached";
     }
     delete entry.leased_to;
+    delete entry.leased_executor_id;
+    delete entry.leased_document_generation;
     delete entry.lease_expires_at;
     this.persist();
     this.event("workflow_released", { id, status: entry.status, reason: safeError(reason) });
@@ -375,26 +466,96 @@ export class HandoffStore {
     }, {});
   }
 
-  setContext(value) {
-    this.context = sanitizeExecutorContext(value, this.clock(), this.context?.research_session ?? null);
+  setContext(value, executorId = null, documentGeneration = null) {
+    executorId = safeOpaqueId(executorId, "");
+    documentGeneration = safeOpaqueId(documentGeneration, "");
+    if (executorId && !documentGeneration) throw new Error("executor context requires document generation");
+    const previous = executorId ? this.contexts[executorId] : this.context;
+    const context = sanitizeExecutorContext(value, this.clock(), previous?.research_session ?? null);
+    if (executorId) {
+      this.contexts[executorId] = context;
+      this.armExecutor(executorId, documentGeneration, false);
+      this.lastExecutorId = executorId;
+      const ordered = Object.entries(this.contexts).sort((left, right) => left[1].updated_at - right[1].updated_at);
+      while (ordered.length > 16) {
+        const [expiredExecutor] = ordered.shift();
+        delete this.contexts[expiredExecutor];
+        delete this.executorGenerations[expiredExecutor];
+      }
+    } else this.context = context;
     this.persist();
-    return this.context;
+    return context;
   }
 
-  recentContext(maxAgeMs = 15_000, researchMaxAgeMs = 15 * 60_000) {
-    if (!this.context) return null;
+  armExecutor(executorId, documentGeneration, persist = true) {
+    executorId = safeOpaqueId(executorId, "");
+    documentGeneration = safeOpaqueId(documentGeneration, "");
+    if (!executorId || !documentGeneration) throw new Error("executor arm requires exact identity and document generation");
+    this.executorGenerations[executorId] = documentGeneration;
+    this.lastExecutorId = executorId;
+    this.armedExecutorId = executorId;
+    this.armedDocumentGeneration = documentGeneration;
+    this.armedAt = this.clock();
+    if (persist) this.persist();
+    return { executor_id: executorId, document_generation: documentGeneration, armed_at: this.armedAt };
+  }
+
+  armedExecutor(maxAgeMs = 60 * 60_000) {
+    if (!this.armedExecutorId || !this.armedDocumentGeneration) return null;
+    if (this.clock() - this.armedAt > maxAgeMs) return null;
+    return {
+      executor_id: this.armedExecutorId,
+      document_generation: this.armedDocumentGeneration,
+      armed_at: this.armedAt
+    };
+  }
+
+  hasArmedExecutor() {
+    return Boolean(this.armedExecutorId && this.armedDocumentGeneration);
+  }
+
+  isArmedExecutor(executorId, documentGeneration, maxAgeMs = 60 * 60_000) {
+    const armed = this.armedExecutor(maxAgeMs);
+    return Boolean(armed && armed.executor_id === safeOpaqueId(executorId, "")
+      && armed.document_generation === safeOpaqueId(documentGeneration, ""));
+  }
+
+  disarmExecutor(executorId, documentGeneration) {
+    if (this.armedExecutorId !== safeOpaqueId(executorId, "")
+        || this.armedDocumentGeneration !== safeOpaqueId(documentGeneration, "")) return false;
+    this.armedExecutorId = null;
+    this.armedDocumentGeneration = null;
+    this.armedAt = 0;
+    this.persist();
+    return true;
+  }
+
+  recentContext(maxAgeMs = 15_000, researchMaxAgeMs = 15 * 60_000, executorId = null) {
+    executorId = safeOpaqueId(executorId, "");
+    const context = executorId
+      ? this.contexts[executorId]
+      : this.context ?? (this.lastExecutorId ? this.contexts[this.lastExecutorId] : null);
+    if (!context) return null;
     const now = this.clock();
-    const ordinaryFresh = now - this.context.updated_at <= maxAgeMs;
-    const research = this.context.research_session;
+    const ordinaryFresh = now - context.updated_at <= maxAgeMs;
+    const research = context.research_session;
     const researchFresh = research && now - research.updated_at <= researchMaxAgeMs;
     if (!ordinaryFresh && !researchFresh) return null;
     return {
-      updated_at: ordinaryFresh ? this.context.updated_at : research.updated_at,
-      focused_panel: ordinaryFresh ? this.context.focused_panel : null,
-      last_panel: ordinaryFresh ? this.context.last_panel : null,
-      panels: ordinaryFresh ? this.context.panels : [],
+      updated_at: ordinaryFresh ? context.updated_at : research.updated_at,
+      focused_panel: ordinaryFresh ? context.focused_panel : null,
+      last_panel: ordinaryFresh ? context.last_panel : null,
+      panels: ordinaryFresh ? context.panels : [],
       ...(researchFresh ? { research_session: research } : {})
     };
+  }
+
+  defaultExecutor(maxAgeMs = 60 * 60_000) {
+    return this.armedExecutor(maxAgeMs)?.executor_id ?? null;
+  }
+
+  currentDocumentGeneration(executorId) {
+    return this.executorGenerations[safeOpaqueId(executorId, "")] ?? null;
   }
 }
 
@@ -480,7 +641,7 @@ function sanitizeStepTimings(value) {
 function cors(response) {
   response.setHeader("Access-Control-Allow-Origin", "https://app.godelterminal.com");
   response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Godel-Request-Id");
+  response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Godel-Request-Id, X-Godel-Executor-Id, X-Godel-Document-Generation");
   response.setHeader("Access-Control-Expose-Headers", "X-Godel-Realtime-Session");
   response.setHeader("Vary", "Origin");
 }
@@ -549,8 +710,8 @@ export function createHandoffServer({
     const cutoff = clock() - 60 * 60_000;
     for (const [id, session] of realtimeSessions) if (session.createdAt < cutoff) realtimeSessions.delete(id);
   };
-  const currentRealtimeContext = () => {
-    const context = store.recentContext();
+  const currentRealtimeContext = executorId => {
+    const context = store.recentContext(15_000, 15 * 60_000, executorId);
     if (!context) return null;
     const transcriptActive = [context.focused_panel, context.last_panel, ...(context.panels ?? [])]
       .some(panel => panel?.command === "TRAN");
@@ -628,12 +789,18 @@ export function createHandoffServer({
           return respond(response, 415, { error: "Realtime session requires application/sdp" });
         }
         pruneRealtimeSessions();
-        if (realtimeSessions.size >= 3) return respond(response, 429, { error: "too many Realtime sessions" });
+        const executorId = safeOpaqueId(request.headers["x-godel-executor-id"], "");
+        const documentGeneration = safeOpaqueId(request.headers["x-godel-document-generation"], "");
+        if (Boolean(executorId) !== Boolean(documentGeneration)) return respond(response, 400, { error: "Incomplete Godel executor affinity" });
+        const sameAffinitySessions = [...realtimeSessions.values()].filter(session => !session.revoked
+          && session.executor_id === (executorId || null)
+          && session.document_generation === (documentGeneration || null));
+        if (sameAffinitySessions.length >= 3) return respond(response, 429, { error: "too many Realtime sessions" });
         const sdp = await readBody(request, 32_000);
         if (!sdp.startsWith("v=0") || sdp.length < 40) return respond(response, 400, { error: "invalid SDP offer" });
         const form = new FormData();
         form.set("sdp", sdp);
-        const realtimeContext = currentRealtimeContext();
+        const realtimeContext = currentRealtimeContext(executorId || null);
         form.set("session", JSON.stringify(realtimeSessionConfig(realtimeContext)));
         const upstream = await realtimeFetch("https://api.openai.com/v1/realtime/calls", {
           method: "POST",
@@ -644,8 +811,20 @@ export function createHandoffServer({
         if (!upstream.ok) throw new Error(`Realtime session provider returned ${upstream.status}`);
         const answer = await upstream.text();
         if (!answer.startsWith("v=0")) throw new Error("Realtime session provider returned invalid SDP");
+        if (executorId) {
+          store.armExecutor(executorId, documentGeneration);
+          for (const [existingId, existing] of realtimeSessions) {
+            if (existing.executor_id === executorId && existing.document_generation === documentGeneration) continue;
+            existing.revoked = true;
+            existing.revokedAt = clock();
+            store.event("realtime_session_revoked", { session_ref: markerDigest(existingId).slice(0, 12) });
+          }
+        }
         const sessionId = crypto.randomUUID();
-        realtimeSessions.set(sessionId, { createdAt: clock(), calls: new Map(), requests: new Map(), responses: new Set(), costUsd: 0 });
+        realtimeSessions.set(sessionId, {
+          createdAt: clock(), calls: new Map(), requests: new Map(), responses: new Set(), costUsd: 0,
+          executor_id: executorId || null, document_generation: documentGeneration || null
+        });
         store.event("realtime_session_started", { session_ref: markerDigest(sessionId).slice(0, 12), model: realtimeModel });
         audit("session_started", {
           session_ref: markerDigest(sessionId).slice(0, 12), model: realtimeModel,
@@ -657,13 +836,24 @@ export function createHandoffServer({
         if (request.headers.origin !== realtimeOrigin) return respond(response, 403, { error: "invalid Realtime origin" });
         pruneRealtimeSessions();
         const value = JSON.parse(await readBody(request, 64_000));
-        if (!value || Object.keys(value).some(key => !["session_id", "call_id", "workflow"].includes(key))) {
+        if (!value || Object.keys(value).some(key => !["session_id", "call_id", "workflow", "executor_id", "document_generation"].includes(key))) {
           return respond(response, 400, { error: "invalid Realtime tool request" });
         }
         const sessionId = safeOpaqueId(value.session_id, "");
         const callId = safeOpaqueId(value.call_id, "");
         const session = realtimeSessions.get(sessionId);
         if (!session || !callId) return respond(response, 404, { error: "Realtime session not found" });
+        if (session.revoked) return respond(response, 409, { error: "Jarvis is active in another Godel tab" });
+        const executorId = safeOpaqueId(value.executor_id, "");
+        if (session.executor_id && executorId !== session.executor_id) {
+          return respond(response, 409, { error: "Realtime executor affinity changed" });
+        }
+        if (session.document_generation && safeOpaqueId(value.document_generation, "") !== session.document_generation) {
+          return respond(response, 409, { error: "Realtime document generation changed" });
+        }
+        if (session.executor_id && !store.isArmedExecutor(session.executor_id, session.document_generation)) {
+          return respond(response, 409, { error: "Realtime executor is no longer active" });
+        }
         if (session.calls.has(callId)) return respond(response, 200, session.calls.get(callId));
         const requestText = value.workflow?.original_request;
         let requestKey;
@@ -692,7 +882,7 @@ export function createHandoffServer({
         const compileStartedAt = clock();
         let compiled;
         try {
-          compiled = await realtimeWorkflowCompiler(value.workflow, { context: currentRealtimeContext() });
+          compiled = await realtimeWorkflowCompiler(value.workflow, { context: currentRealtimeContext(session.executor_id) });
         } catch (error) {
           const result = { kind: "failed", message: "I couldn't safely prepare that Godel request." };
           session.calls.set(callId, result);
@@ -715,7 +905,7 @@ export function createHandoffServer({
           return respond(response, 200, result);
         }
         const requestId = `rt-${markerDigest(`${sessionId}:${callId}`).slice(0, 32)}`;
-        const queued = store.enqueue(compiled.marker, requestId);
+        const queued = store.enqueue(compiled.marker, requestId, session.executor_id, session.document_generation);
         queued.entry.realtime = true;
         store.persist();
         const result = {
@@ -731,13 +921,24 @@ export function createHandoffServer({
         if (request.headers.origin !== realtimeOrigin) return respond(response, 403, { error: "invalid Realtime origin" });
         pruneRealtimeSessions();
         const value = JSON.parse(await readBody(request, 8_000));
-        if (!value || Object.keys(value).some(key => !["session_id", "turn_id", "transcript"].includes(key))) {
+        if (!value || Object.keys(value).some(key => !["session_id", "turn_id", "transcript", "executor_id", "document_generation"].includes(key))) {
           return respond(response, 400, { error: "invalid Realtime preflight request" });
         }
         const sessionId = safeOpaqueId(value.session_id, "");
         const turnId = safeOpaqueId(value.turn_id, "");
         const session = realtimeSessions.get(sessionId);
         if (!session || !turnId) return respond(response, 404, { error: "Realtime session not found" });
+        if (session.revoked) return respond(response, 409, { error: "Jarvis is active in another Godel tab" });
+        const executorId = safeOpaqueId(value.executor_id, "");
+        if (session.executor_id && executorId !== session.executor_id) {
+          return respond(response, 409, { error: "Realtime executor affinity changed" });
+        }
+        if (session.document_generation && safeOpaqueId(value.document_generation, "") !== session.document_generation) {
+          return respond(response, 409, { error: "Realtime document generation changed" });
+        }
+        if (session.executor_id && !store.isArmedExecutor(session.executor_id, session.document_generation)) {
+          return respond(response, 409, { error: "Realtime executor is no longer active" });
+        }
         session.preflights ??= new Map();
         if (session.preflights.has(turnId)) return respond(response, 200, session.preflights.get(turnId));
         let requestText;
@@ -771,7 +972,7 @@ export function createHandoffServer({
         // planner gets one bounded chance. Realtime is audio transport only;
         // it never improvises executable workflows.
         let marker = null;
-        try { marker = encodeControlFollowup(requestText, currentRealtimeContext()); }
+        try { marker = encodeControlFollowup(requestText, currentRealtimeContext(session.executor_id)); }
         catch {}
         const active = [...session.calls.values(), ...session.preflights.values()]
           .find(item => item.kind === "execute" && !terminalStates.has(store.status(item.id)?.status));
@@ -793,7 +994,7 @@ export function createHandoffServer({
         if (!marker) {
           const compileStartedAt = clock();
           try {
-            compiled = await realtimeNaturalCompiler(requestText, { context: currentRealtimeContext() });
+            compiled = await realtimeNaturalCompiler(requestText, { context: currentRealtimeContext(session.executor_id) });
           } catch (error) {
             const result = { kind: "failed", message: "I couldn't prepare that Godel request quickly enough." };
             session.preflights.set(turnId, result);
@@ -819,7 +1020,7 @@ export function createHandoffServer({
           marker = compiled.marker;
         }
         const requestId = `rt-${markerDigest(`${sessionId}:preflight:${turnId}`).slice(0, 32)}`;
-        const queued = store.enqueue(marker, requestId);
+        const queued = store.enqueue(marker, requestId, session.executor_id, session.document_generation);
         queued.entry.realtime = true;
         store.persist();
         const result = {
@@ -870,13 +1071,20 @@ export function createHandoffServer({
         const value = JSON.parse(await readBody(request, 1_000));
         const sessionId = safeOpaqueId(value.session_id, "");
         const reason = safeAuditText(value.reason, 60) || "unspecified";
+        const session = realtimeSessions.get(sessionId);
         realtimeSessions.delete(sessionId);
+        if (reason === "manual_toggle" && session?.executor_id && !session.revoked) {
+          store.disarmExecutor(session.executor_id, session.document_generation);
+        }
         store.event("realtime_session_closed", { session_ref: markerDigest(sessionId).slice(0, 12) });
         audit("session_closed", { session_ref: markerDigest(sessionId).slice(0, 12), reason });
         return respond(response, 200, { closed: true });
       }
       if (request.method === "GET" && url.pathname === "/next") {
-        const entry = store.lease(url.searchParams.get("client") || "anonymous");
+        const clientId = url.searchParams.get("client") || "anonymous";
+        const executorId = url.searchParams.get("executor") || clientId;
+        const documentGeneration = url.searchParams.get("generation") || null;
+        const entry = store.lease(clientId, executorId, documentGeneration);
         const progress = entry && speaker && entry.realtime !== true && !entry.progress_queued ? progressMessageForMarker(entry.marker) : null;
         if (progress) {
           entry.progress_queued = true;
@@ -901,11 +1109,16 @@ export function createHandoffServer({
         }) : respond(response, 404, { error: "not found" });
       }
       if (request.method === "GET" && url.pathname === "/context") {
-        return respond(response, 200, { context: store.recentContext() });
+        const executorId = safeOpaqueId(request.headers["x-godel-executor-id"] ?? url.searchParams.get("executor"), "");
+        return respond(response, 200, { context: store.recentContext(15_000, 15 * 60_000, executorId || null) });
       }
       if (request.method === "POST" && url.pathname === "/context") {
         const value = JSON.parse(await readBody(request, 8_000));
-        return respond(response, 200, { ok: true, context: store.setContext(value) });
+        const executorId = safeOpaqueId(request.headers["x-godel-executor-id"], "");
+        const documentGeneration = safeOpaqueId(request.headers["x-godel-document-generation"], "");
+        return respond(response, 200, {
+          ok: true, context: store.setContext(value, executorId || null, documentGeneration || null)
+        });
       }
       if (request.method === "POST" && url.pathname === "/grounded-transcript-summary") {
         const value = JSON.parse(await readBody(request, 32_000));
@@ -919,7 +1132,21 @@ export function createHandoffServer({
         const marker = (await readBody(request)).trim();
         if (!marker.startsWith("GV1:") && !marker.startsWith("GV2:")) return respond(response, 400, { error: "invalid marker" });
         try { JSON.parse(marker.slice(4)); } catch { return respond(response, 400, { error: "invalid JSON" }); }
-        const queued = store.enqueue(marker, request.headers["x-godel-request-id"] || null);
+        const requestedExecutor = safeOpaqueId(request.headers["x-godel-executor-id"], "");
+        const requestedGeneration = safeOpaqueId(request.headers["x-godel-document-generation"], "");
+        const armed = store.armedExecutor();
+        if (store.hasArmedExecutor() && !armed) {
+          return respond(response, 409, { error: "No active Godel executor is available" });
+        }
+        const targetExecutor = requestedExecutor || armed?.executor_id || null;
+        const targetGeneration = requestedGeneration || (targetExecutor === armed?.executor_id ? armed.document_generation : null);
+        if (targetExecutor && store.hasArmedExecutor() && !store.isArmedExecutor(targetExecutor, targetGeneration)) {
+          return respond(response, 409, { error: "Requested Godel executor is not active" });
+        }
+        const queued = store.enqueue(
+          marker, request.headers["x-godel-request-id"] || null,
+          targetExecutor, targetGeneration
+        );
         return respond(response, 202, { queued: true, id: queued.entry.id, deduplicated: queued.deduplicated });
       }
       if (request.method === "POST" && url.pathname === "/ack") {
@@ -945,7 +1172,7 @@ export function createHandoffServer({
       }
       if (request.method === "POST" && url.pathname === "/heartbeat") {
         const value = JSON.parse(await readBody(request));
-        const entry = store.heartbeat(value.id, value.client_id);
+        const entry = store.heartbeat(value.id, value.client_id, value.executor_id, value.document_generation);
         return entry ? respond(response, 200, { ok: true, lease_expires_at: entry.lease_expires_at })
           : respond(response, 409, { error: "lease is no longer active" });
       }
@@ -956,7 +1183,7 @@ export function createHandoffServer({
       }
       if (request.method === "POST" && url.pathname === "/retry") {
         const value = JSON.parse(await readBody(request));
-        const entry = store.release(value.id, value.reason, value.client_id);
+        const entry = store.release(value.id, value.reason, value.client_id, value.executor_id, value.document_generation);
         return entry ? respond(response, 200, store.publicEntry(entry)) : respond(response, 404, { error: "not found" });
       }
       return respond(response, 404, { error: "not found" });

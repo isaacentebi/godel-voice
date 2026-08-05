@@ -1,6 +1,19 @@
 importScripts("core.js", "cdp.js", "download-receipts.js");
 
 const GODEL_ORIGIN = "https://app.godelterminal.com";
+const EXECUTOR_SEED_KEY = "godel-voice-executor-seed-v1";
+const EXECUTOR_OWNERS_KEY = "godel-voice-executor-owners-v1";
+const executorSeedReady = chrome.storage.local.get(EXECUTOR_SEED_KEY).then(async stored => {
+  const existing = stored[EXECUTOR_SEED_KEY];
+  if (typeof existing === "string" && /^[A-Za-z0-9_-]{32,128}$/.test(existing)) return existing;
+  const seed = `${crypto.randomUUID()}-${crypto.randomUUID()}`.replace(/-/g, "");
+  await chrome.storage.local.set({ [EXECUTOR_SEED_KEY]: seed });
+  return seed;
+});
+const executorOwnersReady = chrome.storage.session.get(EXECUTOR_OWNERS_KEY).then(stored => {
+  const value = stored[EXECUTOR_OWNERS_KEY];
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+});
 const downloadReceipts = GodelVoiceDownloads.createDownloadReceiptManager();
 const DOWNLOAD_RECEIPTS_KEY = "godel-voice-download-receipts-v1";
 const downloadReceiptsReady = chrome.storage.local.get(DOWNLOAD_RECEIPTS_KEY).then(stored => {
@@ -40,6 +53,36 @@ function assertGodelSender(sender) {
   if (url.origin !== GODEL_ORIGIN) throw new Error("Refusing non-Godel tab");
   return tab;
 }
+
+async function executorIdentity(sender) {
+  const tab = assertGodelSender(sender);
+  // Chrome's documentId is immutable for one document generation and changes
+  // on every navigation/reload. Hash it with a background-only seed so page
+  // scripts receive an opaque capability, never a reusable tab identifier.
+  const documentId = String(sender.documentId ?? "");
+  if (!documentId) throw new Error("Missing sender document generation");
+  const owners = await executorOwnersReady;
+  const tabKey = String(tab.id);
+  if (!/^gx-[A-Za-z0-9_-]{40,96}$/.test(String(owners[tabKey] ?? ""))) {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    owners[tabKey] = `gx-${btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")}`;
+    await chrome.storage.session.set({ [EXECUTOR_OWNERS_KEY]: owners });
+  }
+  const seed = await executorSeedReady;
+  const bytes = new TextEncoder().encode(`${seed}\u0000${tab.id}\u0000${documentId}`);
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  const token = btoa(String.fromCharCode(...digest)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return { executor_id: owners[tabKey], document_generation: `gd-${token}` };
+}
+
+chrome.tabs.onRemoved.addListener(tabId => {
+  executorOwnersReady.then(owners => {
+    if (!Object.hasOwn(owners, String(tabId))) return;
+    delete owners[String(tabId)];
+    return chrome.storage.session.set({ [EXECUTOR_OWNERS_KEY]: owners });
+  }).catch(() => {});
+});
 
 async function withDebugger(tabId, callback) {
   const target = { tabId };
@@ -113,9 +156,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     const tab = assertGodelSender(sender);
     const tabId = tab.id;
+    if (message.type === "godel-voice:executor-identity") {
+      return { ok: true, ...await executorIdentity(sender) };
+    }
     if (message.type === "godel-voice:executor-eligibility") {
       const focusedWindow = await chrome.windows.getLastFocused({ windowTypes: ["normal"] });
-      return { ok: true, eligible: tab.active === true && focusedWindow?.id === tab.windowId };
+      const identity = await executorIdentity(sender);
+      return {
+        ok: true,
+        eligible: tab.active === true && focusedWindow?.id === tab.windowId,
+        ...identity
+      };
     }
     if (message.type === "godel-voice:inject-main") {
       await chrome.scripting.executeScript({

@@ -90,7 +90,7 @@ test("workflow layout failures retain completed step timings and an exact layout
   assert.match(content, /operation: "layout"/);
   assert.match(content, /status: "skipped"/);
   assert.match(content, /I couldn't finish the requested placement/);
-  assert.match(content, /panelInternalAction\(livePanel, "LAYOUT", "setGeometry"/);
+  assert.match(content, /panelInternalAction\(directWindow, "LAYOUT", "setGeometry"/);
   assert.match(content, /document\.getElementById\("godel-voice-workspace-anchor"\)/);
   assert.match(content, /panelInternalAction\(root, "WORKSPACE", action, payload\)/);
   assert.match(mainWorld, /action === "setWindowGeometry"/);
@@ -101,6 +101,12 @@ test("workflow layout binds geometry to the exact workspace window returned by e
   assert.match(content, /opened\.push\(\{ step, panel, workspaceWindowId, workspaceWindowError \}\)/);
   assert.match(content, /workspaceInternalAction\("activeWindowIds"\)/);
   assert.doesNotMatch(content, /windowId: activeIds\[0\]/);
+  assert.doesNotMatch(content, /\?\? activeIds\[0\]/);
+  assert.match(content, /const exactWindow = openedPanel\.workspaceWindowId/);
+  assert.match(content, /panelById\(openedPanel\.workspaceWindowId\)/);
+  assert.match(content, /const capturedWindow = nativeWindowRoot\(openedPanel\.panel\)/);
+  assert.match(content, /const directWindow = exactWindow \?\? capturedWindow/);
+  assert.match(content, /panelInternalAction\(directWindow, "LAYOUT", "setGeometry", placement\.rect\)/);
   assert.match(content, /candidates\.filter\(root => panelMatchesTerminalIdentity\(root, identity\)\)/);
   assert.match(content, /windowRoots\(\)\.filter\(root => panelMatchesCommand\(root, openedPanel\.step\.command\)\)/);
   assert.match(content, /let livePanel = candidates\[0\] \?\? null/);

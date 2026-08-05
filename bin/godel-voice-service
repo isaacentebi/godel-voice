@@ -94,6 +94,15 @@ process.stdout.write(JSON.stringify(files));' "$project_dir" > "$runtime_dir/run
   /bin/chmod 600 "$runtime_dir/.godel-voice-secret" "$runtime_catalog/commands.json" "$runtime_catalog/schemas/"*.json "$runtime_dir/runtime-manifest.json"
   [[ ! -f "$runtime_dir/.env" ]] || /bin/chmod 600 "$runtime_dir/.env"
   [[ ! -f "$runtime_dir/.godel-voice-queue.json" ]] || /bin/chmod 600 "$runtime_dir/.godel-voice-queue.json"
+  # Import the packaged server before launchd is allowed to restart it. This
+  # resolves every runtime dependency without opening the listener, catching
+  # incomplete release copies that would otherwise enter a silent crash loop.
+  /usr/bin/env node --env-file-if-exists="$runtime_dir/.env" -e '
+const { pathToFileURL } = require("node:url");
+import(pathToFileURL(process.argv[2]).href).catch(error => {
+  process.stderr.write(`Packaged Godel Voice runtime is incomplete: ${error.message}\n`);
+  process.exit(1);
+});' godel-voice-import-smoke "$runtime_server"
   /usr/bin/touch "$runtime_logs/server.stdout.log" "$runtime_logs/server.stderr.log"
   /bin/chmod 600 "$runtime_logs/server.stdout.log" "$runtime_logs/server.stderr.log"
 }

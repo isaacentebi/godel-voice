@@ -66,6 +66,96 @@ test("separate VoiceInk request IDs may intentionally repeat the same relative a
   assert.equal(retry.entry.id, second.entry.id);
 });
 
+test("executor affinity prevents a second Godel tab from stealing targeted work", () => {
+  const store = new HandoffStore();
+  const ownerA = "gx-owner-a";
+  const ownerB = "gx-owner-b";
+  const generationA = "gd-document-a";
+  const generationB = "gd-document-b";
+  const entry = store.enqueue(marker, "two-tab-request", ownerA, generationA).entry;
+
+  assert.equal(store.lease(ownerB, ownerB, generationB), null);
+  const leased = store.lease(ownerA, ownerA, generationA);
+  assert.equal(leased.id, entry.id);
+  assert.equal(leased.executor_id, ownerA);
+  assert.equal(leased.document_generation, generationA);
+});
+
+test("executor contexts remain separated while a tab keeps context across document generations", () => {
+  const store = new HandoffStore();
+  const ownerA = "gx-owner-a";
+  const ownerB = "gx-owner-b";
+  store.setContext({ focused_panel: { command: "GF", security: "META" } }, ownerA, "gd-a-1");
+  store.setContext({ focused_panel: { command: "EM", security: "AMZN" } }, ownerB, "gd-b-1");
+
+  assert.equal(store.recentContext(15_000, 900_000, ownerA).focused_panel.security, "META");
+  assert.equal(store.recentContext(15_000, 900_000, ownerB).focused_panel.security, "AMZN");
+
+  store.setContext({ focused_panel: { command: "HMAP" } }, ownerA, "gd-a-2");
+  assert.equal(store.currentDocumentGeneration(ownerA), "gd-a-2");
+  assert.equal(store.recentContext(15_000, 900_000, ownerA).focused_panel.command, "HMAP");
+  assert.equal(store.recentContext(15_000, 900_000, ownerB).focused_panel.security, "AMZN");
+});
+
+test("stale document generations fail closed for delivery and acknowledgement", () => {
+  const store = new HandoffStore();
+  const owner = "gx-stable-owner";
+  store.setContext({ focused_panel: { command: "HMAP" } }, owner, "gd-old");
+  const stale = store.enqueue(marker, "stale-document-request", owner, "gd-old").entry;
+  store.setContext({ focused_panel: { command: "HMAP" } }, owner, "gd-new");
+
+  assert.equal(store.lease(owner, owner, "gd-new"), null);
+  assert.equal(store.status(stale.id).status, "failed");
+  assert.match(store.status(stale.id).error, /document changed/);
+
+  const fresh = store.enqueue(marker, "fresh-document-request", owner, "gd-new").entry;
+  store.lease(owner, owner, "gd-new");
+  assert.throws(() => store.acknowledge(fresh.id, "completed", {
+    client_id: owner, executor_id: owner, document_generation: "gd-old"
+  }), /stale executor document/);
+  assert.equal(store.acknowledge(fresh.id, "completed", {
+    client_id: owner, executor_id: owner, document_generation: "gd-new"
+  }).status, "completed");
+});
+
+test("arming a new owner revokes the previous owner's inflight authority", () => {
+  const store = new HandoffStore();
+  store.armExecutor("gx-owner-a", "gd-a");
+  const entry = store.enqueue(marker, "owner-revocation", "gx-owner-a", "gd-a").entry;
+  store.lease("gx-owner-a", "gx-owner-a", "gd-a");
+  store.armExecutor("gx-owner-b", "gd-b");
+  assert.throws(() => store.heartbeat(entry.id, "gx-owner-a", "gx-owner-a", "gd-a"), /no longer armed/);
+  assert.throws(() => store.acknowledge(entry.id, "completed", {
+    client_id: "gx-owner-a", executor_id: "gx-owner-a", document_generation: "gd-a"
+  }), /no longer armed/);
+});
+
+test("armed ownership survives ordinary pauses and never falls back to unbound FIFO after session expiry", async t => {
+  let now = 1_000;
+  const store = new HandoffStore({ clock: () => now });
+  store.setContext({ focused_panel: { command: "HMAP" } }, "gx-owner", "gd-document");
+  const handoff = createHandoffServer({ secret: "test-secret", store, port: 0, clock: () => now });
+  const address = await handoff.listen();
+  t.after(() => handoff.close());
+  now += 15_001;
+  const paused = await fetch(`http://127.0.0.1:${address.port}/plan`, {
+    method: "POST", headers: { Authorization: "Bearer test-secret" }, body: marker
+  });
+  assert.equal(paused.status, 202);
+  const pausedId = (await paused.json()).id;
+  assert.equal(store.lease("gx-owner", "gx-owner", "gd-document").id, pausedId);
+  store.acknowledge(pausedId, "completed", {
+    client_id: "gx-owner", executor_id: "gx-owner", document_generation: "gd-document"
+  });
+
+  now += 60 * 60_000 + 1;
+  const expired = await fetch(`http://127.0.0.1:${address.port}/plan`, {
+    method: "POST", headers: { Authorization: "Bearer test-secret" }, body: marker
+  });
+  assert.equal(expired.status, 409);
+  assert.equal(store.entries.length, 1);
+});
+
 test("executor context is sanitized, persisted and expires", () => {
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "godel-voice-context-"));
   const statePath = path.join(temporary, "state.json");

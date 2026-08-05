@@ -67,14 +67,19 @@
     });
   let running = false;
   let polling = false;
-  const clientId = (() => {
-    const key = "godel-voice-client-id";
-    const existing = sessionStorage.getItem(key);
-    if (existing) return existing;
-    const value = `arc-${crypto.randomUUID()}`;
-    sessionStorage.setItem(key, value);
-    return value;
-  })();
+  let clientId = null;
+  let documentGeneration = null;
+  const executorIdentityReady = runtimeMessage({ type: "godel-voice:executor-identity" }).then(response => {
+    const value = String(response?.executor_id ?? "");
+    const generation = String(response?.document_generation ?? "");
+    if (!response?.ok || !/^gx-[A-Za-z0-9_-]{40,96}$/.test(value)
+        || !/^gd-[A-Za-z0-9_-]{40,96}$/.test(generation)) {
+      throw new Error("Godel executor identity is unavailable");
+    }
+    clientId = value;
+    documentGeneration = generation;
+    return { executorId: value, documentGeneration: generation };
+  });
   let lastWindowId = null;
   let lastPanelElement = null;
   let lastPanelContext = null;
@@ -488,6 +493,7 @@
 
   async function publishExecutorContext() {
     if (document.visibilityState !== "visible" || !document.hasFocus()) return;
+    const { executorId, documentGeneration: generation } = await executorIdentityReady;
     const roots = await activeScreenRoots();
     const rootIds = new Set(roots.map(root => String(windowId(root) ?? "")).filter(Boolean));
     const focusedRoot = roots.find(root => {
@@ -510,7 +516,10 @@
     const digest = JSON.stringify(value);
     if (digest === lastContextDigest && Date.now() - lastContextPublishAt < 5_000) return;
     const response = await fetch(`${config.handoffUrl}/context`, {
-      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.secret}` },
+      method: "POST", headers: {
+        "Content-Type": "application/json", Authorization: `Bearer ${config.secret}`,
+        "X-Godel-Executor-Id": executorId, "X-Godel-Document-Generation": generation
+      },
       body: digest
     });
     if (!response.ok) return;
@@ -663,13 +672,26 @@
 
   function topCommandInput() {
     return [...document.querySelectorAll("input,textarea")]
-      .filter(element => visible(element) && element.getBoundingClientRect().top < 100)
+      .filter(element => visible(element) && elementExposed(element) && element.getBoundingClientRect().top < 100)
       .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0] ?? null;
   }
 
+  function elementExposed(element) {
+    if (!(element instanceof Element) || !visible(element)) return false;
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return false;
+    const x = Math.max(0, Math.min(innerWidth - 1, rect.left + rect.width / 2));
+    const y = Math.max(0, Math.min(innerHeight - 1, rect.top + rect.height / 2));
+    const hit = document.elementFromPoint(x, y);
+    return Boolean(hit && (hit === element || element.contains(hit)));
+  }
+
   function commandMenuOpen() {
+    const input = topCommandInput();
+    if (!input) return false;
     return [...document.querySelectorAll("h1,h2,h3,h4,div,span,p")].some(element =>
       visible(element)
+      && elementExposed(element)
       && element.textContent.trim().toUpperCase() === "COMMANDS"
       && element.getBoundingClientRect().top < 220);
   }
@@ -683,6 +705,8 @@
       // Godel 4.5.8 may mount the palette as its default empty-screen state;
       // Backquote does not close that variant, while Escape does. Prefer the
       // semantic close key and retain Backquote only as a bounded fallback.
+      const staleInput = topCommandInput();
+      if (staleInput) await click(staleInput);
       await press("Escape");
       try {
         await waitUntil(() => !commandMenuOpen(), "closed Godel command bar", 600);
@@ -2231,6 +2255,20 @@
     await Promise.all(planned.placements.map(async placement => {
       const openedPanel = opened.find(item => item.step.id === placement.id);
       if (!openedPanel) return;
+      const exactWindow = openedPanel.workspaceWindowId
+        ? panelById(openedPanel.workspaceWindowId)
+        : null;
+      const capturedWindow = nativeWindowRoot(openedPanel.panel);
+      // Geometry belongs to a rendered native window, not to whichever screen
+      // the global workspace provider reports during a concurrent multi-open.
+      // The page-world adapter verifies the exact native id and resulting
+      // position-manager state. Keep the screen-checked workspace path only
+      // for an id that Godel has committed but has not mounted in the DOM yet.
+      const directWindow = exactWindow ?? capturedWindow;
+      if (directWindow) {
+        await panelInternalAction(directWindow, "LAYOUT", "setGeometry", placement.rect);
+        return;
+      }
       if (openedPanel.workspaceWindowId) {
         try {
           await workspaceInternalAction("setWindowGeometry", {
@@ -2344,6 +2382,18 @@
       ?? (scopedFallback && String(scopedFallback.textContent ?? "").toUpperCase().includes(token) ? scopedFallback : null);
   }
 
+  function uniqueVisiblePanelForControl(target) {
+    if (target.mode !== "command" || !target.command) return null;
+    const titles = panelTitleNodes(target.command);
+    if (titles.length !== 1) return null;
+    const shell = rootForTitle(titles[0]) ?? titles[0];
+    const native = nativeWindowRoot(shell);
+    if (!native || panelExposureScore(native) < 1 || !panelMatchesCommand(native, target.command)) return null;
+    if (target.security && !panelContainsSecurity(shell, target.security)
+        && !panelContainsSecurity(native, target.security)) return null;
+    return native;
+  }
+
   function detachedUniqueHDSPanel(target) {
     if (target.command !== "HDS") return null;
     const titles = panelTitleNodes("HDS");
@@ -2417,7 +2467,13 @@
   }
 
   async function executeControlStep(step) {
-    const panel = panelForControl(step.target, await activeScreenRoots());
+    // Godel currently renders some title bars and their native `*-window`
+    // roots as React siblings. Prefer the active-screen inventory, then allow
+    // only one exposed, exact-title native root with the requested security.
+    // This keeps follow-up controls deterministic without falling back to an
+    // arbitrary active window.
+    const panel = panelForControl(step.target, await activeScreenRoots())
+      ?? uniqueVisiblePanelForControl(step.target);
     if (!panel) throw new Error(`No Godel window matches ${step.target.command ?? step.target.mode}`);
     if (step.operation === "move") {
       const planned = layoutEngine.plan({
@@ -2603,7 +2659,6 @@
             }
             const workspaceWindowId = newlyReportedId
               ?? (nativeId && activeIds.includes(nativeId) ? nativeId : null)
-              ?? activeIds[0]
               ?? null;
             if (!borrowed && workspaceWindowId && !beforeWindowIds.includes(workspaceWindowId)) transactionWindowIds.add(String(workspaceWindowId));
             opened.push({ step, panel, workspaceWindowId, workspaceWindowError });
@@ -2827,7 +2882,8 @@
       method: "POST",
       headers: { "Content-Type": "text/plain", Authorization: `Bearer ${config.secret}` },
       body: JSON.stringify({
-        id, client_id: clientId, status, duration_ms: Date.now() - startedAt,
+        id, client_id: clientId, executor_id: clientId, document_generation: documentGeneration,
+        status, duration_ms: Date.now() - startedAt,
         error: error?.message ?? "", message, steps, suppress_spoken_feedback: suppressSpokenFeedback
       })
     });
@@ -2840,7 +2896,8 @@
     await fetch(`${config.handoffUrl}/retry`, {
       method: "POST",
       headers: { "Content-Type": "text/plain", Authorization: `Bearer ${config.secret}` },
-      body: JSON.stringify({ id, client_id: clientId, reason: error?.message ?? "executor reload" })
+      body: JSON.stringify({ id, client_id: clientId, executor_id: clientId, document_generation: documentGeneration,
+        reason: error?.message ?? "executor reload" })
     });
   }
 
@@ -2848,7 +2905,7 @@
     const response = await fetch(`${config.handoffUrl}/heartbeat`, {
       method: "POST",
       headers: { "Content-Type": "text/plain", Authorization: `Bearer ${config.secret}` },
-      body: JSON.stringify({ id, client_id: clientId })
+      body: JSON.stringify({ id, client_id: clientId, executor_id: clientId, document_generation: documentGeneration })
     });
     if (!response.ok) throw new CancelledError("Workflow lease was lost");
   }
@@ -2859,11 +2916,14 @@
     // 100 ms queue poll; that round trip was often slower than the command
     // compiler itself and created visible start jitter.
     if (document.visibilityState !== "visible") return false;
-    if (document.hasFocus()) return true;
+    const identity = await executorIdentityReady;
+    if (document.hasFocus()) return Boolean(identity.executorId && identity.documentGeneration);
     // Visibility without document focus is unusual, but retain the stricter
     // browser-level check as a safe compatibility fallback.
     const response = await runtimeMessage({ type: "godel-voice:executor-eligibility" });
-    return response?.ok === true && response.eligible === true;
+    return response?.ok === true && response.eligible === true
+      && response.executor_id === identity.executorId
+      && response.document_generation === identity.documentGeneration;
   }
 
   function emitCompletion({ id, status, message, durationMs, acknowledged = true, premiumVoice = false }) {
@@ -2917,8 +2977,9 @@
     polling = true;
     try {
       await lifecycleCleanup;
+      const { executorId, documentGeneration: generation } = await executorIdentityReady;
       if (!(await eligibleExecutor().catch(() => false))) return;
-      const response = await fetch(`${config.handoffUrl}/next?client=${encodeURIComponent(clientId)}`, {
+      const response = await fetch(`${config.handoffUrl}/next?client=${encodeURIComponent(executorId)}&executor=${encodeURIComponent(executorId)}&generation=${encodeURIComponent(generation)}`, {
         cache: "no-store", headers: { Authorization: `Bearer ${config.secret}` }
       });
       if (response.status === 204) return;
@@ -3010,6 +3071,10 @@
   // Context is also published immediately after Realtime work. A slower idle
   // cadence avoids repeatedly scanning Godel's large dashboard DOM.
   setInterval(() => publishExecutorContext().catch(() => {}), 2_500);
+  window.addEventListener("focus", () => publishExecutorContext().catch(() => {}));
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") publishExecutorContext().catch(() => {});
+  });
   poll();
   publishExecutorContext().catch(() => {});
 })();
