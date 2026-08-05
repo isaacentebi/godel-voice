@@ -114,7 +114,7 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
   assert.match(upstreamSession, /\"tool_choice\":\"auto\"/);
   assert.match(upstreamSession, /\"eagerness\":\"auto\"/);
   assert.match(upstreamSession, /\"create_response\":false/);
-  assert.match(upstreamSession, /\"gpt-4o-mini-transcribe\"/);
+  assert.match(upstreamSession, /\"gpt-4o-transcribe\"/);
   assert.match(upstreamSession, /\"wait_for_user\"/);
 
   const tool = await fetch(`${base}/realtime/request`, {
@@ -210,6 +210,12 @@ test("Realtime deterministic preflight executes common commands without a model 
   assert.equal(repeated.kind, "execute");
   assert.notEqual(repeated.id, first.id);
 
+  const checkIn = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, turn_id: "turn-check-in", transcript: "Are you there?" })
+  })).json();
+  assert.deepEqual(checkIn, { kind: "conversation", message: "Yes, I'm here and listening." });
+
   const ambiguous = await (await fetch(`${base}/realtime/preflight`, {
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
     body: JSON.stringify({ session_id: sessionId, turn_id: "turn-2", transcript: "what should I look at next?" })
@@ -237,7 +243,9 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /\/realtime\/preflight/);
   assert.match(source, /TURN_GRACE_MS = 325/);
   assert.match(source, /wait_for_user/);
-  assert.match(source, /!\["connecting", "thinking", "working"\]\.includes\(state\)/);
+  assert.match(source, /auditAssistantTranscript/);
+  assert.match(source, /createConversationResponse/);
+  assert.doesNotMatch(source, /event\.key === "Escape"/);
   assert.match(source, /status is conversation/);
   assert.match(source, /MAX_RECONNECT_ATTEMPTS = 3/);
   assert.match(source, /scheduleReconnect/);

@@ -22,6 +22,7 @@
   let reconnectTimer = null;
   let reconnectAttempts = 0;
   const handledCalls = new Set();
+  const recentAssistantAudits = new Map();
   const TURN_GRACE_MS = 325;
   const MAX_RECONNECT_ATTEMPTS = 3;
 
@@ -113,6 +114,19 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: sessionId, event_id: eventId, type, ...fields })
     }).catch(() => {});
+  }
+
+  function auditAssistantTranscript(eventId, value) {
+    const text = String(value ?? "").replace(/\s+/g, " ").trim();
+    if (!text) return;
+    const now = Date.now();
+    const previous = recentAssistantAudits.get(text);
+    if (previous && now - previous < 15_000) return;
+    recentAssistantAudits.set(text, now);
+    for (const [candidate, timestamp] of recentAssistantAudits) {
+      if (now - timestamp > 60_000) recentAssistantAudits.delete(candidate);
+    }
+    audit("assistant_transcript", eventId, { text });
   }
 
   function waitForWorkflow(id, timeoutMs = 30_000) {
@@ -268,6 +282,19 @@
     render("thinking", "Preparing the grounded response");
   }
 
+  function createConversationResponse(message) {
+    const exact = String(message ?? "").replace(/\s+/g, " ").trim().slice(0, 160);
+    if (!exact) return;
+    send({
+      type: "response.create",
+      response: {
+        tools: [], tool_choice: "none", max_output_tokens: 32,
+        instructions: `Say exactly this sentence and nothing else: ${JSON.stringify(exact)}`
+      }
+    });
+    render("thinking", "Responding");
+  }
+
   async function executePreflight(request, turnId, runGeneration) {
     render("working", "Operating Godel directly");
     let output;
@@ -312,6 +339,10 @@
         activeWorkflow = executePreflight(request, turnId, runGeneration);
         try { await activeWorkflow; }
         finally { activeWorkflow = null; }
+        return;
+      }
+      if (request.kind === "conversation") {
+        createConversationResponse(request.message);
         return;
       }
     } catch (error) {
@@ -372,7 +403,7 @@
       scheduleTranscript(event.transcript, event.item_id ?? event.event_id ?? `turn-${Date.now()}`, runGeneration);
     }
     if ((event.type === "response.output_audio_transcript.done" || event.type === "response.audio_transcript.done") && event.transcript) {
-      audit("assistant_transcript", event.event_id ?? `${event.response_id ?? event.item_id}-assistant`, { text: event.transcript });
+      auditAssistantTranscript(event.event_id ?? `${event.response_id ?? event.item_id}-assistant`, event.transcript);
     }
     if (event.type === "conversation.item.input_audio_transcription.failed") {
       audit("client_error", event.event_id ?? `${event.item_id}-transcription-failed`, { text: "Input transcription failed" });
@@ -394,7 +425,7 @@
         const groundedTranscript = (item?.content ?? [])
           .map(part => part?.transcript ?? part?.text ?? "").join(" ").trim();
         if (groundedTranscript) {
-          audit("assistant_transcript", `${event.response?.id ?? item.id}-assistant`, { text: groundedTranscript });
+          auditAssistantTranscript(`${event.response?.id ?? item.id}-assistant`, groundedTranscript);
         }
         if (item?.type === "function_call" && item.name === "run_godel_workflow" && item.status === "completed") {
           dispatchTool(item, runGeneration);
@@ -520,8 +551,6 @@
     if (event.code === "KeyJ" && event.ctrlKey && event.shiftKey && !event.metaKey && !event.altKey) {
       event.preventDefault();
       toggle();
-    } else if (event.key === "Escape" && peer && !["connecting", "thinking", "working"].includes(state)) {
-      teardown("ready", null, "escape");
     }
   }, true);
   window.addEventListener("pagehide", event => {

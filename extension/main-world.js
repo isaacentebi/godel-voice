@@ -945,8 +945,13 @@
   }
 
   function workspaceContextFor(root) {
-    const first = fiberOf(root);
-    const starts = [first, first?.alternate].filter(Boolean);
+    const tabButtons = [...document.querySelectorAll('[data-icon="plus"]')]
+      .map(icon => icon.closest("button"))
+      .filter(Boolean);
+    const starts = [root, ...tabButtons].flatMap(element => {
+      const first = fiberOf(element);
+      return [first, first?.alternate].filter(Boolean);
+    });
     const seen = new Set();
     for (const start of starts) {
       for (let fiber = start; fiber && !seen.has(fiber); fiber = fiber.return) {
@@ -971,9 +976,15 @@
     if (!valid) throw new Error("Godel workspace layout shape changed");
     for (const screenId of layout.screenIds) {
       const screen = layout.screens[screenId];
-      if (!screen || screen.id !== screenId || typeof screen.title !== "string"
-          || !Array.isArray(screen.windowIds) || !("activeWindowId" in screen)) {
-        throw new Error("Godel screen record shape changed");
+      if (!screen || String(screen.id) !== String(screenId) || typeof screen.title !== "string"
+          || !Array.isArray(screen.windowIds)
+          || (screen.windowIds.length > 0 && !("activeWindowId" in screen))) {
+        const shape = screen && typeof screen === "object" ? {
+          key: String(screenId), id: String(screen.id), title: typeof screen.title,
+          windows: Array.isArray(screen.windowIds), active: "activeWindowId" in screen,
+          fields: Object.keys(screen).sort().join(",")
+        } : { key: String(screenId), missing: true };
+        throw new Error(`Godel screen record shape changed: ${JSON.stringify(shape)}`);
       }
     }
     return layout;
@@ -1093,24 +1104,58 @@
 
   async function runWorkspace(root, action, payload) {
     const contextRoot = root.matches?.('[id$="-window"]') ? root : root.querySelector('[id$="-window"]');
+    if (action === "activeScreenInfo") {
+      const tabs = screenTabs();
+      const active = tabs.items.find(item => String(item.id) === String(tabs.activeItemId));
+      if (!active) throw new Error("Godel active screen is unavailable");
+      return { id: String(active.id), title: active.title };
+    }
     if (!contextRoot && action === "createScreen") {
       const title = validateScreenName(payload.name ?? "Voice");
       const tabs = screenTabs();
-      const active = tabs.items.find(item => String(item.id) === String(tabs.activeItemId));
-      if (!active) throw new Error("Godel active empty screen is unavailable");
-      if (active.title !== title) tabs.onEdit(String(active.id), title);
-      await waitForElement(() => screenTabs().items.some(item =>
-        String(item.id) === String(active.id) && item.title === title), `${title} active empty screen`, 5000);
+      const reusable = tabs.items.find(item => item.title.toLowerCase() === title.toLowerCase())
+        ?? tabs.items.find(item => item.title.toLowerCase() === "blank");
+      if (!reusable) {
+        throw new Error(`Create an empty Blank screen once so Jarvis can claim its dedicated ${title} workspace`);
+      }
+      if (String(tabs.activeItemId) !== String(reusable.id)) tabs.onSelect(String(reusable.id));
+      await waitForElement(() => String(screenTabs().activeItemId) === String(reusable.id),
+        `${title} reusable empty screen`, 5000);
       return;
     }
-    if (!contextRoot) throw new Error("Godel workspace has no native window context");
-    const context = workspaceContextFor(contextRoot);
+    const context = workspaceContextFor(contextRoot ?? root);
     const current = assertLayoutShape(context.layout);
     if (action === "activeWindowIds") {
       const screen = current.screens[current.activeScreenId];
       if (!screen) throw new Error("Godel active screen is unavailable");
       const active = screen.activeWindowId == null ? [] : [String(screen.activeWindowId)];
       return [...active, ...screen.windowIds.map(id => String(id)).filter(id => !active.includes(id))];
+    }
+    if (action === "nameActiveScreen") {
+      const title = validateScreenName(payload.name ?? "Voice");
+      const screenId = current.activeScreenId;
+      let rejected = null;
+      context.setLayout(layoutValue => {
+        let layout;
+        try { layout = assertLayoutShape(layoutValue); }
+        catch (error) { rejected = error; return layoutValue; }
+        const screen = layout.screens[screenId];
+        if (!screen) {
+          rejected = new Error("Godel active screen changed during rename");
+          return layoutValue;
+        }
+        return {
+          ...layout,
+          screens: { ...layout.screens, [screenId]: { ...screen, title } }
+        };
+      });
+      await waitForElement(() => {
+        if (rejected) throw rejected;
+        const tabs = screenTabs();
+        return String(tabs.activeItemId) === String(screenId)
+          && tabs.items.some(item => String(item.id) === String(screenId) && item.title === title);
+      }, `${title} active screen name`, 3000);
+      return;
     }
     if (action === "setWindowGeometry") {
       const rawId = String(payload.id ?? "");
@@ -1136,14 +1181,28 @@
     }
     if (action === "createScreen") {
       const title = validateScreenName(payload.name ?? "Voice");
-      const reusable = current.screenIds
-        .map(screenId => current.screens[screenId])
-        .find(screen => screen.windowIds.length === 0 && [title.toLowerCase(), "blank"].includes(screen.title.toLowerCase()));
+      const screens = current.screenIds.map(screenId => current.screens[screenId]);
+      const reusable = screens.find(screen => screen.title.toLowerCase() === title.toLowerCase())
+        ?? screens.find(screen => screen.windowIds.length === 0 && screen.title.toLowerCase() === "blank");
       if (reusable) {
-        const tabs = screenTabs();
-        tabs.onSelect(String(reusable.id));
-        if (reusable.title !== title) tabs.onEdit(String(reusable.id), title);
+        let rejected = null;
+        context.setLayout(layoutValue => {
+          let layout;
+          try { layout = assertLayoutShape(layoutValue); }
+          catch (error) { rejected = error; return layoutValue; }
+          const screen = layout.screens[reusable.id];
+          if (!screen) {
+            rejected = new Error("Godel reusable screen changed during activation");
+            return layoutValue;
+          }
+          return {
+            ...layout,
+            activeScreenId: reusable.id,
+            screens: { ...layout.screens, [reusable.id]: { ...screen, title } }
+          };
+        });
         await waitForElement(() => {
+          if (rejected) throw rejected;
           const next = screenTabs();
           return String(next.activeItemId) === String(reusable.id)
             && next.items.some(item => String(item.id) === String(reusable.id) && item.title === title);

@@ -167,6 +167,28 @@ test("plain high-frequency opens compile locally without an LLM", () => {
   assert.equal(parseControlFollowup("open the heatmap and compare Amazon with Meta"), null);
 });
 
+test("ordinary finance surfaces and noisy speech stay on the zero-model route", () => {
+  const cases = [
+    ["show me the three statements for micro soft", "MSFT US EQ FA"],
+    ["open n vidia earnings matt tricks", "NVDA US EQ EM"],
+    ["pull reddit short interest and days to cover", "RDDT US EQ SI"],
+    ["open oracle historical prices", "ORCL US EQ HP"],
+    ["latest news for eli lilly", "LLY US EQ N"],
+    ["show me world stock indexes live", "WEI"],
+    ["open global commodities", "GLCO"],
+    ["bring up forex cross rates", "FX"],
+    ["open most active options", "MOSO"],
+    ["show me top Reuters stories", "TOP"],
+    ["open the IPO calendar", "IPO"],
+    ["pull up my quote moniter watch list", "QM"]
+  ];
+  for (const [voice, terminalCommand] of cases) {
+    const plan = parseControlFollowup(voice);
+    assert.ok(plan, voice);
+    assert.equal(plan.steps[0].terminal_command, terminalCommand, voice);
+  }
+});
+
 test("opens one exact five-year operating-margin graph without the model", () => {
   for (const voice of [
     "open Amazon's operating margin graph for the past five years",

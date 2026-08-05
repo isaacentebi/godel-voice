@@ -75,6 +75,11 @@ if [[ -f "$project_dir/.env" ]]; then
       minimal|low|medium|high|xhigh) pass "Realtime reasoning effort is supported: ${realtime_reasoning:-low}" ;;
       *) fail "Realtime reasoning effort must be minimal, low, medium, high, or xhigh" ;;
     esac
+    realtime_transcription="$(/usr/bin/sed -n 's/^GODEL_VOICE_REALTIME_TRANSCRIPTION_MODEL=//p' "$project_dir/.env" | /usr/bin/tail -1)"
+    case "${realtime_transcription:-gpt-4o-transcribe}" in
+      gpt-4o-transcribe|gpt-4o-mini-transcribe) pass "Realtime transcription model is supported: ${realtime_transcription:-gpt-4o-transcribe}" ;;
+      *) fail "Realtime transcription model must be gpt-4o-transcribe or gpt-4o-mini-transcribe" ;;
+    esac
   fi
 else
   warn "copy .env.example to .env and add a model API key"

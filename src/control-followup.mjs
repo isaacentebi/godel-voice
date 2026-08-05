@@ -16,17 +16,35 @@ const targetCommands = [
   ["market halts", "HALT"], ["halts", "HALT"],
   ["most active stocks", "MOST"], ["most active", "MOST"],
   ["world equity index futures", "WEIF"], ["index futures", "WEIF"],
-  ["world equity index", "WEI"], ["world indices", "WEI"],
+  ["world equity index", "WEI"], ["world stock indexes", "WEI"], ["world indices", "WEI"],
   ["fundamentals graph", "GF"], ["fundamental graph", "GF"], ["chart", "G"],
   ["historical comparison", "HMS"], ["comparison graph", "HMS"],
   ["news feed", "N"], ["news", "N"], ["option chain", "OMON"], ["screener", "EQS"],
   ["world venue map", "MAP"], ["world map", "MAP"],
   ["securities finder", "SECF"], ["security finder", "SECF"],
   ["company description", "DES"], ["company profile", "DES"],
+  ["company page", "DES"], ["three statements", "FA"], ["financial statements", "FA"],
   ["analyst ratings", "ANR"], ["broker ratings", "ANR"],
-  ["analyst estimates", "ERN"], ["earnings estimates", "ERN"],
-  ["financials", "FA"], ["earnings transcript", "TRAN"], ["earnings calls", "TRAN"], ["earnings call", "TRAN"], ["transcript", "TRAN"], ["filings", "CF"]
-  , ["institutional holders", "HDS"], ["holders window", "HDS"], ["ownership window", "HDS"]
+  ["analyst earnings estimates", "ERN"], ["analyst estimates", "ERN"], ["earnings estimates", "ERN"],
+  ["financials", "FA"], ["short interest", "SI"], ["days to cover", "SI"],
+  ["dividend history", "DVD"], ["dividend yield", "DVD"], ["payment history", "DVD"],
+  ["quote monitor", "QM"], ["time and sales", "TAS"], ["live tape", "TAS"],
+  ["historical percent changes", "HCP"], ["historical change percent", "HCP"],
+  ["global commodities", "GLCO"], ["commodity futures", "GLCO"], ["commodities screen", "GLCO"],
+  ["forex cross rates", "FX"], ["currency converter", "FX"], ["forex pairs", "FX"],
+  ["most active options", "MOSO"], ["active options", "MOSO"],
+  ["latest holdings", "HLDR"], ["portfolio holdings", "HLDR"],
+  ["news search", "NI"], ["top news", "TOP"], ["top stories", "TOP"],
+  ["trending tickers", "TREND"], ["trending on godel", "TREND"],
+  ["research reports", "RES"], ["historical prices", "HP"], ["historical price data", "HP"],
+  ["ipo calendar", "IPO"], ["ipo list", "IPO"], ["all quotes", "ALLQ"],
+  ["black scholes", "OVME"], ["options calculator", "OVME"], ["calculator", "CALC"],
+  ["pattern search", "PAT"], ["systematic pattern search", "PRT"],
+  ["wojak sentiment", "WJI"], ["sentiment gauge", "WJI"],
+  ["citadel overview", "CITADEL"], ["kelly criterion", "KELLY"],
+  ["godel help", "HELP"], ["release notes", "CHANGE"], ["changelog", "CHANGE"],
+  ["earnings transcript", "TRAN"], ["earnings calls", "TRAN"], ["earnings call", "TRAN"], ["transcript", "TRAN"], ["filings", "CF"],
+  ["institutional holders", "HDS"], ["institutional owners", "HDS"], ["holders window", "HDS"], ["ownership window", "HDS"]
 ];
 
 function clean(value) {
@@ -34,6 +52,15 @@ function clean(value) {
     .replace(/\bheat\s+map\b/g, "heatmap")
     .replace(/\brev a new\b/g, "revenue")
     .replace(/\bmicro soft\b/g, "microsoft")
+    .replace(/\bn vidia\b/g, "nvidia")
+    .replace(/\bmatt? tricks\b/g, "matrix")
+    .replace(/\bearnins\b/g, "earnings")
+    .replace(/\brooters\b/g, "reuters")
+    .replace(/\bfill ins\b/g, "filings")
+    .replace(/\bmoniter\b/g, "monitor")
+    .replace(/\btime and sails\b/g, "time and sales")
+    .replace(/\bmarket holts\b/g, "market halts")
+    .replace(/\bblack shoals\b/g, "black scholes")
     .replace(/\binstitush(?:un|on)al\b/g, "institutional")
     .replace(/\bbub bull\b/g, "bubble")
     .replace(/\bsecurit(?:y|ies) (?:find her|find are)\b/g, "security finder")
@@ -46,18 +73,30 @@ const commonSecurities = [
   ["alphabet", "GOOG"], ["google", "GOOG"], ["reddit", "RDDT"], ["netflix", "NFLX"],
   ["service now", "NOW"], ["servicenow", "NOW"], ["palantir", "PLTR"], ["novo nordisk", "NVO"],
   ["eli lilly", "LLY"], ["lilly", "LLY"], ["chipotle", "CMG"], ["unity", "U"],
-  ["corsair", "CRSR"], ["sandisk", "SNDK"]
+  ["corsair", "CRSR"], ["sandisk", "SNDK"], ["coca cola", "KO"]
 ];
-const directSecurityOpen = new Set(["EM", "G", "DES", "ANR", "ERN", "HDS", "OMON", "GF", "FA", "TRAN", "CF"]);
-const directGlobalOpen = new Set(["HMAP", "HALT", "MOST", "WEI", "WEIF", "MAP", "EQS"]);
-const directOpenModifier = /\b(?:with|as|set|change|switch|compare|versus|vs|download|export|close|move|put|place|bigger|smaller|table|active|resumed|all|metric|multiple|revenue|ebit|ebitda|margin|growth)\b/;
+const directSecurityOpen = new Set([
+  "EM", "G", "DES", "ANR", "ERN", "HDS", "HLDR", "OMON", "GF", "FA", "TRAN", "CF",
+  "SI", "DVD", "TAS", "HCP", "N", "RES", "HP", "OVME", "PAT", "PRT"
+]);
+const directGlobalOpen = new Set([
+  "HMAP", "IMAP", "HALT", "MOST", "MOSO", "WEI", "WEIF", "MAP", "EQS", "QM", "GLCO", "FX",
+  "NI", "TOP", "TREND", "ALLQ", "SECF", "WJI", "IPO", "CALC", "CITADEL", "KELLY", "HELP", "CHANGE"
+]);
+const directOpenModifier = /\b(?:with|as|set|change|switch|compare|versus|vs|download|export|close|move|put|place|bigger|smaller|table|bubbles?|treemap|active|resumed|all|metric|multiple|revenue|ebit|ebitda|margin|growth|minutes?|hourly|candles?|ten k|ten q|eight k|forms?)\b/;
 
 function targetFor(text) {
   const security = commonSecurities.find(([name]) => new RegExp(`\\b${name}\\b`).test(text))?.[1] ?? null;
+  if (/\btop\b.*\breuters\b.*\b(?:stories|headlines|news)\b/.test(text)
+      || /\breuters\b.*\btop\b.*\b(?:stories|headlines|news)\b/.test(text)) {
+    return { mode: "command", command: "TOP", security };
+  }
   if (/\b(?:operating|gross|net) margin\b.*\b(?:graph|chart)\b|\b(?:graph|chart)\b.*\b(?:operating|gross|net) margin\b/.test(text)) {
     return { mode: "command", command: "GF", security };
   }
-  const match = targetCommands.find(([phrase]) => text.includes(phrase));
+  const match = targetCommands
+    .filter(([phrase]) => text.includes(phrase))
+    .sort((left, right) => right[0].length - left[0].length)[0];
   if (match) return { mode: "command", command: match[1], security };
   if (/\b(focused|active)\b/.test(text)) return { mode: "focused", command: null, security: null };
   return { mode: "last", command: null, security: null };
@@ -86,12 +125,17 @@ function exactTerminalStep(command, terminalCommand, id, placement = null) {
 export function parseControlFollowup(transcript, context = null) {
   const text = clean(transcript);
   if (!text) return null;
+  const focusedPanel = context?.focused_panel;
   let target = targetFor(text);
   // “Open eye” is a frequent OpenAI transcription and is query content, not
   // an instruction to open a new Godel panel.
   const openingText = text.replace(/\bopen[ -]?(?:eye|ai)\b/g, "");
-  const explicitlyOpening = /\b(open|create|build|launch|new)\b|\bpull up\b|\bbring up\b/.test(openingText);
-  const focusedPanel = context?.focused_panel;
+  const implicitSurfaceRequest = !focusedPanel?.command && target.command && target.command !== "SECF"
+    && !/\b(?:this|that|current|existing|window|panel|one)\b/.test(openingText)
+    && !/\b(?:add|set|change|switch|make|run|clear|strikes?)\b/.test(openingText)
+    && /\b(?:show|find|what|who|how|which|every|upcoming|top|estimates?|dividends?|tape|historical|indices|indexes|futures|commodities|forex|rates|most active|owners?|holdings|reports?|trending|quotes?|chain|calculator|calendar|patterns?|sentiment|help|shortcuts|release)\b/.test(openingText);
+  const explicitlyOpening = /\b(open|create|build|launch|new|display)\b|\bpull(?: up)?\b|\bbring up\b/.test(openingText)
+    || (!focusedPanel?.command && /\b(?:show me|latest)\b/.test(openingText)) || implicitSurfaceRequest;
   if (!explicitlyOpening && focusedPanel?.command) {
     const focusedCommand = String(focusedPanel.command).toUpperCase();
     const focusedSecurity = focusedPanel.security ? String(focusedPanel.security).toUpperCase() : null;
@@ -322,7 +366,12 @@ export function parseControlFollowup(transcript, context = null) {
   // Plain "open X" requests should never pay an LLM round trip. Keep this
   // deliberately narrow: any requested filter, view, metric, comparison,
   // layout, export, or second operation falls through to the strict compiler.
-  const hasOpenModifier = /\b(?:and|then)\b/.test(text) || directOpenModifier.test(text);
+  const describesOneSurface = (target.command === "SI" && /\bshort interest\b.*\bdays to cover\b/.test(text))
+    || (target.command === "DVD" && /\bdividend\b.*\bpayment history\b/.test(text))
+    || (target.command === "FX" && /\bforex\b.*\bcurrency converter\b/.test(text));
+  const activeIsSurfaceName = ["MOST", "MOSO"].includes(target.command) && /\bmost active\b/.test(text);
+  const hasOpenModifier = (/\b(?:and|then)\b/.test(text) && !describesOneSurface)
+    || (directOpenModifier.test(text) && !activeIsSurfaceName);
   if (explicitlyOpening && target.command === "EM" && security) {
     const emOpen = compileEMFollowup({ command: "EM", target }, transcript);
     if (emOpen?.ready_for_live_executor && emOpen.actions.length) {

@@ -84,19 +84,21 @@ test("workflow layout failures retain completed step timings and an exact layout
   assert.match(content, /status: "skipped"/);
   assert.match(content, /I couldn't finish the requested placement/);
   assert.match(content, /panelInternalAction\(livePanel, "LAYOUT", "setGeometry"/);
-  assert.match(content, /const root = windowRoots\(\)\[0\] \?\? document\.documentElement/);
+  assert.match(content, /const root = windowRoots\(\)\[0\]/);
+  assert.match(content, /document\.querySelector\('\[id\$="-window"\]'\)/);
   assert.match(mainWorld, /action === "setWindowGeometry"/);
 });
 
-test("workflow layout binds geometry to the exact panel returned by each command", () => {
+test("workflow layout binds geometry to the exact workspace window returned by each command", () => {
   const content = read("extension/content.js");
-  assert.match(content, /opened\.push\(\{ step, panel \}\)/);
+  assert.match(content, /opened\.push\(\{ step, panel, workspaceWindowId, workspaceWindowError \}\)/);
+  assert.match(content, /workspaceInternalAction\("activeWindowIds"\)/);
   assert.doesNotMatch(content, /windowId: activeIds\[0\]/);
   assert.match(content, /candidates\.filter\(root => panelMatchesTerminalIdentity\(root, identity\)\)/);
   assert.match(content, /windowRoots\(\)\.filter\(root => panelMatchesCommand\(root, openedPanel\.step\.command\)\)/);
   assert.match(content, /let livePanel = candidates\[0\] \?\? null/);
   assert.match(content, /if \(!livePanel\) \{\s*livePanel = nativeWindowRoot\(openedPanel\.panel\)/);
-  assert.doesNotMatch(content, /workspaceInternalAction\("setWindowGeometry"/);
+  assert.match(content, /workspaceInternalAction\("setWindowGeometry"/);
   assert.match(content, /panelInternalAction\(livePanel, "LAYOUT", "setGeometry", placement\.rect\)/);
 });
 

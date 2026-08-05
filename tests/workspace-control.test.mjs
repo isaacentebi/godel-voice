@@ -17,11 +17,18 @@ test("native workspace bridge uses exact Godel lifecycle contracts", () => {
   assert.match(bridge, /setLayout\(layoutValue =>/);
   assert.match(bridge, /tabs\.onSelect/);
   assert.match(bridge, /tabs\.onEdit/);
-  assert.match(bridge, /screen\.windowIds\.length === 0/);
+  assert.match(bridge, /screen\.title\.toLowerCase\(\) === title\.toLowerCase\(\)/);
+  assert.match(bridge, /screen\.windowIds\.length === 0 && screen\.title\.toLowerCase\(\) === "blank"/);
+  assert.match(bridge, /action === "activeScreenInfo"/);
+  assert.match(bridge, /action === "nameActiveScreen"/);
   assert.match(bridge, /eight-screen limit/);
   assert.match(bridge, /context\.exportScreen/);
   assert.match(bridge, /context\.exportLayout/);
   assert.match(bridge, /workspace layout shape changed/);
+  assert.match(bridge, /const tabButtons = \[\.\.\.document\.querySelectorAll/);
+  assert.match(bridge, /workspaceContextFor\(contextRoot \?\? root\)/);
+  assert.match(bridge, /String\(screen\.id\) !== String\(screenId\)/);
+  assert.match(bridge, /screen\.windowIds\.length > 0 && !\("activeWindowId" in screen\)/);
   assert.doesNotMatch(bridge, /style\.(left|top|width|height)\s*=/);
 });
 
@@ -40,14 +47,26 @@ test("content executor acknowledges leased work and checks cancellation between 
   assert.match(content, /\/context`/);
 });
 
-test("Jarvis replaces only its own stale safe windows before an ordinary new request", () => {
+test("Jarvis replaces safe windows only inside its dedicated Voice screen", () => {
   assert.match(content, /godel-voice-managed-window-ids-v1/);
   assert.match(content, /if \(opensNewPanels && plan\.layout\.preserve_existing === false\)/);
-  assert.match(content, /await closeStaleManagedPanels\(\)/);
+  assert.match(content, /await workspaceInternalAction\("createScreen", \{ name: "Voice" \}\)/);
+  assert.match(content, /await closeVoiceScreenPanels\(\)/);
+  assert.match(content, /await workspaceInternalAction\("nameActiveScreen", \{ name: "Voice" \}\)/);
+  assert.match(content, /activeScreenInfo/);
+  assert.match(content, /dedicated Voice screen/);
   assert.match(content, /rememberManagedPanel\(panel\)/);
   assert.match(content, /CHAT\|NOTE\|ACCOUNT\|BROK\|ORDER\|TRADE\|MESSAGE\|ALERT/);
-  assert.match(content, /automatic housekeeping into a destructive or blocking failure/);
+  assert.match(content, /destructive or blocking failure/);
   assert.doesNotMatch(content, /localStorage\.clear|sessionStorage\.clear/);
+});
+
+test("empty-screen recovery never renames a named user screen", () => {
+  assert.match(bridge, /tabs\.items\.find\(item => item\.title\.toLowerCase\(\) === title\.toLowerCase\(\)\)/);
+  assert.match(bridge, /tabs\.items\.find\(item => item\.title\.toLowerCase\(\) === "blank"\)/);
+  assert.match(bridge, /Create an empty Blank screen once so Jarvis can claim/);
+  assert.doesNotMatch(bridge, /const active = tabs\.items\.find[\s\S]{0,300}tabs\.onEdit\(String\(active\.id\), title\)/);
+  assert.match(bridge, /screens: \{ \.\.\.layout\.screens, \[screenId\]: \{ \.\.\.screen, title \} \}/);
 });
 
 test("contextual controls target last, focused, or remembered command windows", () => {
@@ -55,6 +74,13 @@ test("contextual controls target last, focused, or remembered command windows", 
   assert.match(content, /target\.mode === "focused"/);
   assert.match(content, /commandWindows\.get\(target\.command\)/);
   assert.match(content, /workspaceInternalAction\("activeWindowIds"\)/);
+  assert.match(content, /workspaceWindowId/);
+  assert.match(content, /beforeWindowIds/);
+  assert.match(content, /activeIds\.find\(id => !beforeWindowIds\.includes\(id\)\)/);
+  assert.match(content, /attempt < 20/);
+  assert.match(content, /await pause\(25\)/);
+  assert.match(content, /workspaceInternalAction\("setWindowGeometry"/);
+  assert.match(content, /document\.querySelector\('\[id\$="-window"\]'\)/);
   assert.match(content, /panelForControl\(step\.target, await activeScreenRoots\(\)\)/);
   assert.match(content, /roots\.filter\(root => panelMatchesCommand\(root, target\.command\)\)/);
   assert.match(bridge, /screen\.activeWindowId == null/);

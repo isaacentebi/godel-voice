@@ -143,20 +143,26 @@
     persistManagedWindowIds();
   }
 
-  async function closeStaleManagedPanels() {
-    const ids = [...managedWindowIds];
-    for (const id of ids) {
-      const panel = panelById(id);
-      if (!panel?.isConnected) {
-        managedWindowIds.delete(id);
-        continue;
-      }
+  async function closeVoiceScreenPanels() {
+    const active = await workspaceInternalAction("activeScreenInfo");
+    const title = String(active?.title ?? "").toLowerCase();
+    if (title === "blank" && windowRoots().length === 0) return;
+    if (title !== "voice") {
+      throw new Error("Jarvis could not establish its dedicated Voice screen");
+    }
+
+    // The screen title is the durable ownership boundary. Unlike the old
+    // session-only id list, it survives extension reloads and screen switches.
+    // Consequential or unrecognised windows still fail closed.
+    for (const panel of windowRoots()) {
+      const id = managedWindowId(panel);
+      if (!id) continue;
       try {
         await panelInternalAction(panel, "LAYOUT", "close");
         managedWindowIds.delete(id);
       } catch {
-        // A changed or consequential Godel window must remain open. Never turn
-        // automatic housekeeping into a destructive or blocking failure.
+        // A changed Godel window must remain open. Never turn automatic
+        // housekeeping into a destructive or blocking failure.
       }
     }
     persistManagedWindowIds();
@@ -543,7 +549,13 @@
     // A native window id is a stable main-world target. Using the document
     // element's temporary data attribute races when two geometry updates run
     // concurrently: one request can replace the other's bridge token.
-    const root = windowRoots()[0] ?? document.documentElement;
+    // Some Godel panels (notably EM) render a visible React shell around a
+    // connected native window whose own box has zero visual bounds. It remains
+    // the correct workspace-provider anchor even though windowRoots excludes it
+    // from user-visible targeting.
+    const root = windowRoots()[0]
+      ?? document.querySelector('[id$="-window"]')
+      ?? document.documentElement;
     return panelInternalAction(root, "WORKSPACE", action, payload);
   }
 
@@ -2076,6 +2088,13 @@
     await Promise.all(planned.placements.map(async placement => {
       const openedPanel = opened.find(item => item.step.id === placement.id);
       if (!openedPanel) return;
+      if (openedPanel.workspaceWindowId) {
+        await workspaceInternalAction("setWindowGeometry", {
+          id: openedPanel.workspaceWindowId,
+          rect: placement.rect
+        });
+        return;
+      }
       const identity = terminalPanelIdentity(openedPanel.step.terminal_command);
       let candidates = windowRoots().filter(root => panelMatchesCommand(root, openedPanel.step.command));
       if (identity) {
@@ -2096,7 +2115,10 @@
       if (!livePanel) {
         livePanel = nativeWindowRoot(openedPanel.panel);
       }
-      if (!livePanel) throw new Error(`Godel ${openedPanel.step.command} live window is unavailable for layout`);
+      if (!livePanel) {
+        const context = openedPanel.workspaceWindowError ? `: ${openedPanel.workspaceWindowError}` : "";
+        throw new Error(`Godel ${openedPanel.step.command} live window is unavailable for layout${context}`);
+      }
       // Target the exact rendered native window. Godel's active-screen list can
       // lag behind its DOM after opening or reusing a window, which caused a
       // valid visible panel to be rejected as "not on the active screen".
@@ -2338,9 +2360,10 @@
     const timings = [];
     const opensNewPanels = plan.steps.some(step => step.kind === "command");
     if (opensNewPanels && plan.layout.preserve_existing === false) {
-      await closeStaleManagedPanels();
-    }
-    if (plan.layout.new_screen) {
+      await ensureNotCancelled(requestId);
+      await workspaceInternalAction("createScreen", { name: "Voice" });
+      await closeVoiceScreenPanels();
+    } else if (plan.layout.new_screen) {
       await ensureNotCancelled(requestId);
       await workspaceInternalAction("createScreen", { name: "Voice" });
     }
@@ -2356,9 +2379,28 @@
           if (panel) grounded.push({ step, panel });
         }
         else {
+          const beforeWindowIds = await workspaceInternalAction("activeWindowIds").catch(() => []);
           const panel = await executeCommandPlan(step, { capturePanel: true, announce: false });
           if (panel) {
-            opened.push({ step, panel });
+            const native = nativeWindowRoot(panel);
+            const nativeId = native ? String(windowId(native) ?? "") : "";
+            let workspaceWindowError = null;
+            let activeIds = [];
+            let newlyReportedId = null;
+            for (let attempt = 0; attempt < 20; attempt += 1) {
+              activeIds = await workspaceInternalAction("activeWindowIds").catch(error => {
+                workspaceWindowError = error.message;
+                return [];
+              });
+              newlyReportedId = activeIds.find(id => !beforeWindowIds.includes(id)) ?? null;
+              if (newlyReportedId || (nativeId && activeIds.includes(nativeId))) break;
+              if (attempt < 19) await pause(25);
+            }
+            const workspaceWindowId = newlyReportedId
+              ?? (nativeId && activeIds.includes(nativeId) ? nativeId : null)
+              ?? activeIds[0]
+              ?? null;
+            opened.push({ step, panel, workspaceWindowId, workspaceWindowError });
             grounded.push({ step, panel });
           }
         }
@@ -2380,6 +2422,12 @@
           failure.stepTimings = timings;
           throw failure;
         }
+      }
+    }
+    if (opensNewPanels && plan.layout.preserve_existing === false && opened.length) {
+      const activeScreen = await workspaceInternalAction("activeScreenInfo");
+      if (String(activeScreen?.title ?? "").toLowerCase() !== "voice") {
+        await workspaceInternalAction("nameActiveScreen", { name: "Voice" });
       }
     }
     const layoutStartedAt = Date.now();

@@ -480,6 +480,7 @@ export function createHandoffServer({
   realtimeModel = process.env.GODEL_VOICE_REALTIME_MODEL || "gpt-realtime-2.1",
   realtimeReasoningEffort = process.env.GODEL_VOICE_REALTIME_REASONING_EFFORT || "low",
   realtimeVoice = process.env.GODEL_VOICE_REALTIME_VOICE || "cedar",
+  realtimeTranscriptionModel = process.env.GODEL_VOICE_REALTIME_TRANSCRIPTION_MODEL || "gpt-4o-transcribe",
   realtimeAuditEnabled = String(process.env.GODEL_VOICE_REALTIME_AUDIT ?? "false").toLowerCase() === "true",
   realtimeAuditPath = process.env.GODEL_VOICE_REALTIME_AUDIT_PATH || path.join(projectDir, "logs", "jarvis-audit.jsonl")
 } = {}) {
@@ -489,6 +490,8 @@ export function createHandoffServer({
   const realtimeOrigin = "https://app.godelterminal.com";
   const validRealtimeModels = new Set(["gpt-realtime-2.1", "gpt-realtime-2.1-mini"]);
   if (!validRealtimeModels.has(realtimeModel)) throw new Error("unsupported Realtime model");
+  const validRealtimeTranscriptionModels = new Set(["gpt-4o-transcribe", "gpt-4o-mini-transcribe"]);
+  if (!validRealtimeTranscriptionModels.has(realtimeTranscriptionModel)) throw new Error("unsupported Realtime transcription model");
   if (!["minimal", "low", "medium", "high", "xhigh"].includes(realtimeReasoningEffort)) throw new Error("unsupported Realtime reasoning effort");
   const safetyIdentifier = crypto.createHash("sha256").update(`godel-voice:${secret}`).digest("hex");
   const audit = (type, fields = {}) => {
@@ -537,7 +540,7 @@ export function createHandoffServer({
         // The client deliberately starts responses after a short continuation
         // grace period. This prevents a natural mid-sentence pause from
         // launching a tool call or spoken answer over the user.
-        transcription: { model: "gpt-4o-mini-transcribe", language: "en" },
+        transcription: { model: realtimeTranscriptionModel, language: "en" },
         turn_detection: { type: "semantic_vad", eagerness: "auto", create_response: false, interrupt_response: true }
       },
       output: { voice: realtimeVoice }
@@ -699,6 +702,17 @@ export function createHandoffServer({
         let requestText;
         try { requestText = safeAuditText(value.transcript, 1_000); normalizedRealtimeRequest(requestText); }
         catch { return respond(response, 200, { kind: "model" }); }
+
+        const conversationMessage = realtimeConversationMessage(requestText);
+        if (conversationMessage) {
+          const result = { kind: "conversation", message: conversationMessage };
+          session.preflights.set(turnId, result);
+          audit("tool_compiled", {
+            session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
+            request: requestText, kind: result.kind, route: "local_conversation", duration_ms: 0
+          });
+          return respond(response, 200, result);
+        }
 
         // Only the deterministic parser runs here. Ambiguous and research
         // requests still go to the conversational Realtime model, but common
