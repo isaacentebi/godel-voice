@@ -16,6 +16,9 @@
   let toolTurn = 0;
   let responseTimer = null;
   let speechActive = false;
+  let speechStartedAt = 0;
+  let speechStoppedAt = 0;
+  let transcriptCompletedAt = 0;
   let pendingTranscript = [];
   let activeWorkflow = null;
   let wantsActive = false;
@@ -127,6 +130,14 @@
       if (now - timestamp > 60_000) recentAssistantAudits.delete(candidate);
     }
     audit("assistant_transcript", eventId, { text });
+  }
+
+  function transcriptionConfidence(logprobs) {
+    const values = (Array.isArray(logprobs) ? logprobs : [])
+      .map(item => Number(item?.logprob)).filter(Number.isFinite);
+    if (!values.length) return undefined;
+    const meanLogprob = values.reduce((sum, value) => sum + value, 0) / values.length;
+    return Math.max(0, Math.min(1, Math.exp(meanLogprob)));
   }
 
   function waitForWorkflow(id, timeoutMs = 30_000) {
@@ -328,12 +339,17 @@
     if (activeWorkflow) await activeWorkflow.catch(() => {});
     if (runGeneration !== generation || channel?.readyState !== "open") return;
     try {
+      const preflightStartedAt = Date.now();
       const response = await api("/realtime/preflight", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sessionId, turn_id: turnId, transcript })
       });
       const request = await response.json();
+      audit("turn_timing", `${turnId}-preflight`, {
+        status: `preflight_${request.kind ?? "unknown"}`,
+        duration_ms: Date.now() - preflightStartedAt
+      });
       if (runGeneration !== generation) return;
       if (request.kind === "execute") {
         activeWorkflow = executePreflight(request, turnId, runGeneration);
@@ -343,6 +359,10 @@
       }
       if (request.kind === "conversation") {
         createConversationResponse(request.message);
+        return;
+      }
+      if (request.kind === "ignore") {
+        render("listening", "Ready when you are");
         return;
       }
     } catch (error) {
@@ -385,21 +405,36 @@
     if (event.type === "session.created" || event.type === "session.updated") render("listening");
     else if (event.type === "input_audio_buffer.speech_started") {
       speechActive = true;
+      speechStartedAt = Date.now();
       clearResponseTimer();
       render("listening", "I hear you");
     }
     else if (event.type === "input_audio_buffer.speech_stopped") {
       speechActive = false;
+      speechStoppedAt = Date.now();
+      if (speechStartedAt) audit("turn_timing", `${event.event_id ?? `speech-${speechStoppedAt}`}-segment`, {
+        status: "speech_segment", duration_ms: speechStoppedAt - speechStartedAt
+      });
       render("thinking");
     }
     else if (event.type === "output_audio_buffer.started") {
       clearToolWatchdog();
+      if (transcriptCompletedAt) audit("turn_timing", `${event.event_id ?? `audio-${Date.now()}`}-response`, {
+        status: "response_audio_after_transcript", duration_ms: Date.now() - transcriptCompletedAt
+      });
       render("speaking");
     }
     else if (event.type === "output_audio_buffer.stopped") render("listening");
     else if (event.type === "error") render("error", "Realtime voice reported an error");
     if (event.type === "conversation.item.input_audio_transcription.completed" && event.transcript) {
-      audit("user_transcript", event.event_id ?? `${event.item_id}-user`, { text: event.transcript });
+      transcriptCompletedAt = Date.now();
+      audit("user_transcript", event.event_id ?? `${event.item_id}-user`, {
+        text: event.transcript,
+        confidence: transcriptionConfidence(event.logprobs)
+      });
+      if (speechStoppedAt) audit("turn_timing", `${event.event_id ?? event.item_id}-transcription`, {
+        status: "transcription_after_stop", duration_ms: transcriptCompletedAt - speechStoppedAt
+      });
       scheduleTranscript(event.transcript, event.item_id ?? event.event_id ?? `turn-${Date.now()}`, runGeneration);
     }
     if ((event.type === "response.output_audio_transcript.done" || event.type === "response.audio_transcript.done") && event.transcript) {
@@ -519,6 +554,9 @@
     clearResponseTimer();
     if (!preserveIntent) clearReconnectTimer();
     speechActive = false;
+    speechStartedAt = 0;
+    speechStoppedAt = 0;
+    transcriptCompletedAt = 0;
     pendingTranscript = [];
     if (!preserveIntent) activeWorkflow = null;
     if (!preserveIntent) wantsActive = false;

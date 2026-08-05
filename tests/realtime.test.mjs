@@ -128,6 +128,8 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
   assert.match(upstreamSession, /\"effort\":\"low\"/);
   assert.match(upstreamSession, /\"tool_choice\":\"auto\"/);
   assert.match(upstreamSession, /\"eagerness\":\"low\"/);
+  assert.match(upstreamSession, /\"item\.input_audio_transcription\.logprobs\"/);
+  assert.match(upstreamSession, /\"noise_reduction\":\{\"type\":\"far_field\"\}/);
   assert.match(upstreamSession, /\"create_response\":false/);
   assert.match(upstreamSession, /\"gpt-4o-transcribe\"/);
   assert.match(upstreamSession, /\"wait_for_user\"/);
@@ -236,6 +238,18 @@ test("Realtime deterministic preflight executes common commands without a model 
     body: JSON.stringify({ session_id: sessionId, turn_id: "turn-2", transcript: "what should I look at next?" })
   })).json();
   assert.deepEqual(ambiguous, { kind: "model" });
+
+  const ambient = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, turn_id: "turn-ambient", transcript: "society is falling" })
+  })).json();
+  assert.deepEqual(ambient, { kind: "ignore" });
+
+  const addressed = await (await fetch(`${base}/realtime/preflight`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, turn_id: "turn-addressed", transcript: "Jarvis, society is falling" })
+  })).json();
+  assert.deepEqual(addressed, { kind: "model" });
 });
 
 test("Realtime browser surface contains no provider credential and has bounded teardown", () => {
@@ -248,6 +262,10 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /run_godel_workflow/);
   assert.doesNotMatch(source, /Jarvis online/);
   assert.match(source, /Ready when you are/);
+  assert.match(source, /transcriptionConfidence/);
+  assert.match(source, /request\.kind === "ignore"/);
+  assert.match(source, /response_audio_after_transcript/);
+  assert.match(source, /transcription_after_stop/);
   assert.match(source, /function_call_output/);
   assert.match(source, /tool_choice: "none"/);
   assert.match(source, /12_000/);

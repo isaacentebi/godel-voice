@@ -55,6 +55,13 @@ function realtimeConversationMessage(value) {
   return null;
 }
 
+function looksLikeIntentionalRealtimeSpeech(value) {
+  const normalized = safeAuditText(value, 1_000).toLowerCase().replace(/[^a-z0-9?.]+/g, " ").trim();
+  if (!normalized) return false;
+  if (/\bjarvis\b|[?]$/.test(normalized)) return true;
+  return /\b(?:open|show|display|launch|pull|bring|close|remove|move|resize|make|arrange|compare|search|find|look up|read|tell|explain|summarize|check|give|download|export|save|what|which|who|how|why|where|when|can you|could you|would you|chart|graph|matrix|heatmap|screener|earnings|transcript|news|price|quote|holders?|ownership|options?|filings?|margin|revenue|ebitda|forward pe|p e|vix|volatility)\b/.test(normalized);
+}
+
 function appendPrivateAudit(auditPath, clock, type, fields = {}, maxBytes = 5_000_000) {
   if (!auditPath) return;
   try {
@@ -521,6 +528,7 @@ export function createHandoffServer({
   const realtimeSessionConfig = context => ({
     type: "realtime",
     model: realtimeModel,
+    include: ["item.input_audio_transcription.logprobs"],
     output_modalities: ["audio"],
     ...(realtimeModel === "gpt-realtime-2.1" ? { reasoning: { effort: realtimeReasoningEffort } } : {}),
     instructions: [
@@ -543,6 +551,7 @@ export function createHandoffServer({
         // grace period. This prevents a natural mid-sentence pause from
         // launching a tool call or spoken answer over the user.
         transcription: { model: realtimeTranscriptionModel, language: "en" },
+        noise_reduction: { type: "far_field" },
         turn_detection: { type: "semantic_vad", eagerness: realtimeVadEagerness, create_response: false, interrupt_response: true }
       },
       output: { voice: realtimeVoice }
@@ -725,6 +734,15 @@ export function createHandoffServer({
         catch {}
         const active = [...session.calls.values(), ...session.preflights.values()]
           .find(item => item.kind === "execute" && !terminalStates.has(store.status(item.id)?.status));
+        if (!marker && !looksLikeIntentionalRealtimeSpeech(requestText)) {
+          const result = { kind: "ignore" };
+          session.preflights.set(turnId, result);
+          audit("tool_compiled", {
+            session_ref: markerDigest(sessionId).slice(0, 12), call_ref: markerDigest(turnId).slice(0, 12),
+            request: requestText, kind: result.kind, route: "ambient_filter", duration_ms: 0
+          });
+          return respond(response, 200, result);
+        }
         if (!marker || active) {
           const result = { kind: "model" };
           session.preflights.set(turnId, result);
@@ -762,7 +780,7 @@ export function createHandoffServer({
         const sessionId = safeOpaqueId(value.session_id, "");
         const session = realtimeSessions.get(sessionId);
         const eventId = safeOpaqueId(value.event_id, "");
-        const allowedTypes = new Set(["user_transcript", "assistant_transcript", "tool_result", "client_error"]);
+        const allowedTypes = new Set(["user_transcript", "assistant_transcript", "tool_result", "client_error", "turn_timing"]);
         if (!session || !eventId || !allowedTypes.has(value.type)) return respond(response, 400, { error: "invalid Realtime audit event" });
         session.auditEvents ??= new Set();
         if (session.auditEvents.has(eventId)) return respond(response, 200, { duplicate: true });
@@ -770,7 +788,8 @@ export function createHandoffServer({
         audit(value.type, {
           session_ref: markerDigest(sessionId).slice(0, 12), event_ref: markerDigest(eventId).slice(0, 12),
           text: safeAuditText(value.text), status: safeAuditText(value.status, 40) || undefined,
-          duration_ms: Number.isFinite(value.duration_ms) ? Math.max(0, Math.round(value.duration_ms)) : undefined
+          duration_ms: Number.isFinite(value.duration_ms) ? Math.max(0, Math.round(value.duration_ms)) : undefined,
+          confidence: Number.isFinite(value.confidence) ? Math.max(0, Math.min(1, Number(value.confidence))) : undefined
         });
         return respond(response, 200, { recorded: realtimeAuditEnabled });
       }
