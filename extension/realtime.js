@@ -68,6 +68,13 @@
       }
       return dropped;
     }
+    function cancelActiveResponse(predicate) {
+      if (!activeResponse || activeResponse.audible === true || typeof predicate !== "function"
+          || !predicate(activeResponse)) return false;
+      activeResponse = null;
+      pumpResponses();
+      return true;
+    }
     function responseCreated(responseId) { if (activeResponse && responseId) activeResponse.providerResponseId = String(responseId); }
     function responseMatches(responseId) {
       if (!activeResponse || !responseId) return Boolean(activeResponse);
@@ -120,7 +127,7 @@
       }
     }
     return {
-      enqueueTurn, enqueueResponse, deferResponse, releaseDeferredResponses, dropResponses,
+      enqueueTurn, enqueueResponse, deferResponse, releaseDeferredResponses, dropResponses, cancelActiveResponse,
       responseCreated, responseStarted, responseDone, responseFailed,
       kickTurns: pumpTurns, kickResponses: pumpResponses, reset,
       snapshot: () => ({ queuedTurns: turnQueue.length, turnRunning, queuedResponses: responseQueue.length,
@@ -469,8 +476,9 @@
     if (completedId) coordinator.dropResponses(response => response.workflowProgressId === completedId);
   }
 
-  function scheduleWorkflowProgress(id, runGeneration) {
+  function scheduleWorkflowProgress(id, runGeneration, message = null) {
     clearWorkflowProgressTimer();
+    if (!message) return;
     workflowProgressId = id;
     workflowProgressTimer = setTimeout(() => {
       workflowProgressTimer = null;
@@ -479,7 +487,7 @@
           || speechActive || speechAwaitingTranscript || assistantSpeaking) return;
       const queued = coordinator.snapshot();
       if (queued.activeResponse || queued.queuedResponses || queued.deferredResponses) return;
-      const response = exactResponse("Still working.", "workflow_progress");
+      const response = exactResponse(message, "workflow_progress");
       if (!response) return;
       response.workflowProgressId = id;
       coordinator.enqueueResponse(response);
@@ -584,7 +592,7 @@
   async function executePreflight(request, turnId, runGeneration) {
     render("working", "Operating Godel directly");
     activeWorkflowId = request.id;
-    scheduleWorkflowProgress(request.id, runGeneration);
+    scheduleWorkflowProgress(request.id, runGeneration, request.progress_message);
     let output;
     try {
       const completed = await waitForWorkflow(request.id, request.workflow_timeout_ms);
@@ -720,8 +728,18 @@
       speechAwaitingTranscript = true;
       speechStartedAt = Date.now();
       clearDeferredReleaseTimer();
+      const pendingProgressId = workflowProgressId;
+      if (pendingProgressId) {
+        const cancelledProgress = coordinator.cancelActiveResponse(
+          response => response.workflowProgressId === pendingProgressId);
+        clearWorkflowProgressTimer(pendingProgressId);
+        if (cancelledProgress) {
+          try { send({ type: "response.cancel" }); } catch {}
+        }
+      }
       transcriptBatcher.speechChanged();
       if (assistantSpeaking) {
+        if (audio) audio.volume = 0.15;
         clearBargeInTimer();
         bargeInTimer = setTimeout(() => {
           bargeInTimer = null;
@@ -729,7 +747,7 @@
           audit("turn_timing", event.event_id ?? `speech-${Date.now()}-interrupt`, {
             status: "user_interrupted_assistant", duration_ms: Date.now() - speechStartedAt
           });
-          if (audio) audio.muted = true;
+          if (audio) { audio.muted = true; audio.volume = 1; }
           try { send({ type: "response.cancel" }); } catch {}
         }, BARGE_IN_CONFIRM_MS);
       }
@@ -738,6 +756,7 @@
     else if (event.type === "input_audio_buffer.speech_stopped") {
       speechActive = false;
       clearBargeInTimer();
+      if (audio && !audio.muted) audio.volume = 1;
       speechStoppedAt = Date.now();
       if (speechStartedAt) audit("turn_timing", `${event.event_id ?? `speech-${speechStoppedAt}`}-segment`, {
         status: "speech_segment", duration_ms: speechStoppedAt - speechStartedAt
@@ -868,6 +887,9 @@
   async function start({ reconnecting = false } = {}) {
     if (peer) return;
     if (!reconnecting) window.dispatchEvent(new CustomEvent("godel-voice:session-started"));
+    window.dispatchEvent(new CustomEvent("godel-voice:session-state", {
+      detail: { active: true, reconnecting }
+    }));
     wantsActive = true;
     transportSuspended = false;
     const runGeneration = ++generation;
@@ -967,6 +989,7 @@
     assistantSpeaking = false;
     transcriptBatcher.reset({ preserve: preserveWork });
     coordinator.reset({ preserveTurns: preserveWork, preserveResponses: preserveWork });
+    const closingWorkflowId = activeWorkflowId;
     if (!preserveWork) {
       clearWorkflowProgressTimer();
       if (activeWorkflowId) cancelWorkflow(activeWorkflowId).catch(() => {});
@@ -992,8 +1015,15 @@
       keepalive: reason === "pagehide"
     }).catch(() => {});
     if (!preserveIntent && reason !== "pagehide") {
+      window.dispatchEvent(new CustomEvent("godel-voice:session-state", {
+        detail: { active: false, reason }
+      }));
       window.dispatchEvent(new CustomEvent("godel-voice:cleanup-request", {
-        detail: { reason, explicit: reason === "manual_toggle" }
+        detail: {
+          reason, explicit: reason === "manual_toggle",
+          workflow_id: closingWorkflowId,
+          stopped_at: Date.now()
+        }
       }));
     }
     render(nextState, message);

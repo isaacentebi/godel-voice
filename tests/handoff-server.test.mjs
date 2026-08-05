@@ -97,6 +97,20 @@ test("executor contexts remain separated while a tab keeps context across docume
   assert.equal(store.recentContext(15_000, 900_000, ownerB).focused_panel.security, "AMZN");
 });
 
+test("background context from another tab cannot steal a pinned Realtime executor", () => {
+  const store = new HandoffStore();
+  store.setContext({ focused_panel: { command: "HMAP" } }, "gx-owner-a", "gd-a");
+  store.armExecutor("gx-owner-a", "gd-a");
+  const entry = store.enqueue(marker, "pinned-owner", "gx-owner-a", "gd-a").entry;
+  store.lease("gx-owner-a", "gx-owner-a", "gd-a");
+  store.setContext({ focused_panel: { command: "EM", security: "META" } }, "gx-owner-b", "gd-b");
+  assert.deepEqual(store.armedExecutor(), {
+    executor_id: "gx-owner-a", document_generation: "gd-a", armed_at: store.armedAt
+  });
+  assert.equal(store.status(entry.id).cancel_requested, false);
+  assert.ok(store.heartbeat(entry.id, "gx-owner-a", "gx-owner-a", "gd-a"));
+});
+
 test("stale document generations fail closed for delivery and acknowledgement", () => {
   const store = new HandoffStore();
   const owner = "gx-stable-owner";
@@ -124,6 +138,8 @@ test("arming a new owner revokes the previous owner's inflight authority", () =>
   const entry = store.enqueue(marker, "owner-revocation", "gx-owner-a", "gd-a").entry;
   store.lease("gx-owner-a", "gx-owner-a", "gd-a");
   store.armExecutor("gx-owner-b", "gd-b");
+  assert.equal(store.status(entry.id).status, "inflight");
+  assert.equal(store.status(entry.id).cancel_requested, true);
   assert.throws(() => store.heartbeat(entry.id, "gx-owner-a", "gx-owner-a", "gd-a"), /no longer armed/);
   assert.throws(() => store.acknowledge(entry.id, "completed", {
     client_id: "gx-owner-a", executor_id: "gx-owner-a", document_generation: "gd-a"
@@ -231,6 +247,62 @@ test("an executor can immediately release a lease for bounded recovery", () => {
   store.lease("stale-extension");
   assert.equal(store.release(entry.id, "extension context invalidated", "stale-extension").status, "queued");
   assert.equal(store.lease("fresh-extension").attempts, 2);
+});
+
+test("expired work cannot be revived or acknowledged by its former lease owner", () => {
+  let now = 10_000;
+  const store = new HandoffStore({ clock: () => now, leaseMs: 100 });
+  const entry = store.enqueue(marker, "expiring-work").entry;
+  store.lease("old-owner");
+  now += 101;
+  assert.equal(store.status(entry.id).status, "queued");
+  assert.equal(store.heartbeat(entry.id, "old-owner"), null);
+  assert.throws(() => store.acknowledge(entry.id, "completed", { client_id: "old-owner" }), /not leased/);
+  assert.equal(store.lease("new-owner").attempts, 2);
+});
+
+test("cancelled inflight work drops its private marker when the lease expires", () => {
+  let now = 20_000;
+  const store = new HandoffStore({ clock: () => now, leaseMs: 100 });
+  const entry = store.enqueue(marker, "cancel-expiry").entry;
+  store.lease("owner");
+  store.cancel(entry.id);
+  now += 101;
+  assert.equal(store.status(entry.id).status, "cancelled");
+  assert.equal("marker" in store.entries[0], false);
+  assert.equal(store.status(entry.id).finished_at, now);
+});
+
+test("arming a replacement executor retires queued work and cancels inflight work", () => {
+  const store = new HandoffStore();
+  store.armExecutor("gx-owner-a", "gd-generation-a");
+  const queued = store.enqueue(marker, "queued-a", "gx-owner-a", "gd-generation-a").entry;
+  const inflight = store.enqueue(marker, "inflight-a", "gx-owner-a", "gd-generation-a").entry;
+  store.lease("gx-owner-a", "gx-owner-a", "gd-generation-a");
+  store.armExecutor("gx-owner-b", "gd-generation-b");
+  assert.equal(store.status(queued.id).status, "inflight");
+  assert.equal(store.status(queued.id).cancel_requested, true);
+  assert.equal(store.status(inflight.id).status, "failed");
+  assert.equal(store.counts().queued ?? 0, 0);
+  assert.equal(store.counts().inflight ?? 0, 1);
+});
+
+test("a disarmed old owner cannot leave targeted work behind after another owner starts", () => {
+  const store = new HandoffStore();
+  store.armExecutor("gx-owner-a", "gd-a");
+  const queued = store.enqueue(marker, "disarm-rearm", "gx-owner-a", "gd-a").entry;
+  assert.equal(store.disarmExecutor("gx-owner-a", "gd-a"), true);
+  store.armExecutor("gx-owner-b", "gd-b");
+  assert.equal(store.status(queued.id).status, "failed");
+});
+
+test("queued workflows expire instead of remaining permanent zombies", () => {
+  let now = 30_000;
+  const store = new HandoffStore({ clock: () => now, queuedTtlMs: 100 });
+  const entry = store.enqueue(marker, "queued-expiry").entry;
+  now += 101;
+  assert.equal(store.status(entry.id).status, "failed");
+  assert.match(store.status(entry.id).error, /expired before delivery/);
 });
 
 test("HTTP handoff exposes leased delivery, status, acknowledgement and cancellation", async t => {

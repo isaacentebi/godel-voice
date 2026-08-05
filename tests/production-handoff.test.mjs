@@ -20,6 +20,15 @@ test("executor leases are gated to the focused active Godel tab and renewed duri
   assert.match(content, /clearInterval\(heartbeatTimer\)/);
 });
 
+test("an affined live Jarvis session keeps its deterministic executor and context alive in the background", () => {
+  const content = read("extension/content.js");
+  assert.match(content, /let jarvisRealtimeActive = false/);
+  assert.match(content, /document\.visibilityState !== "visible"[\s\S]{0,180}jarvisRealtimeActive/);
+  assert.match(content, /if \(\(!jarvisRealtimeActive && document\.visibilityState !== "visible"\)/);
+  assert.match(content, /jarvisRealtimeActive = true/);
+  assert.match(content, /jarvisRealtimeActive = false/);
+});
+
 test("executor queue polling is low-latency, overlap-safe, and still leases only after eligibility", () => {
   const content = read("extension/content.js");
   assert.match(content, /let polling = false/);
@@ -90,7 +99,7 @@ test("page-world panel actions synchronize their exact DOM target across isolate
   assert.match(content, /target_id: \(nativeRoot \?\? panel\)\.id \|\| null/);
   assert.match(content, /Godel native window target is unavailable or ambiguous/);
   assert.match(content, /!panel\.isConnected/);
-  assert.match(content, /Godel \$\{openedPanel\.step\.command\} live window is unavailable for layout/);
+  assert.match(content, /Godel \$\{openedPanel\.step\.command\} exact receipted window is unavailable for layout/);
   assert.match(mainWorld, /document\.getElementById\(targetId\)/);
   assert.match(mainWorld, /stableRoot \?\? targeted/);
   assert.match(mainWorld, /document\.querySelector\(selector\)/);
@@ -128,14 +137,10 @@ test("workflow layout binds geometry to the exact workspace window returned by e
   assert.match(content, /const capturedWindow = nativeWindowRoot\(openedPanel\.panel\)/);
   assert.match(content, /const directWindow = exactWindow \?\? capturedWindow/);
   assert.match(content, /panelInternalAction\(directWindow, "LAYOUT", "setGeometry", placement\.rect\)/);
-  assert.match(content, /candidates\.filter\(root => panelMatchesTerminalIdentity\(root, identity\)\)/);
-  assert.match(content, /windowRoots\(\)\.filter\(root => panelMatchesCommand\(root, openedPanel\.step\.command\)\)/);
-  assert.match(content, /let livePanel = candidates\[0\] \?\? null/);
-  assert.match(content, /if \(!livePanel\) \{\s*livePanel = nativeWindowRoot\(openedPanel\.panel\)/);
   assert.match(content, /workspaceInternalAction\("setWindowGeometry"/);
-  assert.match(content, /panelInternalAction\(livePanel, "LAYOUT", "setGeometry", placement\.rect\)/);
+  assert.doesNotMatch(content, /let livePanel = candidates\[0\] \?\? null/);
+  assert.match(content, /exact receipted window is unavailable for layout/);
 });
-
 test("workflow lease suppresses the browser start voice when premium speech is available", () => {
   const content = read("extension/content.js");
   assert.match(content, /toast\("Godel Voice: On it"\)/);

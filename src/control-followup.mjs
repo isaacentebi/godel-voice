@@ -431,6 +431,32 @@ export function parseControlFollowup(transcript, context = null) {
   // company. Anything involving configuration remains on the strict path.
   const openClauses = text.split(/\b(?:and then|then|and)\b/).map(value => value.trim()).filter(Boolean);
 
+  const placementForClause = clause => {
+    for (const placement of ["top-left", "top-right", "bottom-left", "bottom-right", "left", "right", "top", "bottom"]) {
+      if (new RegExp(`\\b${placement.replace("-", "[ -]?")}\\b`).test(clause)) return placement;
+    }
+    return null;
+  };
+  if (explicitlyOpening && openClauses.length === 2) {
+    const placedPair = openClauses.map((clause, index) => {
+      const clauseTarget = targetFor(clause);
+      const placement = placementForClause(clause);
+      const allowed = placement && (directGlobalOpen.has(clauseTarget.command)
+        || (directSecurityOpen.has(clauseTarget.command) && clauseTarget.security));
+      return allowed ? {
+        ...commandStep(clauseTarget.command,
+          directSecurityOpen.has(clauseTarget.command) ? clauseTarget.security : null,
+          `command-${index + 1}`),
+        layout: { placement }
+      } : null;
+    });
+    if (placedPair.every(Boolean) && placedPair[0].layout.placement !== placedPair[1].layout.placement) {
+      return validateWorkflowPlan({
+        version: 2, failure_policy: "stop_on_any", layout: workflowLayout("grid"), steps: placedPair
+      });
+    }
+  }
+
   // Compose one complete open request with its trailing verified window
   // control. This lane runs before generic window handling so “open X and
   // maximize it” cannot turn into a maximize against a panel that was never

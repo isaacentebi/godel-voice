@@ -77,7 +77,8 @@ test("TRAN result is panel-scoped, grounded and retains exact passage navigation
   assert.match(source, /await tranSelectPeriod\(panel, strongest\.period\)/);
   assert.match(source, /if \(!tranScrollToPassage\(reader, strongest\.text\)\) result\.current = null/);
   assert.match(source, /behavior: "auto"/);
-  assert.match(source, /rgba\(53, 211, 153, 0\.95\)/);
+  assert.match(source, /rgba\(53, 211, 153, 1\)/);
+  assert.match(source, /selection\?\.addRange\(selectedRange\)/);
 });
 
 test("TRAN sends only bounded extracted evidence to the authenticated local summary endpoint", () => {

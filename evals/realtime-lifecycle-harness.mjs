@@ -14,7 +14,7 @@ import os from "node:os";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
-import { createHandoffServer, HandoffStore } from "../src/handoff-server.mjs";
+import { createHandoffServer, HandoffStore, progressMessageForMarker } from "../src/handoff-server.mjs";
 import { parseWorkflowMarker } from "../src/workflow-plan.mjs";
 
 const projectDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -380,7 +380,9 @@ export async function runRealtimeLifecycleHarness({
     await sleep(30);
 
     assert.equal(lease?.marker?.startsWith("GV"), true, "transcript must compile into a validated workflow marker");
-    const expectedSpokenResponses = Number.isFinite(workflowProgressDelayMs) && executionMs > workflowProgressDelayMs ? 2 : 1;
+    const expectedSpokenResponses = Number.isFinite(workflowProgressDelayMs)
+      && executionMs > workflowProgressDelayMs
+      && progressMessageForMarker(lease.marker) ? 2 : 1;
     assert.equal(
       clientEvents.filter(item => item.type === "response.create").length,
       expectedSpokenResponses,

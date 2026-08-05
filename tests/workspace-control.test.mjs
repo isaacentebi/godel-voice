@@ -52,12 +52,12 @@ test("Jarvis replaces safe windows only inside its dedicated Voice screen", () =
   assert.match(content, /godel-voice-managed-window-ids-v1/);
   assert.match(content, /if \(replacesVoiceWorkspace\)/);
   assert.match(content, /await workspaceInternalAction\("createScreen", \{ name: "Voice" \}\)/);
-  assert.match(content, /await closeVoiceScreenPanels\(\)/);
+  assert.match(content, /await closeVoiceScreenPanels\(\{ replaceAllSafe: true \}\)/);
   assert.match(content, /await workspaceInternalAction\("nameActiveScreen", \{ name: "Voice" \}\)/);
   assert.match(content, /activeScreenInfo/);
   assert.match(content, /dedicated Voice screen/);
   assert.match(content, /const managedWindowReceipts = new Map/);
-  assert.match(content, /if \(createdByWorkflow\) rememberManagedPanel\(panel, \{ requestId, command: step\.command \}\)/);
+  assert.match(content, /if \(createdByWorkflow\) rememberManagedPanel\(panel, \{ requestId: stepReceiptId, command: step\.command \}\)/);
   assert.match(content, /managedWindowReceipts\.has\(id\)/);
   assert.match(content, /CHAT\|NOTE\|ACCOUNT\|BROK\|ORDER\|TRADE\|MESSAGE\|ALERT/);
   assert.match(content, /destructive or blocking failure/);
@@ -78,18 +78,21 @@ test("manual Jarvis shutdown cleans only receipted Voice-screen windows and pres
   assert.match(realtime, /godel-voice:cleanup-request/);
   assert.match(realtime, /explicit: reason === "manual_toggle"/);
   assert.match(content, /queueVoiceCleanup\(jarvisSessionEpoch\)/);
-  assert.match(content, /if \(event\.detail\?\.explicit === true\) queueVoiceCleanup\(jarvisSessionEpoch, \{ closeAll: true \}\)/);
+  assert.match(content, /if \(event\.detail\?\.explicit === true\) \{[\s\S]{0,360}queueVoiceCleanup\(jarvisSessionEpoch/);
   assert.match(content, /Starting or reconnecting Jarvis must preserve the visible panels/);
-  assert.match(content, /requestedEpoch !== jarvisSessionEpoch \|\| running/);
+  assert.match(content, /if \(!closeAll && requestedEpoch !== jarvisSessionEpoch\) return/);
   assert.match(content, /await lifecycleCleanup/);
   assert.match(content, /const payload = await response\.json\(\);[\s\S]{0,320}await lifecycleCleanup;[\s\S]{0,80}running = true/);
-  assert.match(content, /for \(let attempt = 0; attempt < 700 && running/);
-  assert.match(content, /await closeVoiceScreenPanels\(\)/);
+  assert.match(content, /while \(running\) await pause\(100\)/);
+  assert.match(content, /createdBefore: event\.detail\?\.stopped_at/);
+  assert.match(content, /requestId: event\.detail\?\.workflow_id/);
+  assert.match(content, /await closeVoiceScreenPanels\(\{ requestId, createdBefore \}\)/);
 });
 
 test("manual shutdown keeps exact same-document receipts for layout-store orphan panels", () => {
   assert.match(content, /const managedDomReceipts = new Map\(\)/);
-  assert.match(content, /const root = nativeRoot \?\? \(titleShells\.length === 1 \? titleShells\[0\] : panel\)/);
+  assert.match(content, /function titleReceiptRoot\(command\)/);
+  assert.match(content, /const root = nativeRoot \?\? titleReceiptRoot\(canonicalCommand\) \?\? panel/);
   assert.match(content, /managedDomReceipts\.set\(root, receipt\)/);
   assert.match(content, /for \(const \[panel, receipt\] of ownedDom\)/);
   assert.match(content, /panelForDomReceipt\(panel, receipt\)/);
@@ -103,15 +106,13 @@ test("manual shutdown keeps exact same-document receipts for layout-store orphan
   assert.match(content, /await waitUntil\(\(\) => !panel\.isConnected \|\| !visible\(panel\)/);
 });
 
-test("an orphan receipt can follow one exact command-and-security React remount", () => {
+test("an orphan receipt follows only its stable native id across a React remount", () => {
   assert.match(content, /function panelForDomReceipt\(original, receipt\)/);
   assert.match(content, /original instanceof HTMLElement && original\.isConnected/);
   assert.match(content, /panelMatchesCommand\(original, receipt\.command\)/);
-  assert.match(content, /windowRoots\(\)\.filter\(root => panelMatchesCommand\(root, receipt\.command\)\)/);
-  assert.match(content, /panelTitleNodes\(receipt\.command\)\.map\(rootForTitle\)/);
-  assert.match(content, /panelMatchesReceiptSecurity\(candidate, receipt\.command, receipt\.security\)/);
-  assert.match(content, /return candidates\.length === 1 \? candidates\[0\] : null/);
-  assert.match(content, /managedDomReceipts\.set\(currentPanel, receipt\)/);
+  assert.match(content, /if \(!receipt\.id\) return null/);
+  assert.match(content, /const candidate = panelById\(String\(receipt\.id\)\)/);
+  assert.match(content, /bare[\s\S]{0,160}command\/security match is not ownership proof/);
   assert.match(content, /Reconciliation is observation-only for same-document receipts/);
   assert.doesNotMatch(content, /if \(!activeVoiceScreen \|\| !currentPanel\) \{\s*managedDomReceipts\.delete\(panel\)/);
 });
@@ -127,9 +128,37 @@ test("failed workflows roll back only newly opened safe Voice windows", () => {
   assert.match(content, /const transactionWindowIds = new Set\(\)/);
   assert.match(content, /beforeRenderedIds = new Set/);
   assert.match(content, /transactionWindowIds\.add/);
-  assert.match(content, /closeVoiceScreenPanels\(\{ onlyIds: transactionWindowIds \}\)/);
-  assert.match(content, /if \(plan\.layout\.preserve_existing === false\) await closeVoiceScreenPanels\(\)/);
+  assert.match(content, /closeVoiceScreenPanels\(\{ onlyIds: transactionWindowIds, requestId \}\)/);
+  assert.match(content, /if \(plan\.layout\.preserve_existing === false\) await closeVoiceScreenPanels\(\{ replaceAllSafe: true \}\)/);
   assert.match(content, /const ownedIds = new Set\(\[\.\.\.requestedIds\]\.filter\(id => managedWindowReceipts\.has\(id\)\)\)/);
+});
+
+test("new panels are receipted before nested actions and optional failures roll back their exact request", () => {
+  assert.match(content, /onPanelReady = null, onCommandSubmitted = null/);
+  assert.match(content, /await onPanelReady\(panel, \{ terminalCommand, workspaceCommitted, phases \}\)/);
+  assert.match(content, /requestId: stepReceiptId, command: step\.command/);
+  assert.match(content, /const stepNewIds = new Set/);
+  assert.match(content, /closeVoiceScreenPanels\(\{ onlyIds: stepNewIds, requestId: stepReceiptId \}\)/);
+  assert.match(content, /receipt\.request_id === requestedReceipt \|\| receipt\.request_id\?\.startsWith/);
+  assert.match(content, /const beforeInventory = await workspaceInternalAction\("workspaceInventory"\)/);
+  assert.doesNotMatch(content, /const beforeInventory = await workspaceInternalAction\("workspaceInventory"\)\.catch/);
+  assert.match(content, /failure preceded onPanelReady/);
+  assert.match(content, /const afterWorkspaceIds = new Set/);
+  assert.match(content, /if \(recoveryCandidates\.size === 1\)/);
+  assert.match(content, /submittedTerminalIdentity = terminalPanelIdentity\(terminalCommand\)/);
+  assert.match(content, /Could not establish ownership of the new/);
+  assert.match(content, /Run legacy single-command markers through the same transactional engine/);
+  assert.match(content, /const workflow = plan\.version === 2 \? plan/);
+});
+
+test("completion narration names only completed panels and admits skipped commands", () => {
+  assert.match(content, /function completionMessage\(plan, openedPanels = \[\], timings = \[\]\)/);
+  assert.match(content, /timing\.status === "completed"/);
+  assert.match(content, /timing\.status === "failed" \|\| timing\.status === "skipped"/);
+  assert.match(content, /function failedStepSubject\(step\)/);
+  assert.match(content, /const failedSteps = plan\.steps\.filter/);
+  assert.match(content, /I couldn't complete/);
+  assert.match(content, /completionMessage\(workflow, result\.grounded, result\.timings\)/);
 });
 
 test("Voice workspace cleanup atomically prunes stale Jarvis layout records", () => {
@@ -142,6 +171,9 @@ test("Voice workspace cleanup atomically prunes stale Jarvis layout records", ()
   assert.match(content, /workspaceInternalAction\("clearVoiceScreen"/);
   assert.match(content, /preserve_ids: \[\.\.\.borrowedWindowReceipts\.keys\(\)\]/);
   assert.match(content, /only_ids: \[\.\.\.ownedIds\]/);
+  assert.match(content, /function pendingCleanupReceipts\(requestId = null, createdBefore = null\)/);
+  assert.match(content, /attempt < 5/);
+  assert.match(content, /await pause\(100 \* \(2 \*\* attempt\)\)/);
 });
 
 test("successful requests reconcile orphaned receipts and enforce a bounded managed-window cap", () => {
@@ -166,6 +198,25 @@ test("a receipted connected panel survives a missing Godel layout-store id for m
 
 test("managed receipts retain Godel's alphanumeric native ids across a content-script restart", () => {
   assert.ok(content.includes("receipt && /^[A-Za-z0-9_-]{1,120}$/.test(String(receipt.id"));
+  assert.match(content, /receipt\.document_generation === generation/);
+  assert.match(content, /document_generation: documentGeneration/);
+});
+
+test("id-less Godel panels keep an exact title-toolbar receipt for later cleanup", () => {
+  assert.match(content, /function titleReceiptRootForNode\(title\)/);
+  assert.match(content, /function isExplicitCloseControl\(element\)/);
+  assert.match(content, /function titleReceiptRoot\(command\)/);
+  assert.match(content, /buttons\.filter\(isExplicitCloseControl\)\.length === 1/);
+  assert.match(content, /const root = nativeRoot \?\? titleReceiptRoot\(canonicalCommand\) \?\? panel/);
+});
+
+test("replacement requests clear remounted safe panels on the dedicated Voice desk", () => {
+  assert.match(content, /async function closeAllSafePanelsOnVoice\(\)/);
+  assert.match(content, /closeVoiceScreenPanels\(\{ replaceAllSafe: true \}\)/);
+  assert.match(content, /if \(replaceAllSafe\) await closeAllSafePanelsOnVoice\(\)/);
+  assert.match(content, /if \(candidate\.native\) await panelInternalAction\(candidate\.native, "LAYOUT", "close"\)/);
+  assert.match(content, /else await closeOwnedDomPanel\(candidate\.root, candidate\.command, null\)/);
+  assert.match(content, /Manual Stop remains receipt-only/);
 });
 
 test("a title-authenticated native panel can be receipted when Godel omits its command-type attribute", () => {
@@ -231,7 +282,7 @@ test("creation ownership uses exact element identity when Godel exposes no layou
   assert.match(content, /beforeRenderedRoots = new Set\(windowRoots\(\)\)/);
   assert.match(content, /beforeCommandPanels = new Set\(\[/);
   assert.match(content, /const creationRoot = native \?\? panel/);
-  assert.match(content, /const createdByWorkflow = !borrowed && creationRoot/);
+  assert.match(content, /const createdByWorkflow = !borrowed && \(provisionalOwnership\s*\n\s*\? provisionalOwnership\.createdByWorkflow/);
   assert.match(content, /!beforeCommandPanels\.has\(creationRoot\)/);
   assert.match(content, /ownershipPhases\.ownership_dom_receipt = managedDomReceipts\.has\(creationRoot\) \? 1 : 0/);
 });
@@ -282,4 +333,10 @@ test("explicit post-open geometry is never undone by automatic layout", () => {
   assert.match(content, /const hasExplicitGeometryControl = plan\.steps\.some/);
   assert.match(content, /\["maximize", "restore", "move", "resize"\]\.includes\(step\.operation\)/);
   assert.match(content, /if \(!hasExplicitGeometryControl\) await arrangeWorkflow\(plan, opened\)/);
+});
+
+test("a workflow cannot report success when every requested action failed", () => {
+  assert.match(content, /completedRequestedActions = timings\.filter/);
+  assert.match(content, /if \(failures\.length && completedRequestedActions\.length === 0\)/);
+  assert.match(content, /None of the .* requested Godel action/);
 });

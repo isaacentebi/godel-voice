@@ -176,6 +176,19 @@ test("Realtime can remove a stale queued progress acknowledgement before complet
   assert.deepEqual(sent, []);
 });
 
+test("Realtime can cancel an unaudible active progress response when the user resumes speaking", () => {
+  const state = loadState();
+  const sent = [];
+  const coordinator = state.createCoordinator({
+    runTurn: async () => {},
+    sendResponse: response => sent.push(response.event.id)
+  });
+  coordinator.enqueueResponse({ kind: "progress", workflowProgressId: "workflow-1", event: { id: "active-progress" } });
+  assert.equal(coordinator.cancelActiveResponse(response => response.workflowProgressId === "workflow-1"), true);
+  assert.equal(coordinator.snapshot().activeResponse, false);
+  assert.deepEqual(sent, ["active-progress"]);
+});
+
 test("Realtime event trace rearms batching during speech and drops only the failed segment", () => {
   const state = loadState();
   const timers = new Map();

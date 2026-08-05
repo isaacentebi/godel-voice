@@ -212,6 +212,7 @@ test("Realtime deterministic preflight executes common commands without a model 
   assert.equal(first.kind, "execute");
   assert.equal(first.route, "local_preflight");
   assert.equal(first.workflow_timeout_ms, 30_000);
+  assert.equal(first.progress_message, undefined);
   assert.match(first.id, /^rt-/);
   const replay = await (await fetch(`${base}/realtime/preflight`, {
     method: "POST", headers: { ...auth, "Content-Type": "application/json" }, body: JSON.stringify(request)
@@ -355,6 +356,7 @@ test("Realtime sessions and preflights retain exact executor and document affini
 
 test("Realtime browser surface contains no provider credential and has bounded teardown", () => {
   const source = fs.readFileSync(new URL("../extension/realtime.js", import.meta.url), "utf8");
+  const serverSource = fs.readFileSync(new URL("../src/handoff-server.mjs", import.meta.url), "utf8");
   const manifest = JSON.parse(fs.readFileSync(new URL("../extension/manifest.json", import.meta.url), "utf8"));
   assert.equal(source.includes("OPENAI_API_KEY"), false);
   assert.equal(source.includes("sk-proj-"), false);
@@ -418,8 +420,13 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /BARGE_IN_CONFIRM_MS = 420/);
   assert.match(source, /RESPONSE_START_TIMEOUT_MS = 4_000/);
   assert.match(source, /WORKFLOW_PROGRESS_DELAY_MS = 3_000/);
-  assert.match(source, /exactResponse\("Still working\.", "workflow_progress"\)/);
+  assert.match(source, /scheduleWorkflowProgress\(request\.id, runGeneration, request\.progress_message\)/);
+  assert.match(source, /if \(!message\) return/);
+  assert.match(source, /exactResponse\(message, "workflow_progress"\)/);
+  assert.doesNotMatch(source, /exactResponse\("Still working\."/);
   assert.match(source, /coordinator\.dropResponses/);
+  assert.match(source, /cancelActiveResponse/);
+  assert.match(source, /audio\.volume = 0\.15/);
   assert.match(source, /responseStarted/);
   assert.match(source, /failed\.audible !== true/);
   assert.match(source, /audio\.muted = true;[\s\S]*peer\.ontrack/);
@@ -429,7 +436,12 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /recoverableGenerations\.has\(runGeneration\)/);
   assert.match(source, /preserveWork && !suspendTransport/);
   assert.match(source, /cancelWorkflow\(id\)/);
+  assert.match(serverSource, /realtime_session_superseded/);
+  assert.doesNotMatch(serverSource, /sameAffinitySessions\.length >= 3/);
   assert.doesNotMatch(source, /visibilityState === "hidden" && peer\) teardown/);
+  assert.match(source, /"godel-voice:session-state"/);
+  assert.match(source, /detail: \{ active: true, reconnecting \}/);
+  assert.match(source, /detail: \{ active: false, reason \}/);
   assert.ok(manifest.content_scripts[0].js.includes("realtime.js"));
 });
 

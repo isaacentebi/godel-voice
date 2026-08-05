@@ -290,7 +290,7 @@ test("grounded EM narration requires the exact requested row, labelled horizons,
   assert.match(content, /EM Multiples P\/E/);
   assert.match(content, /const grounded = \[\]/);
   assert.match(content, /grounded\.push\(\{ step, panel \}\)/);
-  assert.match(content, /completionMessage\(plan, result\.grounded\)/);
+  assert.match(content, /completionMessage\(workflow, result\.grounded, result\.timings\)/);
 });
 
 test("main-world EM valuation reader enforces the allowlisted row, Multiples section, and row-correct unit", () => {

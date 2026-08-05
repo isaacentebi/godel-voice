@@ -76,6 +76,14 @@ test("real conversational compounds preserve every requested operation", () => {
   assert.deepEqual(pair.steps.map(step => step.layout?.placement), ["left", "right"]);
 });
 
+test("mixed Godel surfaces preserve clause-level left and right placement", () => {
+  const plan = parseControlFollowup("open the market heatmap on the left and Meta earnings matrix on the right");
+  assert.deepEqual(plan.steps.map(step => [step.command, step.layout?.placement]), [
+    ["HMAP", "left"], ["EM", "right"]
+  ]);
+  assert.equal(plan.steps.some(step => step.kind === "control"), false);
+});
+
 test("Realtime-style spacing keeps screener and heatmap on the zero-model path", () => {
   const plan = parseControlFollowup("open an equity screener and a heat map");
   assert.deepEqual(plan.steps.map(step => step.terminal_command), ["EQS", "HMAP"]);
@@ -426,6 +434,19 @@ test("compiles multi-quarter transcript research and contextual followups locall
   assert.deepEqual(followup.steps[0].target, { mode: "command", command: "TRAN", security: "AMZN" });
   assert.deepEqual(followup.steps[0].actions[0].value.topics, ["margins"]);
   assert.equal(parseControlFollowup("what about margins?"), null);
+});
+
+test("transcript research removes conversational call scope from the requested topic", () => {
+  for (const [voice, expected] of [
+    ["Did Meta mention business agents in its latest earnings call?", "business agents"],
+    ["Did Meta discuss business AI agents on the most recent call?", "business ai agents"],
+    ["Has Amazon talked about GPU availability during its latest transcript?", "gpu availability"]
+  ]) {
+    const step = parseControlFollowup(voice).steps[0];
+    assert.equal(step.command, "TRAN", voice);
+    assert.deepEqual(step.actions[0].value.topics, [expected], voice);
+    assert.equal(step.actions[0].value.periods, 1, voice);
+  }
 });
 
 test("read-only account-adjacent opens are deterministic but mutations remain gated", () => {

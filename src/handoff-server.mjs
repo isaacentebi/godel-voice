@@ -133,12 +133,13 @@ export function progressMessageForMarker(marker) {
 
 export class HandoffStore {
   constructor({
-    statePath = null, logPath = null, leaseMs = 60_000, dedupeMs = 10_000,
+    statePath = null, logPath = null, leaseMs = 60_000, dedupeMs = 10_000, queuedTtlMs = 5 * 60_000,
     maxEntries = 100, maxAttempts = 4, maxLogBytes = 5_000_000, clock = Date.now
   } = {}) {
     this.statePath = statePath;
     this.logPath = logPath;
     this.leaseMs = leaseMs;
+    this.queuedTtlMs = queuedTtlMs;
     this.dedupeMs = dedupeMs;
     this.maxEntries = maxEntries;
     this.maxAttempts = maxAttempts;
@@ -171,6 +172,7 @@ export class HandoffStore {
       this.armedExecutorId = safeOpaqueId(value.armed_executor_id, "") || null;
       this.armedDocumentGeneration = safeOpaqueId(value.armed_document_generation, "") || null;
       this.armedAt = Number.isFinite(value.armed_at) ? value.armed_at : 0;
+      this.armedPinned = value.armed_pinned === true;
       this.recoverExpiredLeases();
     } catch (error) {
       if (error.code !== "ENOENT") this.event("state_load_failed", { error: safeError(error.message) });
@@ -187,7 +189,8 @@ export class HandoffStore {
       last_executor_id: this.lastExecutorId ?? null,
       armed_executor_id: this.armedExecutorId ?? null,
       armed_document_generation: this.armedDocumentGeneration ?? null,
-      armed_at: this.armedAt ?? 0
+      armed_at: this.armedAt ?? 0,
+      armed_pinned: this.armedPinned === true
     }), { mode: 0o600 });
     fs.renameSync(temporary, this.statePath);
     try { fs.chmodSync(this.statePath, 0o600); } catch {}
@@ -220,11 +223,11 @@ export class HandoffStore {
     for (const entry of this.entries) {
       if (entry.status === "inflight" && entry.lease_expires_at <= now) {
         entry.status = entry.cancel_requested ? "cancelled" : entry.attempts >= this.maxAttempts ? "failed" : "queued";
-        if (entry.status === "failed") {
-          entry.error = "executor lease expired repeatedly";
+        if (entry.status === "failed" || entry.status === "cancelled") {
+          if (entry.status === "failed") entry.error = "executor lease expired repeatedly";
           entry.finished_at = now;
           delete entry.marker;
-          this.event("workflow_retry_exhausted", { id: entry.id, attempts: entry.attempts });
+          if (entry.status === "failed") this.event("workflow_retry_exhausted", { id: entry.id, attempts: entry.attempts });
         }
         delete entry.leased_to;
         delete entry.leased_executor_id;
@@ -232,6 +235,15 @@ export class HandoffStore {
         delete entry.lease_expires_at;
         entry.updated_at = now;
         changed = true;
+        this.event("workflow_lease_expired", { id: entry.id, status: entry.status, attempts: entry.attempts });
+      } else if (entry.status === "queued" && now - entry.created_at > this.queuedTtlMs) {
+        entry.status = "failed";
+        entry.error = "workflow expired before delivery";
+        entry.updated_at = now;
+        entry.finished_at = now;
+        delete entry.marker;
+        changed = true;
+        this.event("workflow_queue_expired", { id: entry.id });
       }
     }
     if (changed) this.persist();
@@ -325,6 +337,7 @@ export class HandoffStore {
   }
 
   heartbeat(id, clientId, executorId = null, documentGeneration = null) {
+    this.recoverExpiredLeases();
     const entry = this.entries.find(candidate => candidate.id === id);
     if (!entry || entry.status !== "inflight") return null;
     clientId = safeOpaqueId(clientId, "");
@@ -347,6 +360,7 @@ export class HandoffStore {
   }
 
   acknowledge(id, status, details = {}) {
+    this.recoverExpiredLeases();
     if (!terminalStates.has(status)) throw new Error("invalid acknowledgement status");
     const entry = this.entries.find(candidate => candidate.id === id);
     if (!entry) return null;
@@ -410,6 +424,7 @@ export class HandoffStore {
   }
 
   release(id, reason = "executor requested retry", clientId = null, executorId = null, documentGeneration = null) {
+    this.recoverExpiredLeases();
     const entry = this.entries.find(candidate => candidate.id === id);
     if (!entry || terminalStates.has(entry.status)) return entry ?? null;
     clientId = safeOpaqueId(clientId, "");
@@ -456,10 +471,12 @@ export class HandoffStore {
   }
 
   status(id) {
+    this.recoverExpiredLeases();
     return this.publicEntry(this.entries.find(entry => entry.id === id));
   }
 
   counts() {
+    this.recoverExpiredLeases();
     return this.entries.reduce((result, entry) => {
       result[entry.status] = (result[entry.status] ?? 0) + 1;
       return result;
@@ -474,7 +491,14 @@ export class HandoffStore {
     const context = sanitizeExecutorContext(value, this.clock(), previous?.research_session ?? null);
     if (executorId) {
       this.contexts[executorId] = context;
-      this.armExecutor(executorId, documentGeneration, false);
+      this.executorGenerations[executorId] = documentGeneration;
+      // Context publication is observational. While a Realtime session owns
+      // the executor lease, another visible or background Godel tab must not
+      // steal it merely by publishing its panel context.
+      if (!this.hasArmedExecutor() || this.armedPinned !== true
+          || this.isArmedExecutor(executorId, documentGeneration)) {
+        this.armExecutor(executorId, documentGeneration, false, { pinned: false });
+      }
       this.lastExecutorId = executorId;
       const ordered = Object.entries(this.contexts).sort((left, right) => left[1].updated_at - right[1].updated_at);
       while (ordered.length > 16) {
@@ -487,15 +511,39 @@ export class HandoffStore {
     return context;
   }
 
-  armExecutor(executorId, documentGeneration, persist = true) {
+  armExecutor(executorId, documentGeneration, persist = true, { pinned = true } = {}) {
     executorId = safeOpaqueId(executorId, "");
     documentGeneration = safeOpaqueId(documentGeneration, "");
     if (!executorId || !documentGeneration) throw new Error("executor arm requires exact identity and document generation");
+    const now = this.clock();
+    for (const entry of this.entries) {
+      if (!["queued", "inflight"].includes(entry.status) || !entry.executor_id) continue;
+      if (entry.executor_id === executorId && entry.document_generation === documentGeneration) continue;
+      if (entry.status === "inflight") {
+        entry.cancel_requested = true;
+        entry.updated_at = now;
+        this.event("workflow_executor_replaced", { id: entry.id, status: "cancelling" });
+      } else {
+        entry.status = "failed";
+        entry.error = entry.executor_id === executorId
+          ? "executor document changed before delivery"
+          : "executor identity changed before completion";
+        entry.updated_at = now;
+        entry.finished_at = now;
+        delete entry.marker;
+        delete entry.leased_to;
+        delete entry.leased_executor_id;
+        delete entry.leased_document_generation;
+        delete entry.lease_expires_at;
+        this.event("workflow_executor_replaced", { id: entry.id });
+      }
+    }
     this.executorGenerations[executorId] = documentGeneration;
     this.lastExecutorId = executorId;
     this.armedExecutorId = executorId;
     this.armedDocumentGeneration = documentGeneration;
-    this.armedAt = this.clock();
+    this.armedAt = now;
+    this.armedPinned = pinned === true;
     if (persist) this.persist();
     return { executor_id: executorId, document_generation: documentGeneration, armed_at: this.armedAt };
   }
@@ -526,6 +574,7 @@ export class HandoffStore {
     this.armedExecutorId = null;
     this.armedDocumentGeneration = null;
     this.armedAt = 0;
+    this.armedPinned = false;
     this.persist();
     return true;
   }
@@ -625,7 +674,7 @@ function sanitizeExecutorContext(value, updatedAt = Date.now(), previousResearch
 }
 
 function sanitizeStepTimings(value) {
-  const phaseNames = ["command_bar_ms", "security_resolution_ms", "command_submit_ms", "panel_detection_ms", "transcript_root_ms", "nested_actions_ms", "total_ms",
+  const phaseNames = ["command_bar_ms", "security_resolution_ms", "command_submit_ms", "quote_header_ms", "panel_detection_ms", "panel_commit_ms", "transcript_root_ms", "nested_actions_ms", "total_ms",
     "ownership_created", "ownership_native_id", "ownership_dom_receipt", "ownership_creation_root"];
   if (!Array.isArray(value)) return [];
   return value.slice(0, 16).map((item, index) => {
@@ -805,10 +854,6 @@ export function createHandoffServer({
         const executorId = safeOpaqueId(request.headers["x-godel-executor-id"], "");
         const documentGeneration = safeOpaqueId(request.headers["x-godel-document-generation"], "");
         if (Boolean(executorId) !== Boolean(documentGeneration)) return respond(response, 400, { error: "Incomplete Godel executor affinity" });
-        const sameAffinitySessions = [...realtimeSessions.values()].filter(session => !session.revoked
-          && session.executor_id === (executorId || null)
-          && session.document_generation === (documentGeneration || null));
-        if (sameAffinitySessions.length >= 3) return respond(response, 429, { error: "too many Realtime sessions" });
         const sdp = await readBody(request, 32_000);
         if (!sdp.startsWith("v=0") || sdp.length < 40) return respond(response, 400, { error: "invalid SDP offer" });
         const form = new FormData();
@@ -827,7 +872,14 @@ export function createHandoffServer({
         if (executorId) {
           store.armExecutor(executorId, documentGeneration);
           for (const [existingId, existing] of realtimeSessions) {
-            if (existing.executor_id === executorId && existing.document_generation === documentGeneration) continue;
+            if (existing.executor_id === executorId && existing.document_generation === documentGeneration) {
+              // The new provider connection is already established, so it can
+              // atomically supersede a leaked reconnect session. This avoids a
+              // permanent 429 loop when a keepalive close was lost.
+              realtimeSessions.delete(existingId);
+              store.event("realtime_session_superseded", { session_ref: markerDigest(existingId).slice(0, 12) });
+              continue;
+            }
             existing.revoked = true;
             existing.revokedAt = clock();
             store.event("realtime_session_revoked", { session_ref: markerDigest(existingId).slice(0, 12) });
@@ -923,7 +975,8 @@ export function createHandoffServer({
         store.persist();
         const result = {
           kind: "execute", id: queued.entry.id, route: compiled.route,
-          workflow_timeout_ms: realtimeWorkflowDeadlineMs(compiled.marker)
+          workflow_timeout_ms: realtimeWorkflowDeadlineMs(compiled.marker),
+          progress_message: progressMessageForMarker(compiled.marker) ?? undefined
         };
         session.calls.set(callId, result);
         session.requests.set(requestKey, { at: clock(), result });
@@ -1038,7 +1091,8 @@ export function createHandoffServer({
         store.persist();
         const result = {
           kind: "execute", id: queued.entry.id, route: compiled?.route ?? "local_preflight",
-          workflow_timeout_ms: realtimeWorkflowDeadlineMs(marker)
+          workflow_timeout_ms: realtimeWorkflowDeadlineMs(marker),
+          progress_message: progressMessageForMarker(marker) ?? undefined
         };
         session.preflights.set(turnId, result);
         session.requests.set(normalizedRealtimeRequest(requestText), { at: clock(), result });

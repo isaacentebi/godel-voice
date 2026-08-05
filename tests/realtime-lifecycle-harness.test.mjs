@@ -53,9 +53,9 @@ test("an accepted preflight survives transport loss before workflow attachment",
   assert.equal(report.event_counts.spoken_responses, 1);
 });
 
-test("a slow workflow receives one progress acknowledgement before its grounded completion", async () => {
+test("only slow transcript research receives one progress acknowledgement before grounded completion", async () => {
   const report = await runRealtimeLifecycleHarness({
-    transcript: "open the market heatmap",
+    transcript: "search the latest four Amazon earnings calls for AWS growth",
     executionMs: 70,
     transcriptionMs: 5,
     synthesisMs: 3,
@@ -63,6 +63,6 @@ test("a slow workflow receives one progress acknowledgement before its grounded 
   });
 
   assert.equal(report.pass, true);
-  assert.equal(report.spoken_completion, "HMAP completed.");
+  assert.equal(report.spoken_completion, "TRAN completed.");
   assert.equal(report.event_counts.spoken_responses, 2);
 });
