@@ -8,7 +8,7 @@ const core = globalThis.GodelVoiceCore;
 const plan = value => core.validatePlan({
   version: 1,
   command: "TRAN",
-  terminal_command: "AMZN US EQ TRAN",
+  terminal_command: "AMZN EQ TRAN",
   security_query: null,
   arguments: [],
   actions: [{ feature: "research", operation: "summarize", value }]
@@ -38,7 +38,7 @@ test("browser rejects malformed or oversized TRAN research payloads", () => {
     { ...valid, injected: true }
   ]) assert.throws(() => plan(value), /TRAN/);
   assert.throws(() => core.validatePlan({
-    version: 1, command: "TRAN", terminal_command: "AMZN US EQ TRAN", security_query: null,
+    version: 1, command: "TRAN", terminal_command: "AMZN EQ TRAN", security_query: null,
     arguments: [], actions: [{ feature: "research", operation: "delete", value: valid }]
   }), /read-only/);
 });

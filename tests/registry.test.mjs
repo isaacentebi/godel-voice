@@ -49,7 +49,7 @@ test("renders a validated security command", () => {
     security: {spoken_name: "Amazon", ticker: "AMZN", venue: "US", asset_class: "EQ", needs_resolution: false},
     arguments: [], post_open_actions: [], clarification: null, reason: "Earnings matrix requested."
   };
-  assert.equal(renderTerminalCommand(intent), "AMZN US EQ EM");
+  assert.equal(renderTerminalCommand(intent), "AMZN EQ EM");
 });
 
 test("normalizes spoken equity asset class to Godel EQ", () => {
@@ -58,7 +58,7 @@ test("normalizes spoken equity asset class to Godel EQ", () => {
     security: {spoken_name: "AMZN", ticker: "AMZN", venue: "US", asset_class: "equity", needs_resolution: false},
     arguments: [], post_open_actions: [], clarification: null, reason: "Earnings matrix requested."
   };
-  assert.equal(renderTerminalCommand(intent), "AMZN US EQ EM");
+  assert.equal(renderTerminalCommand(intent), "AMZN EQ EM");
 });
 
 test("resolves allowlisted common company names and nested company actions", () => {
@@ -74,7 +74,7 @@ test("resolves allowlisted common company names and nested company actions", () 
   };
   const checked = validateIntent(intent);
   assert.equal(checked.ok, true);
-  assert.equal(renderTerminalCommand(checked.intent), "AMZN US EQ GF");
+  assert.equal(renderTerminalCommand(checked.intent), "AMZN EQ GF");
   assert.equal(checked.intent.post_open_actions[0].value, "META");
   assert.equal(checked.intent.post_open_actions[1].value, "MSFT");
 });
@@ -276,7 +276,7 @@ test("canonicalizes aliases and rejects invented chart arguments", () => {
     security: {spoken_name: "Apple", ticker: "AAPL", venue: "US", asset_class: "EQ", needs_resolution: false},
     arguments: ["5m"], post_open_actions: [], clarification: null, reason: "Chart requested."
   };
-  assert.equal(renderTerminalCommand(base), "AAPL US EQ G 5m");
+  assert.equal(renderTerminalCommand(base), "AAPL EQ G 5m");
   const bad = structuredClone(base);
   bad.arguments = ["4h"];
   assert.equal(validateIntent(bad).ok, false);

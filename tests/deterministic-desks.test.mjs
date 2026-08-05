@@ -30,8 +30,8 @@ test("a named research desk keeps every requested native panel in spoken order",
   );
   assert.deepEqual(plan.steps.map(step => step.command), ["DES", "EM", "ERN", "CF", "TRAN", "N"]);
   assert.deepEqual(plan.steps.map(step => step.terminal_command), [
-    "AMZN US EQ DES", "AMZN US EQ EM", "AMZN US EQ ERN",
-    "AMZN US EQ CF", "AMZN US EQ TRAN", "AMZN US EQ N"
+    "AMZN EQ DES", "AMZN EQ EM", "AMZN EQ ERN",
+    "AMZN EQ CF", "AMZN EQ TRAN", "AMZN EQ N"
   ]);
 });
 
@@ -40,7 +40,7 @@ test("noisy VoiceInk company desk language stays deterministic", () => {
     "jarvis clean screen for micro soft uh company overview earnins matt tricks estimates fill ins holders and news arrange it like a research desk"
   );
   assert.deepEqual(plan.steps.map(step => step.command), ["DES", "EM", "ERN", "CF", "HDS", "N"]);
-  assert.ok(plan.steps.every(step => step.terminal_command.startsWith("MSFT US EQ ")));
+  assert.ok(plan.steps.every(step => step.terminal_command.startsWith("MSFT EQ ")));
   assert.equal(plan.layout.new_screen, true);
 });
 
@@ -154,7 +154,7 @@ test("close-open-maximize compiles as one ordered replacement", () => {
   assert.deepEqual(plan.steps.filter(step => step.kind === "control").map(step => step.operation), [
     "close", "maximize"
   ]);
-  assert.equal(plan.steps[1].terminal_command, "META US EQ ERN");
+  assert.equal(plan.steps[1].terminal_command, "META EQ ERN");
 });
 
 test("market fundamentals desk preserves both requested metrics atomically", () => {
@@ -182,14 +182,14 @@ test("options desk uses only the verified strike-depth nested control", () => {
 
 test("price comparison desk uses the verified HMS membership and display contract", () => {
   const plan = parseControlFollowup("compare Amazon Meta and Microsoft over five years side by side");
-  assert.equal(plan.steps[0].terminal_command, "AMZN US EQ HMS");
+  assert.equal(plan.steps[0].terminal_command, "AMZN EQ HMS");
   assert.deepEqual(plan.steps[0].actions.map(action => action.value), ["META", "MSFT", "5Y", "Side-by-side"]);
 });
 
 test("multi-company fundamentals comparison stays in one authenticated GF panel", () => {
   const plan = parseControlFollowup("compare Amazon and Meta operating margins and revenue over five years");
   assert.deepEqual(plan.steps.map(step => step.command), ["GF"]);
-  assert.equal(plan.steps[0].terminal_command, "AMZN US EQ GF");
+  assert.equal(plan.steps[0].terminal_command, "AMZN EQ GF");
   assert.deepEqual(plan.steps[0].actions, [
     { feature: "range", operation: "select", value: "5Y" },
     { feature: "add company", operation: "add", value: "META" },
@@ -224,7 +224,7 @@ test("open-a-chart comparing grammar keeps cleanup and the full GF comparison", 
   assert.deepEqual(plan.steps.map(step => step.kind), ["control", "control", "command"]);
   assert.deepEqual(plan.steps.slice(0, 2).map(step => step.operation), ["close", "close"]);
   assert.deepEqual(plan.steps.slice(0, 2).map(step => step.failure_policy), ["continue", "continue"]);
-  assert.equal(plan.steps[2].terminal_command, "AMZN US EQ GF");
+  assert.equal(plan.steps[2].terminal_command, "AMZN EQ GF");
   assert.deepEqual(plan.steps[2].actions, [
     { feature: "range", operation: "select", value: "5Y" },
     { feature: "add company", operation: "add", value: "META" },
@@ -239,7 +239,7 @@ test("close-all then open stays local when the Voice screen is already empty", (
     { panels: [] }
   );
   assert.deepEqual(plan.steps.map(step => step.kind), ["command"]);
-  assert.equal(plan.steps[0].terminal_command, "AMZN US EQ GF");
+  assert.equal(plan.steps[0].terminal_command, "AMZN EQ GF");
   assert.deepEqual(plan.steps[0].actions.map(action => action.value), ["5Y", "META", "Operating Margin", "Revenue"]);
 });
 
@@ -252,7 +252,7 @@ test("spoken comparison variants stay on the same zero-model GF route", () => {
   for (const voice of variants) {
     const plan = parseControlFollowup(voice);
     assert.equal(plan.steps[0].command, "GF", voice);
-    assert.equal(plan.steps[0].terminal_command, "AMZN US EQ GF", voice);
+    assert.equal(plan.steps[0].terminal_command, "AMZN EQ GF", voice);
     assert.deepEqual(plan.steps[0].actions.map(action => action.value), ["5Y", "META", "Operating Margin", "Revenue"], voice);
   }
 });

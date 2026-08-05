@@ -6,7 +6,7 @@ You speak naturally. Godel Voice understands the request, opens the right Godel 
 
 > “Open the market heatmap on the left and Amazon earnings on the right.”
 
-It opens `HMAP` and `AMZN EM` separately, places them correctly, and replies after Godel confirms both actions.
+It opens `HMAP` and `AMZN EQ EM` separately, places them correctly, and replies after Godel confirms both actions.
 
 ## What it can do
 
@@ -17,6 +17,7 @@ It opens `HMAP` and `AMZN EM` separately, places them correctly, and replies aft
 - Build comparisons, charts, earnings views, screeners, options views, news searches, and research layouts.
 - Search earnings-call transcripts and answer from the passage Godel returned.
 - Handle imperfect transcription, filler words, and spoken corrections.
+- Keep listening across actions, reconnect without losing silent in-flight work, and give one short “Still working” update when Godel takes longer than three seconds.
 
 Try:
 

@@ -23,13 +23,13 @@ test("encodes and parses a GF browser automation plan", () => {
   const marker = encodeAutomationMarker(source);
   assert.match(marker, /^GV1:/);
   const parsed = core.parseMarker(marker);
-  assert.equal(parsed.terminal_command, "AAPL US EQ GF");
+  assert.equal(parsed.terminal_command, "AAPL EQ GF");
   assert.equal(parsed.actions[0].value, "MSFT");
 });
 
 test("permits ordinary commands with no UI actions", () => {
   const plan = buildAutomationPlan(intent("DES"));
-  assert.equal(plan.terminal_command, "AAPL US EQ DES");
+  assert.equal(plan.terminal_command, "AAPL EQ DES");
   assert.deepEqual(plan.actions, []);
 });
 
@@ -76,7 +76,7 @@ test("allowlists only verified HMAP Map/Table view selection", () => {
 test("allowlists exact HDS Table Treemap and Bubble views", () => {
   for (const value of ["table", "treemap", "bubble"]) {
     const plan = buildAutomationPlan(intent("HDS", [{ feature: "view", operation: "select", value }]));
-    assert.equal(plan.terminal_command, "AAPL US EQ HDS");
+    assert.equal(plan.terminal_command, "AAPL EQ HDS");
     assert.equal(plan.actions[0].value, value[0].toUpperCase() + value.slice(1));
     assert.equal(core.parseMarker(`GV1:${JSON.stringify(plan)}`).actions[0].value, plan.actions[0].value);
   }
@@ -147,7 +147,7 @@ test("browser preserves primitive-only values for every non-EQS command", () => 
     ["HALT", "tab", "select"], ["HMAP", "view", "select"], ["IMAP", "view", "select"], ["EM", "metric", "select"]
   ]) {
     assert.throws(() => core.validatePlan({
-      version: 1, command, terminal_command: `CONTEXT US EQ ${command}`,
+      version: 1, command, terminal_command: `CONTEXT EQ ${command}`,
       security_query: null, arguments: [], actions: [{ feature, operation, value: structured }]
     }), /Invalid value/);
   }
@@ -155,7 +155,7 @@ test("browser preserves primitive-only values for every non-EQS command", () => 
 
 test("browser independently validates exact EM valuation rows, sections and semantic units", () => {
   const validate = value => core.validatePlan({
-    version: 1, command: "EM", terminal_command: "AMZN US EQ EM",
+    version: 1, command: "EM", terminal_command: "AMZN EQ EM",
     security_query: null, arguments: [], actions: [{ feature: "valuation", operation: "read", value }]
   });
   assert.deepEqual(validate({ row: "p/e", section: "Multiples", semantic_unit: "Multiple" }).actions[0].value,
@@ -213,7 +213,7 @@ test("rejects UI actions outside the initial allowlist", () => {
 test("browser validator rejects unknown features and commands", () => {
   assert.throws(() => core.validatePlan({ version: 1, command: "FAKE", terminal_command: "FAKE", actions: [] }), /Unknown/);
   assert.throws(() => core.validatePlan({
-    version: 1, command: "GF", terminal_command: "AAPL US EQ GF",
+    version: 1, command: "GF", terminal_command: "AAPL EQ GF",
     actions: [{ feature: "delete account", operation: "click", value: true }]
   }), /Unsupported/);
 });
@@ -225,12 +225,12 @@ test("browser parses an ordered GV2 workflow with placement", () => {
     layout: { preset: "market", preserve_existing: true, new_screen: false, gap_px: 12 },
     steps: [
       { id: "step-1", command: "HMAP", terminal_command: "HMAP", security_query: null, arguments: [], actions: [], required: true, failure_policy: "stop", layout: { placement: "left" } },
-      { id: "step-2", command: "EM", terminal_command: "AMZN US EQ EM", security_query: null, arguments: [], actions: [], required: true, failure_policy: "stop", layout: { placement: "right" } }
+      { id: "step-2", command: "EM", terminal_command: "AMZN EQ EM", security_query: null, arguments: [], actions: [], required: true, failure_policy: "stop", layout: { placement: "right" } }
     ]
   };
   const parsed = core.parseMarker(`GV2:${JSON.stringify(plan)}`);
   assert.equal(parsed.version, 2);
-  assert.equal(parsed.steps[1].terminal_command, "AMZN US EQ EM");
+  assert.equal(parsed.steps[1].terminal_command, "AMZN EQ EM");
   assert.equal(parsed.steps[0].layout.placement, "left");
 });
 

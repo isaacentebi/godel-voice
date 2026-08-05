@@ -161,7 +161,7 @@
         if (targetSecurity != null && !/^[A-Z0-9][A-Z0-9.-]{0,23}$/.test(targetSecurity)) throw new Error(`Invalid configure security for ${id}`);
         const validated = validatePlan({
           version: 1, command: targetCommand,
-          terminal_command: `${targetSecurity ?? "CONTEXT"} US EQ ${targetCommand}`,
+          terminal_command: `${targetSecurity ?? "CONTEXT"} EQ ${targetCommand}`,
           security_query: null, arguments: [], actions: step.actions
         });
         const required = step.required !== false;

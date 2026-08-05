@@ -88,12 +88,26 @@
   const panelMetadata = new WeakMap();
   const panelCommandTimings = new WeakMap();
   const managedWindowStorageKey = "godel-voice-managed-window-ids-v1";
-  const managedWindowIds = new Set((() => {
+  const managedWindowReceipts = new Map((() => {
     try {
       const value = JSON.parse(sessionStorage.getItem(managedWindowStorageKey) ?? "[]");
-      return Array.isArray(value) ? value.filter(id => /^\d+$/.test(String(id))).slice(-32).map(String) : [];
+      if (!Array.isArray(value)) return [];
+      return value.map(item => typeof item === "string"
+        ? { id: item, created_at: 0, request_id: "legacy", command: null }
+        : item).filter(receipt => receipt && /^[A-Za-z0-9_-]{1,120}$/.test(String(receipt.id ?? ""))
+          && Number.isFinite(Number(receipt.created_at ?? 0)))
+        .slice(-64).map(receipt => [String(receipt.id), {
+          id: String(receipt.id), created_at: Math.max(0, Number(receipt.created_at ?? 0)),
+          request_id: String(receipt.request_id ?? "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 96) || null,
+          command: String(receipt.command ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12) || null
+        }]);
     } catch { return []; }
   })());
+  const managedWindowIds = new Set(managedWindowReceipts.keys());
+  // Same-document ownership proof for widgets that Godel renders without
+  // committing to its private layout store. The element identity cannot be
+  // replayed in another document, so it cannot adopt a user's later window.
+  const managedDomReceipts = new Map();
   const borrowedWindowStorageKey = "godel-voice-borrowed-windows-v1";
   const borrowedWindowReceipts = new Map((() => {
     try {
@@ -179,7 +193,7 @@
   }
 
   function persistManagedWindowIds() {
-    sessionStorage.setItem(managedWindowStorageKey, JSON.stringify([...managedWindowIds].slice(-512)));
+    sessionStorage.setItem(managedWindowStorageKey, JSON.stringify([...managedWindowReceipts.values()].slice(-64)));
   }
 
   function persistBorrowedWindows() {
@@ -194,6 +208,7 @@
         await workspaceInternalAction("restoreWindowLocation", receipt);
         borrowedWindowReceipts.delete(id);
         managedWindowIds.delete(id);
+        managedWindowReceipts.delete(id);
       } catch {
         // Never close or forget a user-owned panel unless its original screen
         // was restored exactly. A later session cleanup can retry safely.
@@ -206,26 +221,141 @@
   function managedWindowId(panel) {
     const root = nativeWindowRoot(panel);
     const id = root ? windowId(root) : null;
-    const type = String(root?.getAttribute("data-cy-command-type") ?? "").toUpperCase();
+    // Godel 4.5.8 can mount a valid `*-window` root without its usual
+    // data-cy-command-type attribute (observed on EM). The exact native id and
+    // the authenticated panel title still identify the command; requiring the
+    // missing attribute here prevented us from recording a creation receipt,
+    // so explicit Jarvis shutdown could not close that one owned panel.
+    // Resolve only through the same strict command matcher used by execution;
+    // unknown and consequential surfaces remain unmanageable.
+    const type = String(root?.getAttribute("data-cy-command-type")
+      ?? contextPanel(root)?.command
+      ?? "").toUpperCase();
     if (!id || !type || /CHAT|NOTE|ACCOUNT|BROK|ORDER|TRADE|MESSAGE|ALERT/.test(type)) return null;
     return String(id);
   }
 
-  function rememberManagedPanel(panel) {
+  function rememberManagedPanel(panel, { requestId = null, command = null } = {}) {
+    const nativeRoot = nativeWindowRoot(panel);
+    const canonicalCommand = String(command ?? contextPanel(nativeRoot ?? panel)?.command ?? "")
+      .toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12) || null;
+    const titleShells = canonicalCommand
+      ? [...new Set(panelTitleNodes(canonicalCommand).map(rootForTitle).filter(Boolean))]
+      : [];
+    const root = nativeRoot ?? (titleShells.length === 1 ? titleShells[0] : panel);
+    if (!(root instanceof HTMLElement) || !root.isConnected || !canonicalCommand
+        || /CHAT|NOTE|ACCOUNT|BROK|ORDER|TRADE|MESSAGE|ALERT/.test(canonicalCommand)) return;
+    const receipt = {
+      id: managedWindowId(root), created_at: Date.now(),
+      request_id: String(requestId ?? "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 96) || null,
+      command: canonicalCommand,
+      security: contextPanel(panel)?.security ?? contextPanel(root)?.security ?? null
+    };
+    managedDomReceipts.set(root, receipt);
     const id = managedWindowId(panel);
     if (!id) return;
     managedWindowIds.add(id);
+    managedWindowReceipts.set(id, { ...receipt, id });
     persistManagedWindowIds();
+  }
+
+  function panelMatchesReceiptSecurity(panel, command, security) {
+    if (!security || panelMatchesTerminalIdentity(panel, { security, venue: null })) return true;
+    const titles = panelTitleNodes(command).filter(title => {
+      const root = rootForTitle(title);
+      return root === panel || panel.contains(title) || (root && root.contains(panel));
+    });
+    if (titles.length !== 1) return false;
+    const titleRect = titles[0].getBoundingClientRect();
+    const wanted = `${String(security).toUpperCase()} US`;
+    const aligned = [...document.querySelectorAll("input")].filter(input => {
+      if (!visible(input) || String(input.value ?? "").trim().toUpperCase() !== wanted) return false;
+      const rect = input.getBoundingClientRect();
+      const horizontalGap = Math.max(0, Math.max(titleRect.left, rect.left) - Math.min(titleRect.right, rect.right));
+      const verticalGap = Math.max(0, Math.max(titleRect.top, rect.top) - Math.min(titleRect.bottom, rect.bottom));
+      return horizontalGap <= 520 && verticalGap <= 80;
+    });
+    return aligned.length === 1;
+  }
+
+  function panelForDomReceipt(original, receipt) {
+    const matchesSecurity = candidate => candidate instanceof HTMLElement && candidate.isConnected
+      && panelMatchesReceiptSecurity(candidate, receipt.command, receipt.security);
+    if (original instanceof HTMLElement && original.isConnected
+        && panelMatchesCommand(original, receipt.command)) return original;
+    const candidates = [...new Set([
+      ...windowRoots().filter(root => panelMatchesCommand(root, receipt.command)),
+      ...panelTitleNodes(receipt.command).map(rootForTitle).filter(Boolean)
+    ])].filter(matchesSecurity);
+    return candidates.length === 1 ? candidates[0] : null;
   }
 
   function forgetManagedPanel(panel) {
     const root = nativeWindowRoot(panel);
+    if (root) managedDomReceipts.delete(root);
     const id = root ? String(windowId(root) ?? "") : "";
     if (!id || !managedWindowIds.delete(id)) return;
+    managedWindowReceipts.delete(id);
     persistManagedWindowIds();
   }
 
+  async function closeOwnedDomPanel(panel, command, nativeId = null) {
+    let nativeError = new Error("Godel orphan panel has no native layout id");
+    if (nativeId) {
+      try {
+        await panelInternalAction(panel, "LAYOUT", "close");
+        return;
+      } catch (error) { nativeError = error; }
+    }
+      // An orphan-rendered Godel panel has no native window id, so the layout
+      // adapter cannot address it. Its own exact native close control remains
+      // available. This fallback is reachable only through a same-document
+      // Jarvis creation receipt and an unchanged exact command identity.
+      if (!panelMatchesCommand(panel, command)) throw nativeError;
+      let closeControl = null;
+      for (let scope = panel, depth = 0; scope && depth < 8 && scope !== document.body;
+        scope = scope.parentElement, depth += 1) {
+        const controls = [...scope.querySelectorAll('button,[role="button"]')].filter(element => {
+          if (!visible(element)) return false;
+          if (element.getAttribute("data-cy-close-window") === "true") return true;
+          const label = compactText([
+            element.getAttribute("aria-label"), element.title, element.textContent
+          ].filter(Boolean).join(" ")).toLowerCase();
+          if (label === "close") return true;
+          const descendantLabels = [...element.querySelectorAll('[aria-label],[alt],[title],[data-icon],[data-testid]')]
+            .flatMap(child => ["aria-label", "alt", "title", "data-icon", "data-testid"]
+              .map(name => child.getAttribute(name))).filter(Boolean)
+            .map(value => compactText(value).toLowerCase());
+          return descendantLabels.some(value => value === "close" || /(?:^|[-_ ])close(?:$|[-_ ])/.test(value));
+        });
+        if (controls.length === 1) { closeControl = controls[0]; break; }
+        if (controls.length > 1) throw nativeError;
+      }
+      if (!closeControl) {
+        const titles = panelTitleNodes(command).filter(title => {
+          const root = rootForTitle(title);
+          return root === panel || panel.contains(title) || (root && root.contains(panel));
+        });
+        if (titles.length !== 1) throw nativeError;
+        const toolbar = titles[0].parentElement;
+        const buttons = toolbar ? [...toolbar.querySelectorAll("button,[role='button']")].filter(visible) : [];
+        const candidate = buttons.at(-1) ?? null;
+        const titleRect = titles[0].getBoundingClientRect();
+        const buttonRect = candidate?.getBoundingClientRect();
+        if (!candidate || buttons.length > 5 || buttonRect.left < titleRect.right
+            || buttonRect.top > titleRect.bottom + 40 || buttonRect.bottom < titleRect.top - 16) throw nativeError;
+        closeControl = candidate;
+      }
+      await click(closeControl);
+      await waitUntil(() => !panel.isConnected || !visible(panel), `${command} receipted panel closed`, 2000);
+  }
+
   async function closeVoiceScreenPanels({ onlyIds = null } = {}) {
+    const requestedIds = onlyIds ? new Set([...onlyIds].map(String)) : new Set(managedWindowIds);
+    const ownedIds = new Set([...requestedIds].filter(id => managedWindowReceipts.has(id)));
+    const ownedDom = [...managedDomReceipts.entries()].filter(([, receipt]) =>
+      !onlyIds || (receipt.id && requestedIds.has(String(receipt.id))));
+    if (!ownedIds.size && !ownedDom.length) return { removed_ids: [] };
     const active = await workspaceInternalAction("activeScreenInfo");
     const title = String(active?.title ?? "").toLowerCase();
     if (title === "blank" && windowRoots().length === 0) return;
@@ -233,18 +363,39 @@
       throw new Error("Jarvis could not establish its dedicated Voice screen");
     }
 
-    // The screen title is the durable ownership boundary. Unlike the old
-    // session-only id list, it survives extension reloads and screen switches.
-    // Consequential or unrecognised windows still fail closed.
-    const allowedIds = onlyIds ? new Set([...onlyIds].map(String)) : null;
+    for (const [panel, receipt] of ownedDom) {
+      const currentPanel = receipt.command ? panelForDomReceipt(panel, receipt) : null;
+      if (!currentPanel) {
+        toast(`Godel Voice stopped: could not safely identify the owned ${receipt.command} panel`, true);
+        managedDomReceipts.delete(panel);
+        continue;
+      }
+      try {
+        await closeOwnedDomPanel(currentPanel, receipt.command, receipt.id);
+        managedDomReceipts.delete(panel);
+        if (receipt.id) {
+          managedWindowIds.delete(String(receipt.id));
+          managedWindowReceipts.delete(String(receipt.id));
+          ownedIds.delete(String(receipt.id));
+        }
+      } catch (error) {
+        // Preserve the exact receipt for a later explicit cleanup attempt.
+        toast(`Godel Voice stopped: could not close the owned ${receipt.command} panel`, true);
+      }
+    }
+
+    // The dedicated Voice screen is only the location boundary. A persisted
+    // Jarvis receipt is the ownership proof; an ordinary window on that screen
+    // must remain untouched. Consequential or unrecognised windows fail closed.
     for (const panel of windowRoots()) {
       const id = managedWindowId(panel);
       if (!id) continue;
       if (borrowedWindowReceipts.has(id)) continue;
-      if (allowedIds && !allowedIds.has(id)) continue;
+      if (!ownedIds.has(id)) continue;
       try {
         await panelInternalAction(panel, "LAYOUT", "close");
         managedWindowIds.delete(id);
+        managedWindowReceipts.delete(id);
       } catch {
         // A changed Godel window must remain open. Never turn automatic
         // housekeeping into a destructive or blocking failure.
@@ -253,15 +404,84 @@
     // Native close callbacks are ideal for ordinary layouts because they let
     // Godel release each mounted widget normally. Crashed or older Jarvis
     // sessions can leave layout records without a usable DOM root, though.
-    // The dedicated Voice screen is the durable ownership boundary, so prune
-    // those stale records in one native layout transaction after restoring any
-    // temporarily borrowed user panels. This prevents unbounded window buildup
-    // and repairs workspaces that can no longer render every leaked widget.
+    // Prune only stale layout records whose exact ids have persisted Jarvis
+    // receipts and still belong to the dedicated Voice screen. Do this in one
+    // native layout transaction after restoring temporarily borrowed panels.
+    // This prevents unbounded buildup without treating screen membership as
+    // permission to delete an ordinary Godel window.
     const cleanup = await workspaceInternalAction("clearVoiceScreen", {
       preserve_ids: [...borrowedWindowReceipts.keys()],
-      ...(onlyIds ? { only_ids: [...onlyIds].map(String) } : {})
+      only_ids: [...ownedIds]
     });
-    for (const id of cleanup?.removed_ids ?? []) managedWindowIds.delete(String(id));
+    for (const id of cleanup?.removed_ids ?? []) {
+      managedWindowIds.delete(String(id));
+      managedWindowReceipts.delete(String(id));
+    }
+    persistManagedWindowIds();
+    return cleanup;
+  }
+
+  async function reconcileManagedWindows({ preserveIds = [], maximum = 12 } = {}) {
+    if (!Number.isInteger(maximum) || maximum < 4 || maximum > 32) {
+      throw new Error("Invalid Jarvis workspace capacity");
+    }
+    const inventory = await workspaceInternalAction("workspaceInventory");
+    const screens = Array.isArray(inventory?.screens) ? inventory.screens : [];
+    const voiceScreens = screens.filter(screen => String(screen?.title ?? "").trim().toLowerCase() === "voice");
+    if (voiceScreens.length > 1) throw new Error(`Expected at most one dedicated Voice screen, found ${voiceScreens.length}`);
+    const voiceScreenId = voiceScreens[0] ? String(voiceScreens[0].id) : null;
+    const activeVoiceScreen = voiceScreenId != null
+      && String(inventory?.active_screen_id ?? "") === voiceScreenId;
+    for (const [panel, receipt] of [...managedDomReceipts]) {
+      const currentPanel = receipt.command ? panelForDomReceipt(panel, receipt) : null;
+      // Reconciliation is observation-only for same-document receipts. Godel
+      // may be between React roots while Jarvis connects; dropping the receipt
+      // here makes an explicit later Stop unable to clean the panel it opened.
+      // Migrate only a unique exact match and otherwise retain the evidence.
+      if (activeVoiceScreen && currentPanel && currentPanel !== panel) {
+        managedDomReceipts.delete(panel);
+        managedDomReceipts.set(currentPanel, receipt);
+      }
+    }
+    const ownersById = new Map();
+    for (const screen of screens) {
+      for (const rawId of Array.isArray(screen?.window_ids) ? screen.window_ids : []) {
+        const id = String(rawId);
+        const owners = ownersById.get(id) ?? [];
+        owners.push(String(screen.id));
+        ownersById.set(id, owners);
+      }
+    }
+    for (const id of [...managedWindowIds]) {
+      const owners = ownersById.get(id) ?? [];
+      const receipt = managedWindowReceipts.get(id);
+      const renderedPanel = panelById(id);
+      const renderedCommand = contextPanel(renderedPanel)?.command ?? null;
+      const renderedOnActiveVoiceScreen = owners.length === 0
+        && voiceScreenId != null
+        && activeVoiceScreen
+        && renderedPanel?.isConnected
+        && receipt
+        && (!receipt.command || renderedCommand === receipt.command);
+      // Godel 4.5.8 sometimes renders a real window without adding its id to
+      // the private layout store. The persisted creation receipt plus the
+      // connected exact-command DOM root still proves Jarvis ownership, and
+      // retaining it lets manual stop close the panel through its native DOM
+      // callback. Never extend this exception to a different screen/type.
+      if (renderedOnActiveVoiceScreen && !borrowedWindowReceipts.has(id)) continue;
+      // Missing ids are stale. An id on another or multiple screens has lost
+      // the Voice-screen ownership proof: forget it, but never close it.
+      if (owners.length === 1 && owners[0] === voiceScreenId && !borrowedWindowReceipts.has(id)) continue;
+      managedWindowIds.delete(id);
+      managedWindowReceipts.delete(id);
+    }
+    const preserved = new Set([...preserveIds].map(String));
+    if (lastWindowId) preserved.add(String(lastWindowId));
+    const candidates = [...managedWindowReceipts.values()]
+      .filter(receipt => !preserved.has(receipt.id) && !borrowedWindowReceipts.has(receipt.id))
+      .sort((left, right) => left.created_at - right.created_at);
+    const excess = Math.max(0, managedWindowReceipts.size - maximum);
+    if (excess > 0) await closeVoiceScreenPanels({ onlyIds: candidates.slice(0, excess).map(receipt => receipt.id) });
     persistManagedWindowIds();
   }
 
@@ -279,37 +499,59 @@
 
   function waitFor(find, description, timeoutMs = 6000) {
     return new Promise((resolve, reject) => {
-      const immediate = find();
-      if (immediate) return resolve(immediate);
-      const observer = new MutationObserver(() => {
-        const result = find();
-        if (!result) return;
-        clearTimeout(timer);
+      const started = performance.now();
+      let timer = null;
+      let settled = false;
+      const cleanup = () => {
+        if (timer !== null) clearTimeout(timer);
         observer.disconnect();
-        resolve(result);
-      });
-      const timer = setTimeout(() => {
-        observer.disconnect();
-        reject(new Error(`Timed out waiting for ${description}`));
-      }, timeoutMs);
+      };
+      const schedule = () => {
+        if (settled || timer !== null) return;
+        const elapsed = performance.now() - started;
+        const delay = elapsed < 250 ? 16 : elapsed < 1000 ? 32 : 75;
+        timer = setTimeout(() => { timer = null; check(); }, delay);
+      };
+      const check = () => {
+        if (settled) return;
+        let result;
+        try { result = find(); }
+        catch (error) { settled = true; cleanup(); reject(error); return; }
+        if (result) { settled = true; cleanup(); resolve(result); return; }
+        if (performance.now() - started >= timeoutMs) {
+          settled = true;
+          cleanup();
+          reject(new Error(`Timed out waiting for ${description}`));
+          return;
+        }
+        schedule();
+      };
+      const observer = new MutationObserver(check);
       observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+      check();
     });
   }
 
-  function waitUntil(find, description, timeoutMs = 6000) {
-    return new Promise((resolve, reject) => {
-      const started = Date.now();
-      const timer = setInterval(() => {
-        const result = find();
-        if (result) {
-          clearInterval(timer);
-          resolve(result);
-        } else if (Date.now() - started >= timeoutMs) {
-          clearInterval(timer);
-          reject(new Error(`Timed out waiting for ${description}`));
-        }
-      }, 50);
-    });
+  async function waitUntil(find, description, timeoutMs = 6000) {
+    const started = performance.now();
+    while (true) {
+      const result = find();
+      if (result) return result;
+      const elapsed = performance.now() - started;
+      if (elapsed >= timeoutMs) throw new Error(`Timed out waiting for ${description}`);
+      await pause(Math.min(timeoutMs - elapsed, elapsed < 250 ? 16 : elapsed < 1000 ? 32 : 75));
+    }
+  }
+
+  async function waitUntilAsync(find, description, timeoutMs = 6000) {
+    const started = performance.now();
+    while (true) {
+      const result = await find();
+      if (result) return result;
+      const elapsed = performance.now() - started;
+      if (elapsed >= timeoutMs) throw new Error(`Timed out waiting for ${description}`);
+      await pause(Math.min(timeoutMs - elapsed, elapsed < 250 ? 25 : elapsed < 1000 ? 50 : 100));
+    }
   }
 
   function exactText(root, label, selectors = "button,[role='button'],[role='option'],label,span,div") {
@@ -420,10 +662,14 @@
 
   function panelMatchesTerminalIdentity(panel, identity) {
     if (!identity) return true;
-    const expected = `${identity.security} ${identity.venue}`;
-    if ([...panel.querySelectorAll("input")].some(input => visible(input)
-      && String(input.value ?? "").trim().toUpperCase() === expected)) return true;
+    const expected = identity.venue ? `${identity.security} ${identity.venue}` : identity.security;
     const escapedSecurity = identity.security.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if ([...panel.querySelectorAll("input")].some(input => {
+      if (!visible(input)) return false;
+      const value = String(input.value ?? "").trim().toUpperCase();
+      return identity.venue ? value === expected : new RegExp(`^${escapedSecurity}(?:\\s+[A-Z0-9]+)?$`).test(value);
+    })) return true;
+    if (!identity.venue) return new RegExp(`\\b${escapedSecurity}\\b`, "i").test(compactText(panel.textContent));
     const escapedVenue = identity.venue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     return new RegExp(`\\b${escapedSecurity}\\s+${escapedVenue}\\b`, "i").test(compactText(panel.textContent));
   }
@@ -511,6 +757,16 @@
       last_panel: contextPanel(rememberedRoot),
       panels: [...new Map(roots.map(contextPanel).filter(Boolean)
         .map(panel => [`${panel.command}:${panel.security ?? ""}`, panel])).values()],
+      ownership: {
+        native_receipts: managedWindowReceipts.size,
+        dom_receipts: managedDomReceipts.size,
+        dom: [...managedDomReceipts.entries()].slice(0, 16).map(([panel, receipt]) => ({
+          command: receipt.command,
+          security: receipt.security,
+          connected: panel.isConnected,
+          resolved: Boolean(panelForDomReceipt(panel, receipt))
+        }))
+      },
       ...(researchSession ? { research_session: researchSession } : {})
     };
     const digest = JSON.stringify(value);
@@ -531,6 +787,18 @@
     const top = Math.max(88, topCommandInput()?.getBoundingClientRect().bottom ?? 0);
     const bottomReserve = 42;
     return { x: 0, y: top, width: innerWidth, height: Math.max(190, innerHeight - top - bottomReserve) };
+  }
+
+  async function committedPanelIdentity(panel, command) {
+    const native = nativeWindowRoot(panel);
+    if (!native || !panelMatchesCommand(native, command)) return null;
+    const id = String(windowId(native) ?? "");
+    if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) return null;
+    const inventory = await workspaceInternalAction("workspaceInventory");
+    const owners = (inventory?.screens ?? []).filter(screen =>
+      Array.isArray(screen?.window_ids) && screen.window_ids.map(String).includes(id));
+    if (owners.length !== 1) return null;
+    return { id, screen_id: String(owners[0].id), panel: native };
   }
 
   function toast(message, error = false) {
@@ -569,6 +837,21 @@
 
   async function trustedType(text) {
     await cdp("trustedType", { text: String(text) });
+  }
+
+  async function trustedReplace(input, text) {
+    if (!visible(input)) throw new Error("Target input is not visible");
+    const token = crypto.randomUUID();
+    input.dataset.godelVoiceTarget = token;
+    try {
+      await cdp("trustedReplaceAndSubmit", {
+        selector: `[data-godel-voice-target="${token}"]`,
+        text: String(text),
+        submit: false
+      });
+    } finally {
+      input.removeAttribute("data-godel-voice-target");
+    }
   }
 
   async function focusAndInsert(input, text) {
@@ -701,6 +984,7 @@
     // old layout callback and let a compound command drop the panel that just
     // opened. Toggle that instance closed, prove it unmounted, then open a
     // fresh palette bound to the current layout.
+    let closedMountedPalette = false;
     if (commandMenuOpen()) {
       // Godel 4.5.8 may mount the palette as its default empty-screen state;
       // Backquote does not close that variant, while Escape does. Prefer the
@@ -714,8 +998,13 @@
         await press("Backquote");
         await waitUntil(() => !commandMenuOpen(), "closed Godel command bar", 1000);
       }
+      closedMountedPalette = true;
     }
-    await press("Escape");
+    // Godel reserves a double Escape for closing the active window. The prior
+    // implementation emitted one Escape to dismiss the mounted palette and a
+    // second unconditional Escape immediately afterwards, which silently
+    // deleted the first panel in every compound request. Emit at most one.
+    if (!closedMountedPalette) await press("Escape");
     await press("Backquote");
     await waitUntil(commandMenuOpen, "open Godel command menu", 3000);
     return waitFor(topCommandInput, "Godel command bar", 1000);
@@ -1823,14 +2112,15 @@
 
   function tranPanelForPlan(plan) {
     const identity = terminalPanelIdentity(plan?.terminal_command);
-    const exactValue = identity ? `${identity.security} ${identity.venue}` : null;
+    const exactValue = identity?.venue ? `${identity.security} ${identity.venue}` : null;
     const candidates = [...new Set([
       ...panelTitleNodes("TRAN").map(rootForTitle).filter(Boolean),
       ...windowRoots().filter(root => panelMatchesCommand(root, "TRAN"))
     ])];
     if (identity) {
       for (const input of document.querySelectorAll("input")) {
-        if (String(input.value ?? "").trim().toUpperCase() !== exactValue) continue;
+        const value = String(input.value ?? "").trim().toUpperCase();
+        if (exactValue ? value !== exactValue : !new RegExp(`^${identity.security.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+[A-Z0-9]+$`).test(value)) continue;
         for (let current = input.parentElement, depth = 0; current && depth < 18; current = current.parentElement, depth += 1) {
           const text = compactText(current.textContent);
           if (!text.includes("TRANSCRIPT HUB") || !text.includes("Final Transcript")
@@ -2121,15 +2411,26 @@
     let terminalCommand = plan.terminal_command;
     if (!terminalCommand) {
       phaseStartedAt = performance.now();
-      const securityPrefix = await resolveSecurityInGodel(input, plan.security_query);
-      terminalCommand = [securityPrefix, plan.command, ...plan.arguments].filter(Boolean).join(" ");
+      const canonicalSecurity = await resolveSecurityInGodel(input, plan.security_query);
+      const securityTokens = canonicalSecurity.split(/\s+/).filter(Boolean);
+      // Autocomplete returns the canonical display identity (for example,
+      // "LNTH US EQ"). Godel's command bar accepts ticker + asset class and
+      // treats the venue token as a different route, so omit only the venue.
+      const terminalSecurity = [...securityTokens.slice(0, -2), securityTokens.at(-1)].join(" ");
+      terminalCommand = [terminalSecurity, plan.command, ...plan.arguments].filter(Boolean).join(" ");
       markPhase("security_resolution_ms", phaseStartedAt);
     }
     phaseStartedAt = performance.now();
     const currentInput = await waitFor(topCommandInput, "resolved Godel command bar", 2000);
-    await replaceText(currentInput, terminalCommand);
+    // Security-scoped commands must reach Godel through real keyboard events.
+    // Input.insertText updates the visible React value but does not advance
+    // Godel's command parser; Enter can then select the ticker-chat suggestion
+    // instead of the requested function. Trusted character events reproduce
+    // the native terminal path while remaining coordinate-free.
+    await trustedReplace(currentInput, terminalCommand);
     await waitUntil(() => String(currentInput.value ?? "").trim() === terminalCommand,
       `Godel command bar value ${terminalCommand}`, 1000);
+    await pause(40);
     await press("Enter");
     markPhase("command_submit_ms", phaseStartedAt);
 
@@ -2203,6 +2504,34 @@
       }, "exact TRAN panel root", 4500);
       markPhase("transcript_root_ms", phaseStartedAt);
     }
+    // A rendered shell can precede Godel's authoritative layout commit. Do
+    // not configure it or announce success until its exact native id belongs
+    // to exactly one Godel screen. The command was already submitted once;
+    // this is observation-only and never retries Enter after mutation.
+    phaseStartedAt = performance.now();
+    let workspaceCommitted = true;
+    try {
+      await waitUntilAsync(() => committedPanelIdentity(panel, plan.command),
+        `committed ${plan.command} panel`, 500);
+    } catch (error) {
+      const authenticatedPanel = nativeWindowRoot(panel) ?? panel;
+      // The preceding new-panel waiter already required the exact command and,
+      // whenever Godel exposes it, the exact security identity. Do not make
+      // that verified render fail solely because the private workspace store
+      // omitted its id.
+      const exactRenderedPanel = panel?.isConnected === true;
+      if (!exactRenderedPanel) throw error;
+      // The rendered panel and its security are already authenticated. Godel
+      // 4.5.8 can omit that real panel from its private workspace inventory;
+      // treating this as a failed command rolls back other correct windows.
+      // Continue with DOM-scoped controls and let layout report a warning if
+      // geometry cannot be committed through the private store.
+      workspaceCommitted = false;
+      phases.workspace_commit_pending = 1;
+      panel = authenticatedPanel;
+    }
+    markPhase("panel_commit_ms", phaseStartedAt);
+    panel.dataset.godelVoiceWorkspaceCommitted = workspaceCommitted ? "true" : "false";
     rememberPanel(panel, plan.command, terminalSecurity(terminalCommand));
 
     phaseStartedAt = performance.now();
@@ -2232,7 +2561,6 @@
     }
     phases.total_ms = Math.max(0, Math.round(performance.now() - commandStartedAt));
     panelCommandTimings.set(panel, phases);
-    rememberManagedPanel(panel);
     if (announce) toast(`Godel Voice: ${plan.command} ${plan.actions.length ? "configured" : "opened"}`);
     return panel;
   }
@@ -2519,7 +2847,7 @@
     if (step.target.security && !panelContainsSecurity(panel, step.target.security)) {
       throw new Error(`The targeted ${step.target.command} window is not for ${step.target.security}`);
     }
-    const terminalCommand = `${step.target.security ?? "CONTEXT"} US EQ ${step.target.command}`;
+    const terminalCommand = `${step.target.security ?? "CONTEXT"} EQ ${step.target.command}`;
     const adapterPlan = { command: step.target.command, actions: step.actions };
     const actions = step.target.command === "GF" ? orderedGFActions(step.actions) : step.actions;
     for (const action of actions) {
@@ -2613,6 +2941,8 @@
       let executedPanel = null;
       let beforeWindowIds = [];
       let beforeRenderedIds = new Set();
+      let beforeRenderedRoots = new Set();
+      let beforeCommandPanels = new Set();
       try {
         if (step.kind === "control") await executeControlStep(step);
         else if (step.kind === "configure") {
@@ -2621,7 +2951,13 @@
         }
         else {
           beforeWindowIds = await workspaceInternalAction("activeWindowIds").catch(() => []);
-          beforeRenderedIds = new Set(windowRoots().map(root => String(windowId(root) ?? "")).filter(Boolean));
+          beforeRenderedRoots = new Set(windowRoots());
+          beforeRenderedIds = new Set([...beforeRenderedRoots]
+            .map(root => String(windowId(root) ?? "")).filter(Boolean));
+          beforeCommandPanels = new Set([
+            ...[...beforeRenderedRoots].filter(root => panelMatchesCommand(root, step.command)),
+            ...panelTitleNodes(step.command).map(rootForTitle).filter(Boolean)
+          ]);
           let panel = await executeCommandPlan(step, { capturePanel: true, announce: false });
           executedPanel = panel;
           if (panel) {
@@ -2631,13 +2967,14 @@
             const native = nativeWindowRoot(panel);
             const nativeId = native ? String(windowId(native) ?? "") : "";
             let borrowed = false;
-            if (nativeId && workflowScreenId) {
+            if (nativeId && workflowScreenId && panel.dataset.godelVoiceWorkspaceCommitted !== "false") {
               const receipt = await moveWindowToWorkflowScreen(nativeId, workflowScreenId);
               if (receipt?.moved === true) {
                 borrowed = true;
                 borrowedWindowReceipts.set(nativeId, receipt);
                 transactionBorrowedIds.add(nativeId);
                 managedWindowIds.delete(nativeId);
+                managedWindowReceipts.delete(nativeId);
                 persistBorrowedWindows();
                 persistManagedWindowIds();
                 panel = await waitUntil(() => panelById(nativeId), `${step.command} moved to Voice screen`, 3000);
@@ -2661,6 +2998,18 @@
               ?? (nativeId && activeIds.includes(nativeId) ? nativeId : null)
               ?? null;
             if (!borrowed && workspaceWindowId && !beforeWindowIds.includes(workspaceWindowId)) transactionWindowIds.add(String(workspaceWindowId));
+            const creationRoot = native ?? panel;
+            const createdByWorkflow = !borrowed && creationRoot
+              && (!beforeCommandPanels.has(creationRoot)
+                || (nativeId && workspaceWindowId && !beforeWindowIds.includes(workspaceWindowId)));
+            if (createdByWorkflow) rememberManagedPanel(panel, { requestId, command: step.command });
+            const ownershipPhases = panelCommandTimings.get(executedPanel) ?? panelCommandTimings.get(panel);
+            if (ownershipPhases) {
+              ownershipPhases.ownership_created = createdByWorkflow ? 1 : 0;
+              ownershipPhases.ownership_native_id = nativeId ? 1 : 0;
+              ownershipPhases.ownership_dom_receipt = managedDomReceipts.has(creationRoot) ? 1 : 0;
+              ownershipPhases.ownership_creation_root = creationRoot ? 1 : 0;
+            }
             opened.push({ step, panel, workspaceWindowId, workspaceWindowError });
             grounded.push({ step, panel });
             // Godel's command-bar callback closes over its current screen
@@ -2736,6 +3085,13 @@
     if (failures.length) toast(`Godel Voice: workflow ready with ${failures.length} skipped step${failures.length === 1 ? "" : "s"}`, true);
     else if (plan.steps.every(step => step.kind === "control" || step.kind === "configure")) toast("Godel Voice: window updated");
     else toast(`Godel Voice: ${opened.length} windows ready in ${plan.layout.preset} layout`);
+    const currentRequestWindowIds = new Set(transactionWindowIds);
+    for (const item of opened) {
+      if (item.workspaceWindowId) currentRequestWindowIds.add(String(item.workspaceWindowId));
+      const native = nativeWindowRoot(item.panel);
+      if (native) currentRequestWindowIds.add(String(windowId(native)));
+    }
+    await reconcileManagedWindows({ preserveIds: currentRequestWindowIds }).catch(() => {});
     return { timings, opened, grounded, layoutWarning };
     } catch (error) {
       if (opensNewPanels) {
@@ -2766,7 +3122,14 @@
       };
     }
     const startedAt = Date.now();
+    const beforeWindowIds = await workspaceInternalAction("activeWindowIds").catch(() => []);
     const panel = await executeCommandPlan(plan, { capturePanel: true });
+    const active = await workspaceInternalAction("activeScreenInfo").catch(() => null);
+    const id = managedWindowId(panel);
+    if (id && String(active?.title ?? "").toLowerCase() === "voice" && !beforeWindowIds.includes(id)) {
+      rememberManagedPanel(panel, { requestId, command: plan.command });
+    }
+    await reconcileManagedWindows({ preserveIds: id ? [id] : [] }).catch(() => {});
     const fact = groundedCompletionFact([{ step: plan, panel }]);
     return {
       message: fact ?? `${COMMAND_NAMES[plan.command] ?? plan.command}, on screen.`,
@@ -2781,9 +3144,11 @@
   }
 
   function terminalPanelIdentity(terminalCommand) {
-    const match = String(terminalCommand ?? "").trim().toUpperCase()
-      .match(/^([A-Z][A-Z0-9.-]{0,9})\s+(US|LN|CN|AU|JP|GR|FP|IM|SM|SW|NA|BB|HK|CBOE|CME|GBL|FX1)\b/);
-    return match ? { security: match[1], venue: match[2] } : null;
+    const value = String(terminalCommand ?? "").trim().toUpperCase();
+    const legacy = value.match(/^([A-Z][A-Z0-9.-]{0,9})\s+(US|LN|CN|AU|JP|GR|FP|IM|SM|SW|NA|BB|HK|CBOE|CME|GBL|FX1)\s+[A-Z]{2,8}\b/);
+    if (legacy) return { security: legacy[1], venue: legacy[2] };
+    const canonical = value.match(/^([A-Z][A-Z0-9.-]{0,9})\s+(EQ|IDX|FUT|CRYPTO|FX|BOND)\b/);
+    return canonical ? { security: canonical[1], venue: null } : null;
   }
 
   function terminalSecurity(terminalCommand) {
@@ -3048,14 +3413,22 @@
   setInterval(poll, 100);
   let jarvisSessionEpoch = 0;
   let lifecycleCleanup = Promise.resolve();
-  function queueVoiceCleanup(requestedEpoch) {
+  function queueVoiceCleanup(requestedEpoch, { closeAll = false } = {}) {
     lifecycleCleanup = lifecycleCleanup.then(async () => {
       for (let attempt = 0; attempt < 700 && running; attempt += 1) await pause(50);
       if (requestedEpoch !== jarvisSessionEpoch || running) return;
-      await workspaceInternalAction("createScreen", { name: "Voice" });
-      await restoreBorrowedWindows();
-      await workspaceInternalAction("createScreen", { name: "Voice" });
-      await closeVoiceScreenPanels();
+      if (closeAll) {
+        await workspaceInternalAction("createScreen", { name: "Voice" });
+        await restoreBorrowedWindows();
+        await workspaceInternalAction("createScreen", { name: "Voice" });
+        await closeVoiceScreenPanels();
+      } else {
+        // Starting or reconnecting Jarvis must preserve the visible panels so
+        // “make it bigger” and other conversational follow-ups retain context.
+        // Reconcile orphaned receipts and enforce the hard managed-window cap
+        // without treating an ordinary Voice-screen window as Jarvis-owned.
+        await reconcileManagedWindows();
+      }
       await publishExecutorContext();
     }).catch(() => {
       // Lifecycle cleanup is best-effort and never blocks a later retry.
@@ -3065,8 +3438,8 @@
     jarvisSessionEpoch += 1;
     queueVoiceCleanup(jarvisSessionEpoch);
   });
-  window.addEventListener("godel-voice:cleanup-request", () => {
-    queueVoiceCleanup(jarvisSessionEpoch);
+  window.addEventListener("godel-voice:cleanup-request", event => {
+    if (event.detail?.explicit === true) queueVoiceCleanup(jarvisSessionEpoch, { closeAll: true });
   });
   // Context is also published immediately after Realtime work. A slower idle
   // cadence avoids repeatedly scanning Godel's large dashboard DOM.

@@ -1161,7 +1161,8 @@
       if (voiceScreens.length !== 1) throw new Error(`Expected one dedicated Voice screen, found ${voiceScreens.length}`);
       const voice = voiceScreens[0];
       const preserveIds = new Set((Array.isArray(payload.preserve_ids) ? payload.preserve_ids : []).map(String));
-      const onlyIds = Array.isArray(payload.only_ids) ? new Set(payload.only_ids.map(String)) : null;
+      if (!Array.isArray(payload.only_ids)) throw new Error("Voice cleanup requires explicit Jarvis ownership receipts");
+      const onlyIds = new Set(payload.only_ids.map(String));
       for (const id of [...preserveIds, ...(onlyIds ?? [])]) {
         if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) throw new Error("Invalid Godel cleanup window id");
       }
@@ -1177,7 +1178,7 @@
         }
       }
       const removeIds = new Set(voice.windowIds.map(String).filter(id =>
-        !preserveIds.has(id) && !blockedIds.has(id) && (!onlyIds || onlyIds.has(id))));
+        !preserveIds.has(id) && !blockedIds.has(id) && onlyIds.has(id)));
       if (!removeIds.size) {
         return { removed_ids: [], preserved_ids: [...preserveIds], blocked_ids: [...blockedIds] };
       }

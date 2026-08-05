@@ -253,7 +253,12 @@ export function renderTerminalCommand(intent) {
   const parts = [];
   const security = checked.intent.security;
   if (security?.ticker && security?.venue && security?.asset_class) {
-    parts.push(normalizeToken(security.ticker), normalizeToken(security.venue), normalizeAssetClass(security.asset_class));
+    // Godel's terminal follows the Bloomberg-style security syntax
+    // "TICKER ASSET_CLASS COMMAND" (for example, "AMZN EQ EM"). The venue
+    // is useful for resolving and authenticating the resulting panel, but it
+    // is not part of the command typed into Godel. Including "US" here is
+    // interpreted by Godel as a different route and can open ticker chat.
+    parts.push(normalizeToken(security.ticker), normalizeAssetClass(security.asset_class));
   } else if (command.scope === "security") {
     throw new Error("Security must be resolved before rendering");
   }

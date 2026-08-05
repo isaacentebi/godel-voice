@@ -546,6 +546,7 @@ export class HandoffStore {
       focused_panel: ordinaryFresh ? context.focused_panel : null,
       last_panel: ordinaryFresh ? context.last_panel : null,
       panels: ordinaryFresh ? context.panels : [],
+      ownership: ordinaryFresh ? context.ownership : { native_receipts: 0, dom_receipts: 0, dom: [] },
       ...(researchFresh ? { research_session: research } : {})
     };
   }
@@ -609,11 +610,23 @@ function sanitizeExecutorContext(value, updatedAt = Date.now(), previousResearch
   const research = value && Object.hasOwn(value, "research_session")
     ? sanitizeResearchSession(value.research_session, updatedAt)
     : previousResearchSession;
-  return { updated_at: updatedAt, focused_panel: focused, last_panel: last, panels, ...(research ? { research_session: research } : {}) };
+  const ownership = value?.ownership && typeof value.ownership === "object" ? {
+    native_receipts: Math.max(0, Math.min(64, Number(value.ownership.native_receipts) || 0)),
+    dom_receipts: Math.max(0, Math.min(64, Number(value.ownership.dom_receipts) || 0)),
+    dom: Array.isArray(value.ownership.dom) ? value.ownership.dom.slice(0, 16).map(item => ({
+      command: String(item?.command ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12),
+      security: /^[A-Z][A-Z0-9.-]{0,15}$/.test(String(item?.security ?? "")) ? String(item.security) : null,
+      connected: item?.connected === true,
+      resolved: item?.resolved === true
+    })) : []
+  } : { native_receipts: 0, dom_receipts: 0, dom: [] };
+  return { updated_at: updatedAt, focused_panel: focused, last_panel: last, panels, ownership,
+    ...(research ? { research_session: research } : {}) };
 }
 
 function sanitizeStepTimings(value) {
-  const phaseNames = ["command_bar_ms", "security_resolution_ms", "command_submit_ms", "panel_detection_ms", "transcript_root_ms", "nested_actions_ms", "total_ms"];
+  const phaseNames = ["command_bar_ms", "security_resolution_ms", "command_submit_ms", "panel_detection_ms", "transcript_root_ms", "nested_actions_ms", "total_ms",
+    "ownership_created", "ownership_native_id", "ownership_dom_receipt", "ownership_creation_root"];
   if (!Array.isArray(value)) return [];
   return value.slice(0, 16).map((item, index) => {
     const kind = ["command", "control", "configure"].includes(item?.kind) ? item.kind : "command";

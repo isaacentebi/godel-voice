@@ -31,7 +31,7 @@ function securitySteps(security, commands, preset) {
     layout: layout(preset),
     steps: commands.map((command, index) => commandStep(
       command,
-      `${security} US EQ ${command}`,
+      `${security} EQ ${command}`,
       `command-${index + 1}`,
       placements[index]
     ))
@@ -121,7 +121,7 @@ function requestedMarketSurfaces(text) {
 function dynamicCommandSteps(surfaces, security = null) {
   return surfaces.map(({ command, placement, terminalCommand }, index) => commandStep(
     command,
-    terminalCommand ?? (security ? `${security} US EQ ${command}` : command),
+    terminalCommand ?? (security ? `${security} EQ ${command}` : command),
     `command-${index + 1}`,
     placement
   ));
@@ -209,9 +209,9 @@ export function compileDeterministicDesk({ transcript, text, security, explicitl
     return {
       version: 2, failure_policy: "stop_on_any", layout: layout("options"),
       steps: [
-        commandStep("G", `${security} US EQ G`, "command-1", "top-left"),
-        commandStep("OMON", `${security} US EQ OMON`, "command-2", "top-right", actions),
-        commandStep("OVME", `${security} US EQ OVME`, "command-3", "bottom")
+        commandStep("G", `${security} EQ G`, "command-1", "top-left"),
+        commandStep("OMON", `${security} EQ OMON`, "command-2", "top-right", actions),
+        commandStep("OVME", `${security} EQ OVME`, "command-3", "bottom")
       ]
     };
   }
@@ -229,7 +229,7 @@ export function compileDeterministicDesk({ transcript, text, security, explicitl
       version: 2, failure_policy: "stop_on_any", layout: layout("market"),
       steps: [
         commandStep("HMAP", "HMAP", "command-1", "left"),
-        commandStep("GF", `${security} US EQ GF`, "command-2", "right", actions)
+        commandStep("GF", `${security} EQ GF`, "command-2", "right", actions)
       ]
     };
   }
@@ -258,7 +258,7 @@ export function compileDeterministicDesk({ transcript, text, security, explicitl
     const companyActions = peers.map(item => ({ feature: "add company", operation: "add", value: item.ticker }));
     return {
       version: 2, failure_policy: "stop_on_any", layout: layout("comparison"),
-      steps: [commandStep("GF", `${base.ticker} US EQ GF`, "command-1", "full", [...controlActions, ...companyActions, ...metricActions])]
+      steps: [commandStep("GF", `${base.ticker} EQ GF`, "command-1", "full", [...controlActions, ...companyActions, ...metricActions])]
     };
   }
   // Do not extract the comparison half from a compound request that also
@@ -274,7 +274,7 @@ export function compileDeterministicDesk({ transcript, text, security, explicitl
     if (!candidate?.ready_for_live_executor) return null;
     return {
       version: 2, failure_policy: "stop_on_any", layout: layout("comparison"),
-      steps: [commandStep("HMS", `${base.ticker} US EQ HMS`, "command-1", "full", candidate.actions)]
+      steps: [commandStep("HMS", `${base.ticker} EQ HMS`, "command-1", "full", candidate.actions)]
     };
   }
 

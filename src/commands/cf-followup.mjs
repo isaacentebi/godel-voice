@@ -1,4 +1,4 @@
-import { commonSecurities } from "../security-resolver.mjs";
+import { resolveTranscriptSecurities } from "../security-resolver.mjs";
 import { CF_FILING_TYPES, normalizeCFAction } from "./cf-actions.mjs";
 
 const FORM_PATTERNS = Object.freeze([
@@ -28,13 +28,8 @@ function forms(text) {
   return [...new Set(hits.map(hit => hit.form))];
 }
 function securityFrom(text) {
-  const padded = ` ${text} `;
-  for (const item of commonSecurities) {
-    for (const alias of [...item.aliases, item.ticker.toLowerCase()]) {
-      if (padded.includes(` ${clean(alias)} `)) return { spoken_name: alias, ticker: item.ticker, venue: item.venue, asset_class: item.asset_class, needs_resolution: false };
-    }
-  }
-  return null;
+  const security = resolveTranscriptSecurities(text)[0];
+  return security ? { ...security, needs_resolution: false } : null;
 }
 function add(blockers, message) { if (!blockers.includes(message)) blockers.push(message); }
 function exactIdentity(value) {

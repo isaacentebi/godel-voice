@@ -56,11 +56,28 @@
       while (deferredResponses.length) responseQueue.push(deferredResponses.shift());
       pumpResponses();
     }
+    function dropResponses(predicate) {
+      if (typeof predicate !== "function") return 0;
+      let dropped = 0;
+      for (const queue of [responseQueue, deferredResponses]) {
+        for (let index = queue.length - 1; index >= 0; index -= 1) {
+          if (!predicate(queue[index])) continue;
+          queue.splice(index, 1);
+          dropped += 1;
+        }
+      }
+      return dropped;
+    }
     function responseCreated(responseId) { if (activeResponse && responseId) activeResponse.providerResponseId = String(responseId); }
     function responseMatches(responseId) {
       if (!activeResponse || !responseId) return Boolean(activeResponse);
       const normalized = String(responseId);
       return normalized === String(activeResponse.providerResponseId ?? "") || normalized === String(activeResponse.event?.event_id ?? "");
+    }
+    function responseStarted(responseId = null) {
+      if (!responseMatches(responseId)) return false;
+      activeResponse.audible = true;
+      return true;
     }
     function responseDone(responseId = null) {
       if (!responseMatches(responseId)) return false;
@@ -72,8 +89,13 @@
       if (!responseMatches(responseId)) return false;
       const failed = activeResponse;
       activeResponse = null;
-      if (failed && (failed.attempts ?? 0) < 1) {
+      // Once any audio has started, retrying the same sentence can speak it
+      // twice. A partially audible response is terminal; only a response that
+      // failed before first audio receives one bounded retry.
+      if (failed && failed.audible !== true && (failed.attempts ?? 0) < 1) {
         failed.attempts = (failed.attempts ?? 0) + 1;
+        delete failed.providerResponseId;
+        failed.audible = false;
         responseQueue.unshift(failed);
       } else if (failed) onError(error, "response", failed);
       pumpResponses();
@@ -82,6 +104,14 @@
     function reset({ preserveTurns = false, preserveResponses = false } = {}) {
       epoch += 1;
       turnRunning = false;
+      // Reconnects preserve a response that had not produced audio yet. A
+      // response that was already audible is deliberately dropped so it can
+      // never be spoken twice after transport recovery.
+      if (preserveResponses && activeResponse && activeResponse.audible !== true) {
+        delete activeResponse.providerResponseId;
+        activeResponse.audible = false;
+        responseQueue.unshift(activeResponse);
+      }
       activeResponse = null;
       if (!preserveTurns) turnQueue.length = 0;
       if (!preserveResponses) {
@@ -90,8 +120,9 @@
       }
     }
     return {
-      enqueueTurn, enqueueResponse, deferResponse, releaseDeferredResponses,
-      responseCreated, responseDone, responseFailed, kickTurns: pumpTurns, kickResponses: pumpResponses, reset,
+      enqueueTurn, enqueueResponse, deferResponse, releaseDeferredResponses, dropResponses,
+      responseCreated, responseStarted, responseDone, responseFailed,
+      kickTurns: pumpTurns, kickResponses: pumpResponses, reset,
       snapshot: () => ({ queuedTurns: turnQueue.length, turnRunning, queuedResponses: responseQueue.length,
         deferredResponses: deferredResponses.length, activeResponse: Boolean(activeResponse) })
     };
@@ -176,6 +207,7 @@
   let audio = null;
   let sessionId = null;
   let generation = 0;
+  const recoverableGenerations = new Set();
   let state = "ready";
   let sessionCost = 0;
   let speechActive = false;
@@ -190,20 +222,30 @@
   let activeWorkflowId = null;
   let deferredReleaseTimer = null;
   let bargeInTimer = null;
+  let responseStartTimer = null;
+  let workflowProgressTimer = null;
+  let workflowProgressId = null;
   let wantsActive = intentStore.isActive();
+  let transportSuspended = false;
   let reconnectTimer = null;
   let sessionRolloverTimer = null;
   let reconnectAttempts = 0;
   const recentAssistantAudits = new Map();
   const TURN_GRACE_MS = 180;
-  const BARGE_IN_CONFIRM_MS = 240;
+  // Semantic VAD can momentarily classify a cough or a nearby voice as user
+  // speech. Require a little under half a second before cancelling audible
+  // output so ordinary room noise cannot constantly interrupt Jarvis.
+  const BARGE_IN_CONFIRM_MS = 420;
   const TRANSCRIPTION_SETTLE_MS = 1_200;
   const WORKFLOW_POLL_MS = 160;
   const PREFLIGHT_RETRY_MS = 120;
   // OpenAI Realtime sessions have a hard 60-minute limit. Roll over early so
   // the provider never gets to terminate a session during a user turn.
   const SESSION_ROLLOVER_MS = 50 * 60_000;
-  const MAX_RECONNECT_ATTEMPTS = 3;
+  const FAST_RECONNECT_ATTEMPTS = 3;
+  const MAX_RECONNECT_DELAY_MS = 5_000;
+  const RESPONSE_START_TIMEOUT_MS = 4_000;
+  const WORKFLOW_PROGRESS_DELAY_MS = 3_000;
 
   const host = document.createElement("div");
   host.id = "godel-jarvis-control";
@@ -413,6 +455,37 @@
     bargeInTimer = null;
   }
 
+  function clearResponseStartTimer() {
+    if (responseStartTimer) clearTimeout(responseStartTimer);
+    responseStartTimer = null;
+  }
+
+  function clearWorkflowProgressTimer(id = null) {
+    if (id && workflowProgressId && id !== workflowProgressId) return;
+    if (workflowProgressTimer) clearTimeout(workflowProgressTimer);
+    workflowProgressTimer = null;
+    const completedId = workflowProgressId;
+    workflowProgressId = null;
+    if (completedId) coordinator.dropResponses(response => response.workflowProgressId === completedId);
+  }
+
+  function scheduleWorkflowProgress(id, runGeneration) {
+    clearWorkflowProgressTimer();
+    workflowProgressId = id;
+    workflowProgressTimer = setTimeout(() => {
+      workflowProgressTimer = null;
+      if (activeWorkflowId !== id || !wantsActive || transportSuspended
+          || runGeneration !== generation || channel?.readyState !== "open"
+          || speechActive || speechAwaitingTranscript || assistantSpeaking) return;
+      const queued = coordinator.snapshot();
+      if (queued.activeResponse || queued.queuedResponses || queued.deferredResponses) return;
+      const response = exactResponse("Still working.", "workflow_progress");
+      if (!response) return;
+      response.workflowProgressId = id;
+      coordinator.enqueueResponse(response);
+    }, WORKFLOW_PROGRESS_DELAY_MS);
+  }
+
   function clearReconnectTimer() {
     if (reconnectTimer) clearTimeout(reconnectTimer);
     reconnectTimer = null;
@@ -446,7 +519,7 @@
       event: {
         type: "response.create",
         response: {
-          tools: [], tool_choice: "none", max_output_tokens: 128,
+          tools: [], tool_choice: "none", max_output_tokens: 64,
           instructions: `Say exactly this sentence and nothing else: ${JSON.stringify(exact)}`
         }
       }
@@ -476,11 +549,30 @@
   }
 
   function sendResponseNow(item) {
-    if (audio) audio.muted = false;
-    item.event.event_id ??= `godel-response-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    // Retries need a fresh provider event id; reusing an id may be treated as
+    // an already-processed request and leave the response queue silent.
+    item.event.event_id = `godel-response-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     send(item.event);
+    if (audio) audio.muted = false;
     responseRequestedAt = Date.now();
     responseRequestKind = item.kind;
+    clearResponseStartTimer();
+    const requestEventId = item.event.event_id;
+    const runGeneration = generation;
+    responseStartTimer = setTimeout(() => {
+      responseStartTimer = null;
+      if (runGeneration !== generation || !responseRequestedAt || !coordinator.snapshot().activeResponse) return;
+      if (audio) audio.muted = true;
+      try { send({ type: "response.cancel" }); } catch {}
+      audit("client_error", `${requestEventId}-first-audio-timeout`, {
+        text: "Realtime response produced no audio before its deadline"
+      });
+      responseRequestedAt = 0;
+      responseRequestKind = null;
+      const handled = coordinator.responseFailed(new Error("Realtime first-audio timeout"), requestEventId);
+      if (handled && coordinator.snapshot().activeResponse) render("thinking", "Retrying response");
+      else if (!speechActive && !activeWorkflow) render("listening", "Voice reply unavailable · still listening");
+    }, RESPONSE_START_TIMEOUT_MS);
     render("thinking", item.kind === "grounded_failure" ? "Preparing the grounded response" : "Responding");
   }
 
@@ -492,6 +584,7 @@
   async function executePreflight(request, turnId, runGeneration) {
     render("working", "Operating Godel directly");
     activeWorkflowId = request.id;
+    scheduleWorkflowProgress(request.id, runGeneration);
     let output;
     try {
       const completed = await waitForWorkflow(request.id, request.workflow_timeout_ms);
@@ -506,18 +599,21 @@
     audit("tool_result", `${turnId}-preflight-result`, {
       status: output.status, text: output.message, duration_ms: output.duration_ms
     });
-    if (activeWorkflowId === request.id) activeWorkflowId = null;
-    if (runGeneration === generation && channel?.readyState === "open") {
-      const response = groundedResponse(output);
-      if (speechActive || speechAwaitingTranscript || transcriptBatcher.snapshot().segments.length) {
-        coordinator.deferResponse(response);
-        render("listening", "I hear you");
-      } else coordinator.enqueueResponse(response);
-    }
+    const stillOwned = activeWorkflowId === request.id;
+    if (stillOwned) activeWorkflowId = null;
+    clearWorkflowProgressTimer(request.id);
+    if (!stillOwned || !wantsActive || transportSuspended) return;
+    const response = groundedResponse(output);
+    if (channel?.readyState !== "open" || speechActive || speechAwaitingTranscript
+        || transcriptBatcher.snapshot().segments.length) {
+      coordinator.deferResponse(response);
+      if (channel?.readyState === "open") render("listening", "I hear you");
+    } else coordinator.enqueueResponse(response);
   }
 
   async function routeTranscript(transcript, turnId, runGeneration) {
-    if (runGeneration !== generation || channel?.readyState !== "open") return;
+    const generationIsOwned = () => runGeneration === generation || recoverableGenerations.has(runGeneration);
+    if (!generationIsOwned() || channel?.readyState !== "open") return;
     try {
       const preflightStartedAt = Date.now();
       const response = await preflight(transcript, turnId);
@@ -526,7 +622,11 @@
         status: `preflight_${request.kind ?? "unknown"}`,
         duration_ms: Date.now() - preflightStartedAt
       });
-      if (runGeneration !== generation) return;
+      // A transport can close after the local preflight was accepted. The
+      // validated workflow still belongs to this user session, so attach to
+      // it and deliver the completion after reconnect instead of silently
+      // losing the turn.
+      if (!generationIsOwned()) return;
       if (request.kind === "execute") {
         activeWorkflow = executePreflight(request, turnId, runGeneration);
         try { await activeWorkflow; }
@@ -551,13 +651,13 @@
         teardown("error", "Jarvis is active in another Godel tab", "executor_revoked");
         return;
       }
-      if (error?.status === 404 && runGeneration === generation && wantsActive) {
+      if (error?.status === 404 && generationIsOwned() && wantsActive) {
         coordinator.enqueueTurn({ transcript, turnId }, { front: true });
-        scheduleReconnect(runGeneration, "local_session_lost");
+        if (runGeneration === generation) scheduleReconnect(runGeneration, "local_session_lost");
         return;
       }
     }
-    if (runGeneration === generation && channel?.readyState === "open" && !speechActive) {
+    if (generationIsOwned() && channel?.readyState === "open" && !speechActive) {
       createConversationResponse("I couldn't reach the local Godel planner. Please try that once more.");
     }
   }
@@ -571,7 +671,7 @@
     runTurn: turn => routeTranscript(turn.transcript, turn.turnId, generation),
     sendResponse: sendResponseNow,
     canRunTurn: () => wantsActive && channel?.readyState === "open" && !activeWorkflow,
-    canSendResponse: () => wantsActive && channel?.readyState === "open"
+    canSendResponse: () => wantsActive && channel?.readyState === "open" && !assistantSpeaking
       && !speechActive && !speechAwaitingTranscript && transcriptBatcher.snapshot().segments.length === 0,
     onError: (error, phase, item) => audit("client_error", `${phase}-${item?.turnId ?? Date.now()}`, {
       text: String(error?.message ?? error).slice(0, 240)
@@ -629,6 +729,7 @@
           audit("turn_timing", event.event_id ?? `speech-${Date.now()}-interrupt`, {
             status: "user_interrupted_assistant", duration_ms: Date.now() - speechStartedAt
           });
+          if (audio) audio.muted = true;
           try { send({ type: "response.cancel" }); } catch {}
         }, BARGE_IN_CONFIRM_MS);
       }
@@ -653,8 +754,10 @@
       render("thinking");
     }
     else if (event.type === "output_audio_buffer.started") {
-      assistantSpeaking = true;
-      if (!coordinator.snapshot().activeResponse) {
+      const authorized = coordinator.responseStarted(event.response_id ?? null);
+      assistantSpeaking = authorized;
+      clearResponseStartTimer();
+      if (!authorized) {
         if (audio) audio.muted = true;
         audit("client_error", event.event_id ?? `audio-${Date.now()}-unsolicited`, {
           text: "Suppressed unsolicited Realtime audio"
@@ -662,6 +765,7 @@
         try { send({ type: "response.cancel" }); } catch {}
         return;
       }
+      if (audio) audio.muted = false;
       if (responseRequestedAt) audit("turn_timing", `${event.event_id ?? `audio-${Date.now()}`}-first-audio`, {
         status: `${responseRequestKind ?? "response"}_first_audio`, duration_ms: Date.now() - responseRequestedAt
       });
@@ -673,13 +777,14 @@
       render("speaking");
     }
     else if (event.type === "output_audio_buffer.stopped") {
-      if (audio) audio.muted = false;
+      if (audio) audio.muted = true;
       assistantSpeaking = false;
       if (activeWorkflow) render("working", "Operating Godel directly");
       else if (speechActive) render("listening", "I hear you");
       else if (responseRequestedAt) render("thinking", "Responding");
       else if (transcriptBatcher.snapshot().segments.length || coordinator.snapshot().queuedTurns) render("thinking");
       else render("listening");
+      coordinator.kickResponses();
     }
     else if (event.type === "error") {
       const message = String(event.error?.message ?? event.error?.code ?? event.error?.type ?? "Realtime event error");
@@ -687,6 +792,9 @@
       // Realtime can emit recoverable response-level errors, notably when its
       // automatic interruption races a response cancellation. The data-channel
       // close event is the authoritative signal for reconnecting the session.
+      clearResponseStartTimer();
+      responseRequestedAt = 0;
+      responseRequestKind = null;
       const responseFailed = coordinator.responseFailed(new Error(message), event.error?.event_id ?? event.response_id);
       if (responseFailed && coordinator.snapshot().activeResponse) {
         render("thinking", "Responding");
@@ -722,7 +830,9 @@
       render("listening", "I didn't catch that · say it again");
     }
     if (event.type === "response.done") {
-      assistantSpeaking = false;
+      clearResponseStartTimer();
+      responseRequestedAt = 0;
+      responseRequestKind = null;
       if (event.response?.status === "failed") {
         coordinator.responseFailed(new Error(event.response?.status_details?.error?.message ?? "Realtime response failed"), event.response?.id);
       } else coordinator.responseDone(event.response?.id);
@@ -739,28 +849,29 @@
 
   function scheduleReconnect(runGeneration, reason = "Voice connection interrupted") {
     if (runGeneration !== generation || !wantsActive) return;
+    clearReconnectTimer();
     reconnectAttempts += 1;
-    if (reconnectAttempts > MAX_RECONNECT_ATTEMPTS) {
-      teardown("error", "Voice connection could not recover", "reconnect_exhausted");
-      return;
-    }
     const attempt = reconnectAttempts;
-    teardown("connecting", `Reconnecting · ${attempt}/${MAX_RECONNECT_ATTEMPTS}`, reason, {
+    teardown("connecting", `Reconnecting · attempt ${attempt}`, reason, {
       preserveMicrophone: true,
       preserveIntent: true
     });
+    const reconnectDelay = attempt <= FAST_RECONNECT_ATTEMPTS
+      ? 250 * (2 ** (attempt - 1))
+      : MAX_RECONNECT_DELAY_MS;
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null;
       if (wantsActive && !peer) start({ reconnecting: true });
-    }, 250 * (2 ** (attempt - 1)));
+    }, reconnectDelay);
   }
 
   async function start({ reconnecting = false } = {}) {
     if (peer) return;
     if (!reconnecting) window.dispatchEvent(new CustomEvent("godel-voice:session-started"));
     wantsActive = true;
+    transportSuspended = false;
     const runGeneration = ++generation;
-    render("connecting", reconnecting ? `Reconnecting · ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}` : null);
+    render("connecting", reconnecting ? `Reconnecting · attempt ${reconnectAttempts}` : null);
     try {
       const identity = await executorIdentityReady;
       const liveMicrophone = microphone?.getAudioTracks?.().some(track => track.readyState === "live");
@@ -774,6 +885,10 @@
       audio = document.createElement("audio");
       audio.autoplay = true;
       audio.hidden = true;
+      // Keep the remote stream silent until an exact client-authorized
+      // response is pending. This prevents the first syllable of unsolicited
+      // provider greetings from escaping before their start event is handled.
+      audio.muted = true;
       document.documentElement.append(audio);
       peer.ontrack = event => { audio.srcObject = event.streams[0]; };
       for (const track of microphone.getTracks()) peer.addTrack(track, microphone);
@@ -786,6 +901,9 @@
           render("listening", "Ready when you are");
           transcriptBatcher.speechChanged();
           coordinator.kickTurns();
+          if (!speechActive && !speechAwaitingTranscript && !transcriptBatcher.snapshot().segments.length) {
+            coordinator.releaseDeferredResponses();
+          }
           coordinator.kickResponses();
         }
       }, { once: true });
@@ -814,8 +932,7 @@
     } catch (error) {
       const message = String(error?.message ?? "Could not start Jarvis");
       if (runGeneration !== generation) return;
-      if (!/permission|denied|notallowed/i.test(message) && wantsActive
-          && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      if (!/permission|denied|notallowed/i.test(message) && wantsActive) {
         scheduleReconnect(runGeneration, "startup_error");
       } else {
         teardown("error", /permission|denied|notallowed/i.test(message)
@@ -829,9 +946,15 @@
     const preserveIntent = options.preserveIntent === true;
     const preserveWork = options.preserveWork ?? preserveIntent;
     const suspendTransport = options.suspendTransport === true;
+    transportSuspended = suspendTransport;
+    if (preserveWork && !suspendTransport) {
+      recoverableGenerations.add(generation);
+      while (recoverableGenerations.size > 8) recoverableGenerations.delete(recoverableGenerations.values().next().value);
+    } else recoverableGenerations.clear();
     generation += 1;
     clearDeferredReleaseTimer();
     clearBargeInTimer();
+    clearResponseStartTimer();
     clearSessionRolloverTimer();
     if (!preserveIntent || suspendTransport) clearReconnectTimer();
     speechActive = false;
@@ -844,9 +967,12 @@
     assistantSpeaking = false;
     transcriptBatcher.reset({ preserve: preserveWork });
     coordinator.reset({ preserveTurns: preserveWork, preserveResponses: preserveWork });
-    if (!preserveWork && activeWorkflowId) cancelWorkflow(activeWorkflowId).catch(() => {});
-    activeWorkflowId = null;
-    if (!preserveWork) activeWorkflow = null;
+    if (!preserveWork) {
+      clearWorkflowProgressTimer();
+      if (activeWorkflowId) cancelWorkflow(activeWorkflowId).catch(() => {});
+      activeWorkflowId = null;
+      activeWorkflow = null;
+    }
     if (!preserveIntent) wantsActive = false;
     const closingSession = sessionId;
     sessionId = null;
@@ -866,7 +992,9 @@
       keepalive: reason === "pagehide"
     }).catch(() => {});
     if (!preserveIntent && reason !== "pagehide") {
-      window.dispatchEvent(new CustomEvent("godel-voice:cleanup-request"));
+      window.dispatchEvent(new CustomEvent("godel-voice:cleanup-request", {
+        detail: { reason, explicit: reason === "manual_toggle" }
+      }));
     }
     render(nextState, message);
   }

@@ -56,7 +56,9 @@ test("Jarvis replaces safe windows only inside its dedicated Voice screen", () =
   assert.match(content, /await workspaceInternalAction\("nameActiveScreen", \{ name: "Voice" \}\)/);
   assert.match(content, /activeScreenInfo/);
   assert.match(content, /dedicated Voice screen/);
-  assert.match(content, /rememberManagedPanel\(panel\)/);
+  assert.match(content, /const managedWindowReceipts = new Map/);
+  assert.match(content, /if \(createdByWorkflow\) rememberManagedPanel\(panel, \{ requestId, command: step\.command \}\)/);
+  assert.match(content, /managedWindowReceipts\.has\(id\)/);
   assert.match(content, /CHAT\|NOTE\|ACCOUNT\|BROK\|ORDER\|TRADE\|MESSAGE\|ALERT/);
   assert.match(content, /destructive or blocking failure/);
   assert.doesNotMatch(content, /localStorage\.clear|sessionStorage\.clear/);
@@ -69,17 +71,56 @@ test("top-level quote requests also clear stale Jarvis panels", () => {
   assert.match(content, /const opensNewPanels = plan\.steps\.some\(step => step\.kind === "command" && step\.command !== "Q"\)/);
 });
 
-test("manual Jarvis shutdown cleans only its Voice-screen windows and aborts across a new session", () => {
+test("manual Jarvis shutdown cleans only receipted Voice-screen windows and preserves session-start followups", () => {
   const realtime = fs.readFileSync(new URL("../extension/realtime.js", import.meta.url), "utf8");
   assert.match(realtime, /godel-voice:session-started/);
   assert.match(realtime, /!preserveIntent && reason !== "pagehide"/);
   assert.match(realtime, /godel-voice:cleanup-request/);
+  assert.match(realtime, /explicit: reason === "manual_toggle"/);
   assert.match(content, /queueVoiceCleanup\(jarvisSessionEpoch\)/);
+  assert.match(content, /if \(event\.detail\?\.explicit === true\) queueVoiceCleanup\(jarvisSessionEpoch, \{ closeAll: true \}\)/);
+  assert.match(content, /Starting or reconnecting Jarvis must preserve the visible panels/);
   assert.match(content, /requestedEpoch !== jarvisSessionEpoch \|\| running/);
   assert.match(content, /await lifecycleCleanup/);
   assert.match(content, /const payload = await response\.json\(\);[\s\S]{0,320}await lifecycleCleanup;[\s\S]{0,80}running = true/);
   assert.match(content, /for \(let attempt = 0; attempt < 700 && running/);
   assert.match(content, /await closeVoiceScreenPanels\(\)/);
+});
+
+test("manual shutdown keeps exact same-document receipts for layout-store orphan panels", () => {
+  assert.match(content, /const managedDomReceipts = new Map\(\)/);
+  assert.match(content, /const root = nativeRoot \?\? \(titleShells\.length === 1 \? titleShells\[0\] : panel\)/);
+  assert.match(content, /managedDomReceipts\.set\(root, receipt\)/);
+  assert.match(content, /for \(const \[panel, receipt\] of ownedDom\)/);
+  assert.match(content, /panelForDomReceipt\(panel, receipt\)/);
+  assert.match(content, /await closeOwnedDomPanel\(currentPanel, receipt\.command, receipt\.id\)/);
+  assert.match(content, /element\.getAttribute\("data-cy-close-window"\) === "true"/);
+  assert.match(content, /element\.getAttribute\("aria-label"\), element\.title, element\.textContent/);
+  assert.match(content, /element\.querySelectorAll\('\[aria-label\],\[alt\],\[title\],\[data-icon\],\[data-testid\]'\)/);
+  assert.match(content, /descendantLabels\.some/);
+  assert.match(content, /const candidate = buttons\.at\(-1\) \?\? null/);
+  assert.match(content, /buttonRect\.left < titleRect\.right/);
+  assert.match(content, /await waitUntil\(\(\) => !panel\.isConnected \|\| !visible\(panel\)/);
+});
+
+test("an orphan receipt can follow one exact command-and-security React remount", () => {
+  assert.match(content, /function panelForDomReceipt\(original, receipt\)/);
+  assert.match(content, /original instanceof HTMLElement && original\.isConnected/);
+  assert.match(content, /panelMatchesCommand\(original, receipt\.command\)/);
+  assert.match(content, /windowRoots\(\)\.filter\(root => panelMatchesCommand\(root, receipt\.command\)\)/);
+  assert.match(content, /panelTitleNodes\(receipt\.command\)\.map\(rootForTitle\)/);
+  assert.match(content, /panelMatchesReceiptSecurity\(candidate, receipt\.command, receipt\.security\)/);
+  assert.match(content, /return candidates\.length === 1 \? candidates\[0\] : null/);
+  assert.match(content, /managedDomReceipts\.set\(currentPanel, receipt\)/);
+  assert.match(content, /Reconciliation is observation-only for same-document receipts/);
+  assert.doesNotMatch(content, /if \(!activeVoiceScreen \|\| !currentPanel\) \{\s*managedDomReceipts\.delete\(panel\)/);
+});
+
+test("orphan security identity can bridge one tightly aligned sibling React input", () => {
+  assert.match(content, /function panelMatchesReceiptSecurity\(panel, command, security\)/);
+  assert.match(content, /String\(input\.value \?\? ""\)\.trim\(\)\.toUpperCase\(\) !== wanted/);
+  assert.match(content, /horizontalGap <= 520 && verticalGap <= 80/);
+  assert.match(content, /return aligned\.length === 1/);
 });
 
 test("failed workflows roll back only newly opened safe Voice windows", () => {
@@ -88,17 +129,48 @@ test("failed workflows roll back only newly opened safe Voice windows", () => {
   assert.match(content, /transactionWindowIds\.add/);
   assert.match(content, /closeVoiceScreenPanels\(\{ onlyIds: transactionWindowIds \}\)/);
   assert.match(content, /if \(plan\.layout\.preserve_existing === false\) await closeVoiceScreenPanels\(\)/);
-  assert.match(content, /const allowedIds = onlyIds \? new Set/);
+  assert.match(content, /const ownedIds = new Set\(\[\.\.\.requestedIds\]\.filter\(id => managedWindowReceipts\.has\(id\)\)\)/);
 });
 
 test("Voice workspace cleanup atomically prunes stale Jarvis layout records", () => {
   assert.match(bridge, /action === "clearVoiceScreen"/);
+  assert.match(bridge, /Voice cleanup requires explicit Jarvis ownership receipts/);
   assert.match(bridge, /Expected one dedicated Voice screen/);
   assert.match(bridge, /const windows = \{ \.\.\.layout\.windows \}/);
   assert.match(bridge, /delete windows\[id\]/);
   assert.match(bridge, /consequentialWindowType/);
   assert.match(content, /workspaceInternalAction\("clearVoiceScreen"/);
   assert.match(content, /preserve_ids: \[\.\.\.borrowedWindowReceipts\.keys\(\)\]/);
+  assert.match(content, /only_ids: \[\.\.\.ownedIds\]/);
+});
+
+test("successful requests reconcile orphaned receipts and enforce a bounded managed-window cap", () => {
+  assert.match(content, /async function reconcileManagedWindows/);
+  assert.match(content, /maximum = 12/);
+  assert.match(content, /owners\.length === 1 && owners\[0\] === voiceScreenId/);
+  assert.match(content, /managedWindowReceipts\.size - maximum/);
+  assert.match(content, /if \(lastWindowId\) preserved\.add\(String\(lastWindowId\)\)/);
+  assert.match(content, /const currentRequestWindowIds = new Set\(transactionWindowIds\)/);
+  assert.match(content, /currentRequestWindowIds\.add\(String\(item\.workspaceWindowId\)\)/);
+  assert.match(content, /await reconcileManagedWindows\(\{ preserveIds: currentRequestWindowIds \}\)\.catch/);
+  assert.match(content, /!preserved\.has\(receipt\.id\) && !borrowedWindowReceipts\.has\(receipt\.id\)/);
+  assert.match(content, /managedWindowReceipts\.delete\(nativeId\)/);
+});
+
+test("a receipted connected panel survives a missing Godel layout-store id for manual cleanup", () => {
+  assert.match(content, /const renderedOnActiveVoiceScreen = owners\.length === 0/);
+  assert.match(content, /const renderedCommand = contextPanel\(renderedPanel\)\?\.command \?\? null/);
+  assert.match(content, /!receipt\.command \|\| renderedCommand === receipt\.command/);
+  assert.match(content, /if \(renderedOnActiveVoiceScreen && !borrowedWindowReceipts\.has\(id\)\) continue/);
+});
+
+test("managed receipts retain Godel's alphanumeric native ids across a content-script restart", () => {
+  assert.ok(content.includes("receipt && /^[A-Za-z0-9_-]{1,120}$/.test(String(receipt.id"));
+});
+
+test("a title-authenticated native panel can be receipted when Godel omits its command-type attribute", () => {
+  assert.match(content, /root\?\.getAttribute\("data-cy-command-type"\)\s*\n\s*\?\? contextPanel\(root\)\?\.command/);
+  assert.match(content, /if \(!id \|\| !type \|\| \/CHAT\|NOTE\|ACCOUNT\|BROK\|ORDER\|TRADE\|MESSAGE\|ALERT\//);
 });
 
 test("workspace inventory exposes bounded state needed for recovery diagnostics", () => {
@@ -153,6 +225,15 @@ test("compound commands wait for Godel's bounded layout commit before opening an
   assert.match(content, /plan\.steps\[index \+ 1\]\?\.kind === "command"/);
   assert.match(content, /await pause\(250\)/);
   assert.match(content, /did not settle before the next command/);
+});
+
+test("creation ownership uses exact element identity when Godel exposes no layout id", () => {
+  assert.match(content, /beforeRenderedRoots = new Set\(windowRoots\(\)\)/);
+  assert.match(content, /beforeCommandPanels = new Set\(\[/);
+  assert.match(content, /const creationRoot = native \?\? panel/);
+  assert.match(content, /const createdByWorkflow = !borrowed && creationRoot/);
+  assert.match(content, /!beforeCommandPanels\.has\(creationRoot\)/);
+  assert.match(content, /ownershipPhases\.ownership_dom_receipt = managedDomReceipts\.has\(creationRoot\) \? 1 : 0/);
 });
 
 test("Q authenticates the strict quote signature across changing Godel header component boundaries", () => {

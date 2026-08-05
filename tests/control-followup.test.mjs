@@ -71,7 +71,7 @@ test("real conversational compounds preserve every requested operation", () => {
   assert.deepEqual(geometry.steps.map(step => [step.operation, step.value]), [["resize", "smaller"], ["move", "right"]]);
 
   const pair = parseControlFollowup("please open the heatmap and I also want an Amazon stock price chart");
-  assert.deepEqual(pair.steps.map(step => [step.command, step.terminal_command]), [["HMAP", "HMAP"], ["G", "AMZN US EQ G"]]);
+  assert.deepEqual(pair.steps.map(step => [step.command, step.terminal_command]), [["HMAP", "HMAP"], ["G", "AMZN EQ G"]]);
   assert.equal(pair.layout.preset, "market");
   assert.deepEqual(pair.steps.map(step => step.layout?.placement), ["left", "right"]);
 });
@@ -84,7 +84,7 @@ test("Realtime-style spacing keeps screener and heatmap on the zero-model path",
 test("repairs QQQ speech and builds automatically arranged macro desks", () => {
   for (const voice of ["Q Q Q Nasdaq", "Q, Nazak", "How is the Q Q doing the Nasdaq?"]) {
     const plan = parseControlFollowup(voice);
-    assert.equal(plan.steps[0].terminal_command, "QQQ US EQ G", voice);
+    assert.equal(plan.steps[0].terminal_command, "QQQ EQ G", voice);
   }
   for (const voice of [
     "open a macro monitor",
@@ -117,10 +117,10 @@ test("natural stock price questions use a grounded chart surface", () => {
   for (const voice of ["what is Meta's stock price", "tell me Amazon's share price", "how is Microsoft doing"]) {
     const plan = parseControlFollowup(voice);
     assert.equal(plan.steps[0].command, "G", voice);
-    assert.match(plan.steps[0].terminal_command, /^(META|AMZN|MSFT) US EQ G$/, voice);
+    assert.match(plan.steps[0].terminal_command, /^(META|AMZN|MSFT) EQ G$/, voice);
   }
   const followup = parseControlFollowup("what about Meta", { focused_panel: { command: "G", security: "QQQ", connected: true } });
-  assert.equal(followup.steps[0].terminal_command, "META US EQ G");
+  assert.equal(followup.steps[0].terminal_command, "META EQ G");
 });
 
 test("after-hours and premarket questions use Godel's grounded Q header", () => {
@@ -131,7 +131,7 @@ test("after-hours and premarket questions use Godel's grounded Q header", () => 
   ]) {
     const step = parseControlFollowup(voice).steps[0];
     assert.equal(step.command, "Q", voice);
-    assert.match(step.terminal_command, /^(AMZN|META|MSFT) US EQ Q$/, voice);
+    assert.match(step.terminal_command, /^(AMZN|META|MSFT) EQ Q$/, voice);
   }
 });
 
@@ -143,14 +143,14 @@ test("VoiceInk forward-P/E variants route to the grounded earnings matrix", () =
   ]) {
     const step = parseControlFollowup(voice).steps[0];
     assert.equal(step.command, "EM", voice);
-    assert.match(step.terminal_command, /^(?:META|AMZN) US EQ EM$/, voice);
+    assert.match(step.terminal_command, /^(?:META|AMZN) EQ EM$/, voice);
   }
 });
 
 test("plain high-frequency opens compile locally without an LLM", () => {
   const em = parseControlFollowup("Open Amazon's earnings matrix").steps[0];
   assert.equal(em.command, "EM");
-  assert.equal(em.terminal_command, "AMZN US EQ EM");
+  assert.equal(em.terminal_command, "AMZN EQ EM");
 
   const heatmap = parseControlFollowup("please pull up the market heatmap").steps[0];
   assert.equal(heatmap.command, "HMAP");
@@ -164,17 +164,17 @@ test("plain high-frequency opens compile locally without an LLM", () => {
   assert.deepEqual(halts.actions, [{ feature: "tab", operation: "select", value: "Active" }]);
 
   const profile = parseControlFollowup("bring up Google's company profile").steps[0];
-  assert.equal(profile.terminal_command, "GOOG US EQ DES");
+  assert.equal(profile.terminal_command, "GOOG EQ DES");
 
   const estimates = parseControlFollowup("open Palantir analyst estimates").steps[0];
-  assert.equal(estimates.terminal_command, "PLTR US EQ ERN");
+  assert.equal(estimates.terminal_command, "PLTR EQ ERN");
 
   const pair = parseControlFollowup("open the market heatmap and Amazon's earnings matrix");
-  assert.deepEqual(pair.steps.map(step => step.terminal_command), ["HMAP", "AMZN US EQ EM"]);
+  assert.deepEqual(pair.steps.map(step => step.terminal_command), ["HMAP", "AMZN EQ EM"]);
   assert.equal(pair.layout.preset, "grid");
 
   const ratingsDesk = parseControlFollowup("open the heatmap and Amazon analyst ratings");
-  assert.deepEqual(ratingsDesk.steps.map(step => step.terminal_command), ["HMAP", "AMZN US EQ ANR"]);
+  assert.deepEqual(ratingsDesk.steps.map(step => step.terminal_command), ["HMAP", "AMZN EQ ANR"]);
   assert.equal(ratingsDesk.layout.preset, "grid");
 
   assert.equal(parseControlFollowup("open the heatmap and compare Amazon with Meta"), null);
@@ -182,11 +182,11 @@ test("plain high-frequency opens compile locally without an LLM", () => {
 
 test("ordinary finance surfaces and noisy speech stay on the zero-model route", () => {
   const cases = [
-    ["show me the three statements for micro soft", "MSFT US EQ FA"],
-    ["open n vidia earnings matt tricks", "NVDA US EQ EM"],
-    ["pull reddit short interest and days to cover", "RDDT US EQ SI"],
-    ["open oracle historical prices", "ORCL US EQ HP"],
-    ["latest news for eli lilly", "LLY US EQ N"],
+    ["show me the three statements for micro soft", "MSFT EQ FA"],
+    ["open n vidia earnings matt tricks", "NVDA EQ EM"],
+    ["pull reddit short interest and days to cover", "RDDT EQ SI"],
+    ["open oracle historical prices", "ORCL EQ HP"],
+    ["latest news for eli lilly", "LLY EQ N"],
     ["show me world stock indexes live", "WEI"],
     ["open global commodities", "GLCO"],
     ["bring up forex cross rates", "FX"],
@@ -209,7 +209,7 @@ test("opens one exact five-year operating-margin graph without the model", () =>
   ]) {
     const plan = parseControlFollowup(voice);
     assert.equal(plan.steps.length, 1, voice);
-    assert.equal(plan.steps[0].terminal_command, "AMZN US EQ GF", voice);
+    assert.equal(plan.steps[0].terminal_command, "AMZN EQ GF", voice);
     assert.deepEqual(plan.steps[0].actions, [
       { feature: "range", operation: "select", value: "5Y" },
       { feature: "margin metric", operation: "add", value: "Operating Margin" }
@@ -308,7 +308,7 @@ test("switches an existing holders panel among its exact native views", () => {
   assert.equal(opener.command, "HDS");
   assert.deepEqual(opener.actions, [{ feature: "view", operation: "select", value: "Bubble" }]);
   const noisy = parseControlFollowup("uh show me micro soft institushunal holders in the bub bull view").steps[0];
-  assert.equal(noisy.terminal_command, "MSFT US EQ HDS");
+  assert.equal(noisy.terminal_command, "MSFT EQ HDS");
   assert.deepEqual(noisy.actions, [{ feature: "view", operation: "select", value: "Bubble" }]);
 });
 
@@ -397,7 +397,7 @@ test("fast-paths verified GF period, layout, and currency controls", () => {
 
 test("opens an explicit multi-company GF comparison instead of treating it as a focused followup", () => {
   const plan = parseControlFollowup("open a fundamentals graph comparing Meta and Microsoft revenue");
-  assert.equal(plan.steps[0].terminal_command, "META US EQ GF");
+  assert.equal(plan.steps[0].terminal_command, "META EQ GF");
   assert.deepEqual(plan.steps[0].actions, [
     { feature: "add company", operation: "add", value: "MSFT" },
     { feature: "add metric", operation: "add", value: "Revenue" }
@@ -417,7 +417,7 @@ test("opens an explicit Dow index map as a table without the LLM", () => {
 test("compiles multi-quarter transcript research and contextual followups locally", () => {
   const plan = parseControlFollowup("Search Amazon's last four earnings calls for AWS revenue and tell me whether management mentioned margin pressure");
   assert.equal(plan.steps[0].command, "TRAN");
-  assert.equal(plan.steps[0].terminal_command, "AMZN US EQ TRAN");
+  assert.equal(plan.steps[0].terminal_command, "AMZN EQ TRAN");
   assert.deepEqual(plan.steps[0].actions[0].value.topics, ["aws revenue", "margin pressure"]);
   assert.equal(plan.steps[0].actions[0].value.periods, 4);
 
@@ -441,7 +441,7 @@ test("read-only account-adjacent opens are deterministic but mutations remain ga
   for (const [voice, command, security] of cases) {
     const step = parseControlFollowup(voice).steps[0];
     assert.equal(step.command, command);
-    assert.equal(step.terminal_command, security ? `${security} US EQ ${command}` : command);
+    assert.equal(step.terminal_command, security ? `${security} EQ ${command}` : command);
   }
   assert.equal(parseControlFollowup("connect my brokerage account"), null);
   assert.equal(parseControlFollowup("post in the tesla ticker chat"), null);
@@ -451,7 +451,7 @@ test("read-only account-adjacent opens are deterministic but mutations remain ga
 test("noisy quick quote uses the authenticated chart surface", () => {
   const step = parseControlFollowup("quick quote for orr a cul uh oracle please").steps[0];
   assert.equal(step.command, "G");
-  assert.equal(step.terminal_command, "ORCL US EQ G");
+  assert.equal(step.terminal_command, "ORCL EQ G");
 });
 
 test("bulk cleanup preserves an and-connected open and its trailing maximize", () => {
@@ -461,7 +461,7 @@ test("bulk cleanup preserves an and-connected open and its trailing maximize", (
   ] };
   const opened = parseControlFollowup("close all windows and open Meta earnings matrix", context);
   assert.deepEqual(opened.steps.map(step => step.kind), ["control", "control", "command"]);
-  assert.equal(opened.steps.at(-1).terminal_command, "META US EQ EM");
+  assert.equal(opened.steps.at(-1).terminal_command, "META EQ EM");
 
   const maximized = parseControlFollowup(
     "close everything then open Meta earnings matrix and maximize it",

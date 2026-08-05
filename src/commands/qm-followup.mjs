@@ -1,4 +1,4 @@
-import { commonSecurities } from "../security-resolver.mjs";
+import { resolveTranscriptSecurities } from "../security-resolver.mjs";
 import { normalizeQMAction } from "./qm-actions.mjs";
 
 function clean(value) {
@@ -17,26 +17,10 @@ function title(value) {
   }).join(" ");
 }
 function confirmed(text) { return /\b(?:confirm(?:ed)?|yes do it|yes proceed|i confirm|approved?)\b/.test(text); }
-function securityShape(item, spokenName = null) {
-  return { spoken_name: spokenName ?? item.aliases[0], ticker: item.ticker, venue: item.venue, asset_class: item.asset_class, needs_resolution: false };
-}
 function securitiesFrom(segment) {
-  const text = ` ${clean(segment).replace(/\b(?:ticker|tickers|symbol|symbols)\b/g, " ").replace(/\s+/g, " ")} `;
-  const found = [];
-  for (const item of commonSecurities) {
-    const candidates = [...item.aliases, item.ticker.toLowerCase()];
-    const hit = candidates.map(alias => ({ alias, index: text.indexOf(` ${clean(alias)} `) }))
-      .filter(match => match.index >= 0).sort((left, right) => left.index - right.index || right.alias.length - left.alias.length)[0];
-    if (hit) found.push({ index: hit.index, item, alias: hit.alias });
-  }
-  found.sort((left, right) => left.index - right.index);
-  const deduped = [];
-  const seen = new Set();
-  for (const match of found) {
-    const key = `${match.item.ticker}|${match.item.venue}|${match.item.asset_class}`;
-    if (!seen.has(key)) { seen.add(key); deduped.push(securityShape(match.item, match.alias)); }
-  }
-  if (deduped.length) return deduped;
+  const text = clean(segment).replace(/\b(?:ticker|tickers|symbol|symbols)\b/g, " ").replace(/\s+/g, " ");
+  const resolved = resolveTranscriptSecurities(`stock ${text}`);
+  if (resolved.length) return resolved.map(item => ({ ...item, needs_resolution: false }));
   const unknown = clean(segment).replace(/\b(?:and|plus|also|ticker|tickers|symbol|symbols)\b/g, " ").replace(/\s+/g, " ").trim();
   return unknown ? [{ spoken_name: unknown, ticker: null, venue: null, asset_class: null, needs_resolution: true }] : [];
 }

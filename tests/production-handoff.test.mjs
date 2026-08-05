@@ -32,11 +32,32 @@ test("executor queue polling is low-latency, overlap-safe, and still leases only
 
 test("command and nested-action execution use rendered postconditions instead of fixed settling sleeps", () => {
   const content = read("extension/content.js");
+  assert.match(content, /const observer = new MutationObserver\(check\)/);
+  assert.match(content, /elapsed < 250 \? 16 : elapsed < 1000 \? 32 : 75/);
+  assert.match(content, /async function waitUntilAsync/);
   assert.match(content, /Godel command bar value \$\{terminalCommand\}/);
   assert.match(content, /String\(currentInput\.value \?\? ""\)\.trim\(\) === terminalCommand/);
   assert.doesNotMatch(content, /pause\((?:120|180|220)\)/);
   assert.match(content, /new \$\{plan\.command\} panel`, 9000/);
+  assert.match(content, /async function committedPanelIdentity\(panel, command\)/);
+  assert.match(content, /owners\.length !== 1/);
+  assert.match(content, /waitUntilAsync\(\(\) => committedPanelIdentity\(panel, plan\.command\)/);
+  assert.match(content, /markPhase\("panel_commit_ms"/);
+  assert.match(content, /this is observation-only and never retries Enter after mutation/);
   assert.match(content, /panelInternalAction\(panel, "GF", "addCompany"/);
+});
+
+test("opening a fresh command palette never emits Godel's double-Escape close gesture", () => {
+  const content = read("extension/content.js");
+  assert.match(content, /let closedMountedPalette = false/);
+  assert.match(content, /if \(!closedMountedPalette\) await press\("Escape"\)/);
+});
+
+test("an exact rendered panel survives a missing private workspace receipt", () => {
+  const content = read("extension/content.js");
+  assert.match(content, /const exactRenderedPanel = panel\?\.isConnected/);
+  assert.match(content, /workspace_commit_pending = 1/);
+  assert.match(content, /godelVoiceWorkspaceCommitted !== "false"/);
 });
 
 test("panel identity uses exact native types or exact rendered titles", () => {

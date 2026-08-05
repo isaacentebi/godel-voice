@@ -9,6 +9,7 @@ import { compileHMSFollowup } from "./commands/q-hldr-hms-followup.mjs";
 import { compileEMFollowup } from "./commands/em-followup.mjs";
 import { parseTRANResearchAction, parseTRANResearchContinuation } from "./commands/tran-help-change-followup.mjs";
 import { compileDeterministicDesk } from "./deterministic-desks.mjs";
+import { resolveTranscriptSecurities } from "./security-resolver.mjs";
 
 const targetCommands = [
   ["earnings matrix", "EM"], ["market heatmap", "HMAP"], ["heatmap", "HMAP"],
@@ -71,15 +72,10 @@ function clean(value) {
     .replace(/\s+/g, " ").trim();
 }
 
-const commonSecurities = [
-  ["amazon", "AMZN"], ["meta", "META"], ["facebook", "META"], ["microsoft", "MSFT"],
-  ["apple", "AAPL"], ["nvidia", "NVDA"], ["tesla", "TSLA"], ["oracle", "ORCL"],
-  ["alphabet", "GOOG"], ["google", "GOOG"], ["reddit", "RDDT"], ["netflix", "NFLX"],
-  ["service now", "NOW"], ["servicenow", "NOW"], ["palantir", "PLTR"], ["novo nordisk", "NVO"],
-  ["eli lilly", "LLY"], ["lilly", "LLY"], ["chipotle", "CMG"], ["unity", "U"],
-  ["corsair", "CRSR"], ["sandisk", "SNDK"], ["coca cola", "KO"],
-  ["berkshire hathaway", "BRK.B"], ["berkshire", "BRK.B"], ["block", "XYZ"], ["square", "XYZ"]
-];
+function resolvedEquities(value) {
+  return resolveTranscriptSecurities(value).filter(item => item.asset_class === "EQ");
+}
+
 const directSecurityOpen = new Set([
   "EM", "G", "Q", "DES", "ANR", "ERN", "HDS", "HLDR", "OMON", "GF", "FA", "TRAN", "CF",
   "SI", "DVD", "TAS", "HCP", "N", "RES", "HP", "PAT", "PRT", "CHAT", "NOTE"
@@ -92,7 +88,7 @@ const directGlobalOpen = new Set([
 const directOpenModifier = /\b(?:with|as|set|change|switch|compare|versus|vs|download|export|close|move|put|place|bigger|smaller|table|bubbles?|treemap|active|resumed|all|metric|multiple|revenue|ebit|ebitda|margin|growth|minutes?|hourly|candles?|ten k|ten q|eight k|forms?)\b/;
 
 function targetFor(text) {
-  const security = commonSecurities.find(([name]) => new RegExp(`\\b${name}\\b`).test(text))?.[1] ?? null;
+  const security = resolvedEquities(text)[0]?.ticker ?? null;
   if (security
       && /\b(?:after[ -]?hours?|pre[ -]?market|before the open)\b/.test(text)
       && /\b(?:how|doing|trading|price|quote|check|show|tell)\b/.test(text)) {
@@ -122,7 +118,7 @@ function targetFor(text) {
 function commandStep(command, security = null, id = "command-1") {
   return {
     id, kind: "command", command,
-    terminal_command: security ? `${security} US EQ ${command}` : command,
+    terminal_command: security ? `${security} EQ ${command}` : command,
     security_query: null, arguments: [], actions: [], required: true, layout: null
   };
 }
@@ -261,7 +257,7 @@ export function parseControlFollowup(transcript, context = null) {
     });
   }
 
-  const security = commonSecurities.find(([name]) => new RegExp(`\\b${name}\\b`).test(text))?.[1] ?? null;
+  const security = resolvedEquities(text)[0]?.ticker ?? null;
 
   // Several account-adjacent surfaces are safe to open but contain buttons
   // that could mutate external state. Their zero-model lane is therefore
@@ -289,7 +285,7 @@ export function parseControlFollowup(transcript, context = null) {
   if (/\bquick quote\b/.test(text) && security) {
     return validateWorkflowPlan({
       version: 2, failure_policy: "stop_on_any", layout: workflowLayout("focus"),
-      steps: [exactTerminalStep("G", `${security} US EQ G`, "command-1", "full")]
+      steps: [exactTerminalStep("G", `${security} EQ G`, "command-1", "full")]
     });
   }
   if (target.command === "TREND" && /\b(?:what|which)\b.*\btrending\b/.test(text)) {
@@ -340,7 +336,7 @@ export function parseControlFollowup(transcript, context = null) {
   if (spokenQQQ) {
     return validateWorkflowPlan({
       version: 2, failure_policy: "stop_on_any", layout: workflowLayout("focus"),
-      steps: [exactTerminalStep("G", "QQQ US EQ G", "command-1", "full")]
+      steps: [exactTerminalStep("G", "QQQ EQ G", "command-1", "full")]
     });
   }
 
@@ -394,14 +390,14 @@ export function parseControlFollowup(transcript, context = null) {
   if (security && asksPrice && !/\b(?:forward|target|fair)\b/.test(text) && !/\b(?:market\s+)?heat\s*map\b/.test(text)) {
     return validateWorkflowPlan({
       version: 2, failure_policy: "stop_on_any", layout: workflowLayout("focus"),
-      steps: [exactTerminalStep("G", `${security} US EQ G`, "command-1", "full")]
+      steps: [exactTerminalStep("G", `${security} EQ G`, "command-1", "full")]
     });
   }
   const terseSecurityFollowup = security && /^(?:and\s+)?(?:(?:what|how)\s+about\s+)?(?:amazon|meta|facebook|microsoft|apple|nvidia|tesla|oracle)\s*$/.test(text);
   if (terseSecurityFollowup && ["G", "Q", "FOCUS", "QM"].includes(String(focusedPanel?.command ?? context?.last_panel?.command ?? "").toUpperCase())) {
     return validateWorkflowPlan({
       version: 2, failure_policy: "stop_on_any", layout: workflowLayout("focus"),
-      steps: [exactTerminalStep("G", `${security} US EQ G`, "command-1", "full")]
+      steps: [exactTerminalStep("G", `${security} EQ G`, "command-1", "full")]
     });
   }
   const forwardPE = /\bforward\s+(?:p\s*\/?\s*e|p e|pe|pee|piece|p)(?:\s+(?:multiple|valuation|chart))?\b/.test(text);
@@ -534,9 +530,7 @@ export function parseControlFollowup(transcript, context = null) {
     }
   }
   if (explicitlyOpening && target.command === "GF" && security) {
-    const mentionedSecurities = commonSecurities
-      .filter(([name]) => new RegExp(`\\b${name}\\b`).test(text))
-      .map(([, ticker]) => ticker);
+    const mentionedSecurities = resolvedEquities(text).map(item => item.ticker);
     if (/\b(?:compare|comparing|versus|vs)\b/.test(text) && new Set(mentionedSecurities).size > 1) return null;
     const gfOpen = compileChartOptionsFollowup({ command: "GF", target }, transcript);
     if (gfOpen?.ready_for_live_executor && gfOpen.executable_actions.length) {
@@ -779,7 +773,7 @@ export function parseControlFollowup(transcript, context = null) {
       version: 2, failure_policy: "stop_on_any", layout: null,
       steps: [{
         id: "command-1", kind: "command", command: "HDS",
-        terminal_command: `${target.security} US EQ HDS`, security_query: null,
+        terminal_command: `${target.security} EQ HDS`, security_query: null,
         arguments: [], actions: [{ feature: "view", operation: "select", value }], required: true, layout: null
       }]
     });

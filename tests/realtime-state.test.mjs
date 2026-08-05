@@ -78,6 +78,104 @@ test("Realtime event trace permits only one response.create lifecycle at a time"
   assert.equal(coordinator.snapshot().activeResponse, false);
 });
 
+test("Realtime never retries a response after any audio became audible", () => {
+  const state = loadState();
+  const sent = [];
+  const failures = [];
+  const coordinator = state.createCoordinator({
+    runTurn: async () => {},
+    sendResponse: response => sent.push(response.event.id),
+    onError: error => failures.push(error.message)
+  });
+
+  coordinator.enqueueResponse({ kind: "grounded", event: { id: "only-once", event_id: "request-once" } });
+  coordinator.responseCreated("provider-once");
+  assert.equal(coordinator.responseStarted("provider-once"), true);
+  assert.equal(coordinator.responseFailed(new Error("late provider failure"), "provider-once"), true);
+  assert.deepEqual(sent, ["only-once"]);
+  assert.deepEqual(failures, ["late provider failure"]);
+  assert.equal(coordinator.snapshot().activeResponse, false);
+});
+
+test("Realtime still retries once when a response fails before first audio", () => {
+  const state = loadState();
+  const sent = [];
+  const coordinator = state.createCoordinator({
+    runTurn: async () => {},
+    sendResponse: response => sent.push(response.event.id)
+  });
+
+  coordinator.enqueueResponse({ kind: "grounded", event: { id: "retryable", event_id: "request-retry" } });
+  coordinator.responseCreated("provider-retry");
+  assert.equal(coordinator.responseFailed(new Error("no audio"), "provider-retry"), true);
+  assert.deepEqual(sent, ["retryable", "retryable"]);
+  assert.equal(coordinator.responseStarted("provider-retry"), false, "late audio from the cancelled attempt stays unauthorized");
+});
+
+test("Realtime does not start the next response until the prior audio buffer drains", () => {
+  const state = loadState();
+  const sent = [];
+  let audioPlaying = false;
+  const coordinator = state.createCoordinator({
+    runTurn: async () => {},
+    sendResponse: response => sent.push(response.event.id),
+    canSendResponse: () => !audioPlaying
+  });
+
+  coordinator.enqueueResponse({ kind: "first", event: { id: "first", event_id: "request-first" } });
+  coordinator.responseCreated("provider-first");
+  coordinator.responseStarted("provider-first");
+  audioPlaying = true;
+  coordinator.enqueueResponse({ kind: "second", event: { id: "second", event_id: "request-second" } });
+  coordinator.responseDone("provider-first");
+  assert.deepEqual(sent, ["first"], "response.done may precede audio-buffer stopped");
+
+  audioPlaying = false;
+  coordinator.kickResponses();
+  assert.deepEqual(sent, ["first", "second"]);
+});
+
+test("Realtime reconnect preserves only responses that never became audible", () => {
+  const state = loadState();
+  const sent = [];
+  const coordinator = state.createCoordinator({
+    runTurn: async () => {},
+    sendResponse: response => sent.push(response.event.id)
+  });
+
+  coordinator.enqueueResponse({ kind: "pending", event: { id: "pending", event_id: "request-pending" } });
+  coordinator.responseCreated("provider-pending");
+  coordinator.reset({ preserveResponses: true });
+  assert.equal(coordinator.snapshot().queuedResponses, 1);
+  coordinator.kickResponses();
+  assert.deepEqual(sent, ["pending", "pending"]);
+
+  coordinator.responseCreated("provider-audible");
+  coordinator.responseStarted("provider-audible");
+  coordinator.reset({ preserveResponses: true });
+  assert.equal(coordinator.snapshot().queuedResponses, 0);
+  coordinator.kickResponses();
+  assert.deepEqual(sent, ["pending", "pending"], "audible speech is never replayed after reconnect");
+});
+
+test("Realtime can remove a stale queued progress acknowledgement before completion", () => {
+  const state = loadState();
+  const sent = [];
+  let allowResponses = false;
+  const coordinator = state.createCoordinator({
+    runTurn: async () => {},
+    sendResponse: response => sent.push(response.event.id),
+    canSendResponse: () => allowResponses
+  });
+
+  coordinator.enqueueResponse({ kind: "progress", workflowProgressId: "workflow-1", event: { id: "stale-progress" } });
+  coordinator.deferResponse({ kind: "progress", workflowProgressId: "workflow-1", event: { id: "stale-deferred" } });
+  assert.equal(coordinator.dropResponses(response => response.workflowProgressId === "workflow-1"), 2);
+  allowResponses = true;
+  coordinator.kickResponses();
+  assert.deepEqual(sent, []);
+});
+
 test("Realtime event trace rearms batching during speech and drops only the failed segment", () => {
   const state = loadState();
   const timers = new Map();

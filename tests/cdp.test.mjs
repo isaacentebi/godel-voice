@@ -14,9 +14,9 @@ test("CDP clicks the center of a Godel control", () => {
 });
 
 test("CDP text replacement selects, clears and inserts without OS keystrokes", () => {
-  const commands = cdp.replaceTextCommands({ x: 0, y: 0, width: 20, height: 20 }, "AAPL US EQ GF");
+  const commands = cdp.replaceTextCommands({ x: 0, y: 0, width: 20, height: 20 }, "AAPL EQ GF");
   assert(commands.some(([method, params]) => method === "Input.dispatchKeyEvent" && params.commands?.includes("selectAll")));
-  assert(commands.some(([method, params]) => method === "Input.insertText" && params.text === "AAPL US EQ GF"));
+  assert(commands.some(([method, params]) => method === "Input.insertText" && params.text === "AAPL EQ GF"));
 });
 
 test("CDP inserts into an empty nested Godel input without select-all", () => {
@@ -37,6 +37,13 @@ test("CDP trusted typing emits physical key, character and key-up events for eve
   assert.equal(commands.at(-2)[1].type, "keyDown");
   assert.equal(commands.at(-1)[1].type, "keyUp");
   assert.equal(commands.some(([method]) => method === "Input.insertText"), false);
+});
+
+test("top-level Godel commands use trusted replacement instead of synthetic insertText", () => {
+  const content = fs.readFileSync(new URL("../extension/content.js", import.meta.url), "utf8");
+  assert.match(content, /cdp\("trustedReplaceAndSubmit"/);
+  assert.match(content, /await trustedReplace\(currentInput, terminalCommand\)/);
+  assert.doesNotMatch(content, /await replaceText\(currentInput, terminalCommand\)/);
 });
 
 test("CDP chart interval typing emits only trusted digit events", () => {

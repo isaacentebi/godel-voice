@@ -22,7 +22,7 @@ function intent(ticker, command, actions = []) {
 test("preserves the existing GV1 plan and marker contract", () => {
   const source = intent("AAPL", "DES");
   assert.deepEqual(buildAutomationPlan(source), {
-    version: 1, command: "DES", terminal_command: "AAPL US EQ DES",
+    version: 1, command: "DES", terminal_command: "AAPL EQ DES",
     security_query: null, arguments: [], actions: []
   });
   assert.match(encodeAutomationMarker(source), /^GV1:/);
@@ -60,7 +60,7 @@ test("carries unresolved security queries and command arguments into a step", ()
   const chart = intent("AAPL", "G");
   chart.arguments = ["1h"];
   const chartPlan = buildWorkflowPlan(chart);
-  assert.equal(chartPlan.steps[0].terminal_command, "AAPL US EQ G 1h");
+  assert.equal(chartPlan.steps[0].terminal_command, "AAPL EQ G 1h");
   assert.deepEqual(chartPlan.steps[0].arguments, ["1h"]);
 });
 
@@ -88,7 +88,7 @@ test("compiles ordered close-and-replace workflows with security targeting", () 
   ], { layout: { preset: "options", preserve_existing: true, new_screen: false } });
   assert.deepEqual(plan.steps[0].target, { mode: "command", command: "EM", security: "META" });
   assert.equal(plan.steps[0].operation, "close");
-  assert.equal(plan.steps[1].terminal_command, "META US EQ OMON");
+  assert.equal(plan.steps[1].terminal_command, "META EQ OMON");
 });
 
 test("compiles existing-panel configuration without reopening the command", () => {

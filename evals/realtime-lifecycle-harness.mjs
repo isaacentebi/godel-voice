@@ -104,6 +104,10 @@ class HarnessChannel extends EventTarget {
     this.readyState = "open";
     this.dispatchEvent(new Event("open"));
   }
+  disconnect() {
+    this.readyState = "closed";
+    this.dispatchEvent(new Event("close"));
+  }
   close() { this.readyState = "closed"; }
 }
 
@@ -125,6 +129,9 @@ export async function runRealtimeLifecycleHarness({
   executionMs = 35,
   transcriptionMs = 65,
   synthesisMs = 28,
+  disconnectAfterLease = false,
+  disconnectDuringPreflight = false,
+  workflowProgressDelayMs = null,
   outputPath = null
 } = {}) {
   const secret = "realtime-harness-secret";
@@ -155,8 +162,12 @@ export async function runRealtimeLifecycleHarness({
   let lease;
   let host;
   let stopped = false;
+  let disconnectedOnce = false;
+  let observer = null;
   let acknowledgedMessage = "";
   let spokenTranscript = "";
+  let providerResponseCounter = 0;
+  const providerTasks = new Set();
 
   function emitProvider(value) {
     providerEvents.push({ at: Date.now(), type: value.type });
@@ -170,7 +181,7 @@ export async function runRealtimeLifecycleHarness({
     const instructions = String(event.response?.instructions ?? "");
     const exactMatch = instructions.match(/Say exactly this sentence and nothing else:\s*("(?:[^"\\]|\\.)*")\s*$/s);
     spokenTranscript = exactMatch ? JSON.parse(exactMatch[1]) : "Godel request completed.";
-    const responseId = "response-harness-1";
+    const responseId = `response-harness-${++providerResponseCounter}`;
     emitProvider({ type: "response.created", response: { id: responseId } });
     await sleep(synthesisMs);
     stamps.firstAudio = Date.now();
@@ -181,9 +192,9 @@ export async function runRealtimeLifecycleHarness({
       response_id: responseId,
       transcript: spokenTranscript
     });
-    await sleep(12);
-    stamps.audioDone = Date.now();
-    emitProvider({ type: "output_audio_buffer.stopped", event_id: "audio-stop-1" });
+    // Providers may declare the response complete before the browser audio
+    // buffer drains. The client must not start another response during this
+    // interval.
     emitProvider({
       type: "response.done",
       response: {
@@ -196,6 +207,9 @@ export async function runRealtimeLifecycleHarness({
         output: [{ id: "assistant-item-1", content: [{ transcript: spokenTranscript }] }]
       }
     });
+    await sleep(12);
+    stamps.audioDone = Date.now();
+    emitProvider({ type: "output_audio_buffer.stopped", event_id: "audio-stop-1" });
   }
 
   const document = new HarnessDocument();
@@ -210,7 +224,11 @@ export async function runRealtimeLifecycleHarness({
   class HarnessPeer {
     addTrack() {}
     createDataChannel() {
-      channel = new HarnessChannel(event => { void respondToClientEvent(event); });
+      channel = new HarnessChannel(event => {
+        const task = respondToClientEvent(event);
+        providerTasks.add(task);
+        task.finally(() => providerTasks.delete(task));
+      });
       return channel;
     }
     async createOffer() { return { type: "offer", sdp: offer }; }
@@ -228,7 +246,14 @@ export async function runRealtimeLifecycleHarness({
     if (url.startsWith(base)) headers.set("Origin", "https://app.godelterminal.com");
     if (url.endsWith("/realtime/preflight")) stamps.preflightStart ??= Date.now();
     const response = await nativeFetch(input, { ...options, headers });
-    if (url.endsWith("/realtime/preflight")) stamps.preflightDone = Date.now();
+    if (url.endsWith("/realtime/preflight")) {
+      stamps.preflightDone = Date.now();
+      if (disconnectDuringPreflight && !disconnectedOnce) {
+        disconnectedOnce = true;
+        stamps.transportInterrupted = Date.now();
+        channel.disconnect();
+      }
+    }
     return response;
   }
 
@@ -268,14 +293,23 @@ export async function runRealtimeLifecycleHarness({
   };
   context.globalThis = context;
 
+  const executorAbort = new AbortController();
   const executor = (async () => {
     while (!stopped) {
-      const response = await nativeFetch(`${base}/next?client=${executorId}&executor=${executorId}&generation=${documentGeneration}`, { headers: auth });
+      const response = await nativeFetch(`${base}/next?client=${executorId}&executor=${executorId}&generation=${documentGeneration}`, {
+        headers: auth,
+        signal: executorAbort.signal
+      });
       if (response.status === 204) { await sleep(5); continue; }
       lease = await response.json();
       stamps.workflowLease = Date.now();
       const commands = parseWorkflowMarker(lease.marker).steps.map(step => step.command).filter(Boolean);
       acknowledgedMessage = commands.length === 1 ? `${commands[0]} completed.` : `${commands.join(", ")} completed.`;
+      if (disconnectAfterLease && !disconnectedOnce) {
+        disconnectedOnce = true;
+        stamps.transportInterrupted = Date.now();
+        channel.disconnect();
+      }
       await sleep(executionMs);
       stamps.workflowAck = Date.now();
       await nativeFetch(`${base}/ack`, {
@@ -293,16 +327,21 @@ export async function runRealtimeLifecycleHarness({
       });
       return;
     }
-  })();
+  })().catch(error => {
+    if (!stopped && error?.name !== "AbortError") throw error;
+  });
 
   try {
     stamps.harnessStart = Date.now();
-    vm.runInNewContext(realtimeSource, context, { filename: "extension/realtime.js" });
+    const sourceForHarness = Number.isFinite(workflowProgressDelayMs)
+      ? realtimeSource.replace("WORKFLOW_PROGRESS_DELAY_MS = 3_000", `WORKFLOW_PROGRESS_DELAY_MS = ${Math.max(1, Math.round(workflowProgressDelayMs))}`)
+      : realtimeSource;
+    vm.runInNewContext(sourceForHarness, context, { filename: "extension/realtime.js" });
     host = await waitFor(() => document.mountedElements.find(candidate => candidate.id === "godel-jarvis-control"), {
       message: "Jarvis control mount"
     });
     const shadow = host.shadowRootForHarness;
-    const observer = setInterval(() => {
+    observer = setInterval(() => {
       const latest = { at: Date.now(), state: shadow.shell.dataset.state, label: shadow.label.textContent, detail: shadow.detail.textContent };
       const previous = renderTrace.at(-1);
       if (!previous || previous.state !== latest.state || previous.detail !== latest.detail) renderTrace.push(latest);
@@ -327,13 +366,21 @@ export async function runRealtimeLifecycleHarness({
       logprobs: [{ logprob: -0.04 }, { logprob: -0.08 }]
     });
 
-    await waitFor(() => stamps.audioDone, { timeoutMs: 5_000, message: "grounded spoken completion" });
     await executor;
+    await waitFor(() => stamps.audioDone && spokenTranscript === acknowledgedMessage, {
+      timeoutMs: 5_000,
+      message: "grounded spoken completion"
+    });
     await sleep(30);
     clearInterval(observer);
 
     assert.equal(lease?.marker?.startsWith("GV"), true, "transcript must compile into a validated workflow marker");
-    assert.equal(clientEvents.filter(item => item.type === "response.create").length, 1, "exactly one spoken completion should be requested");
+    const expectedSpokenResponses = Number.isFinite(workflowProgressDelayMs) && executionMs > workflowProgressDelayMs ? 2 : 1;
+    assert.equal(
+      clientEvents.filter(item => item.type === "response.create").length,
+      expectedSpokenResponses,
+      "the lifecycle should request only its bounded progress acknowledgement and grounded completion"
+    );
     assert.equal(spokenTranscript, acknowledgedMessage, "spoken completion must exactly match the executor acknowledgement");
     assert.equal(providerEvents.some(item => item.type === "output_audio_buffer.started"), true);
     assert.equal(renderTrace.some(item => item.state === "working"), true);
@@ -378,6 +425,7 @@ export async function runRealtimeLifecycleHarness({
         workflow_lease_and_ack: true,
         grounded_response_request: true,
         provider_event_ordering: true,
+        transport_recovery_during_workflow: disconnectAfterLease || disconnectDuringPreflight,
         physical_microphone_capture: false,
         provider_speech_recognition: false,
         provider_audio_synthesis: false,
@@ -396,9 +444,13 @@ export async function runRealtimeLifecycleHarness({
     }
     shadow.button.dispatchEvent(new Event("click"));
     await sleep(10);
+    await Promise.allSettled([...providerTasks]);
     return report;
   } finally {
     stopped = true;
+    if (observer) clearInterval(observer);
+    executorAbort.abort();
+    await Promise.allSettled([executor, ...providerTasks]);
     await server.close();
     fs.rmSync(temporaryDir, { recursive: true, force: true });
   }
