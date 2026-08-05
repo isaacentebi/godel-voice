@@ -35,6 +35,21 @@ test("a named research desk keeps every requested native panel in spoken order",
   ]);
 });
 
+test("a fully specified fundamentals comparison does not require an opening verb", () => {
+  const plan = parseControlFollowup(
+    "Amazon and Meta annual revenue split view max history with estimates"
+  );
+  assert.equal(plan.steps[0].terminal_command, "AMZN EQ GF");
+  assert.deepEqual(plan.steps[0].actions, [
+    { feature: "periodicity", operation: "select", value: "Annual" },
+    { feature: "range", operation: "select", value: "Max" },
+    { feature: "layout", operation: "select", value: "Split" },
+    { feature: "include consensus estimates", operation: "select", value: "on" },
+    { feature: "add company", operation: "add", value: "META" },
+    { feature: "add metric", operation: "add", value: "Revenue" }
+  ]);
+});
+
 test("noisy VoiceInk company desk language stays deterministic", () => {
   const plan = parseControlFollowup(
     "jarvis clean screen for micro soft uh company overview earnins matt tricks estimates fill ins holders and news arrange it like a research desk"

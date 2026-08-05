@@ -81,15 +81,10 @@
     }
     clientId = value;
     documentGeneration = generation;
-    // Persisted native ids are valid only for the exact Godel document that
-    // created them. A page reload can reuse the same id, command and security
-    // for a user-owned panel; discard the old proof instead of risking a close.
-    for (const [id, receipt] of managedWindowReceipts) {
-      if (receipt.document_generation === generation) continue;
-      managedWindowReceipts.delete(id);
-      managedWindowIds.delete(id);
-    }
-    persistManagedWindowIds();
+    // Persisted ids from an older document are evidence of unfinished cleanup,
+    // never authority to mutate the new document. Keep that evidence so Stop
+    // fails visibly instead of silently abandoning a Jarvis-created panel; all
+    // close paths below require this exact generation before acting.
     return { executorId: value, documentGeneration: generation };
   });
   let lastWindowId = null;
@@ -152,7 +147,9 @@
           request_id: String(receipt.request_id ?? "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 96) || null,
           command: String(receipt.command ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12) || null,
           security: String(receipt.security ?? "").toUpperCase().replace(/[^A-Z0-9./-]/g, "").slice(0, 16) || null,
-          document_generation: String(receipt.document_generation ?? "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 120) || null
+          document_generation: String(receipt.document_generation ?? "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 120) || null,
+          ownership_nonce: /^gv1_[a-f0-9]{32}$/.test(String(receipt.ownership_nonce ?? ""))
+            ? String(receipt.ownership_nonce) : null
         }]);
     } catch { return []; }
   })());
@@ -259,6 +256,12 @@
 
   function persistManagedWindowIds() {
     sessionStorage.setItem(managedWindowStorageKey, JSON.stringify([...managedWindowReceipts.values()].slice(-64)));
+  }
+
+  function newOwnershipNonce() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return `gv1_${[...bytes].map(value => value.toString(16).padStart(2, "0")).join("")}`;
   }
 
   function persistBorrowedWindows() {
@@ -461,14 +464,13 @@
       const existing = inventory.screens.filter(item => String(item.title).trim().toLowerCase() === "voice");
       if (existing.length > 1) throw new Error(`Expected at most one recoverable Voice screen, found ${existing.length}`);
       const existingVoice = existing[0] ?? null;
-      if (existingVoice && (!Array.isArray(existingVoice.window_ids) || existingVoice.window_ids.length > 0)
-          && !allowExistingVoice) {
-        throw new Error("An unowned nonempty Voice screen already exists; refusing to create a duplicate");
-      }
-      // An empty reserved Voice screen has no user content to adopt and is the
-      // only safe automatic recovery after a tab or sessionStorage restart.
-      screen = existingVoice && (allowExistingVoice || existingVoice.window_ids.length === 0)
-        ? existingVoice : null;
+      // A pre-existing Voice screen is safe to use as a location even when it
+      // contains user panels. Adopting the screen does not adopt its windows:
+      // cleanup still requires an exact Jarvis receipt and ownership nonce, so
+      // pre-existing panels remain untouched while newly created panels can be
+      // managed normally. This also avoids creating duplicate Voice screens
+      // after an extension or service restart loses sessionStorage receipts.
+      screen = existingVoice ?? null;
       screen ??= inventory.screens.find(item => String(item.title).trim().toLowerCase() === "blank"
         && Array.isArray(item.window_ids) && item.window_ids.length === 0) ?? null;
       if (screen) {
@@ -620,21 +622,41 @@
     const root = nativeRoot ?? titleReceiptRoot(canonicalCommand) ?? panel;
     if (!(root instanceof HTMLElement) || !root.isConnected || !canonicalCommand
         || /CHAT|NOTE|ACCOUNT|BROK|ORDER|TRADE|MESSAGE|ALERT/.test(canonicalCommand)) return null;
+    const id = managedWindowId(root);
+    const previous = id ? managedWindowReceipts.get(id) : null;
     const receipt = {
-      id: managedWindowId(root), created_at: Date.now(),
+      id, created_at: Date.now(),
       request_id: String(requestId ?? "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 96) || null,
       command: canonicalCommand,
       security: contextPanel(panel)?.security ?? contextPanel(root)?.security ?? null,
-      document_generation: documentGeneration
+      document_generation: documentGeneration,
+      ownership_nonce: id && previous?.document_generation === documentGeneration && previous.ownership_nonce
+        ? previous.ownership_nonce : (id ? newOwnershipNonce() : null)
     };
     managedDomReceipts.set(root, receipt);
-    const id = managedWindowId(panel);
     if (!id) return receipt;
     managedWindowIds.add(id);
     managedWindowReceipts.set(id, { ...receipt, id });
     rememberVoiceWindowId(id);
     persistManagedWindowIds();
     return { ...receipt, id };
+  }
+
+  async function claimManagedPanel(panel, { durable = true, ...options } = {}) {
+    const receipt = rememberManagedPanel(panel, options);
+    if (!receipt?.id || !durable) return receipt;
+    if (!voiceScreenReceipt?.screen_id || !receipt.ownership_nonce) {
+      throw new Error("Jarvis window ownership nonce is unavailable");
+    }
+    const tagged = await workspaceInternalAction("tagOwnedWindow", {
+      id: receipt.id,
+      screen_id: voiceScreenReceipt.screen_id,
+      ownership_nonce: receipt.ownership_nonce
+    });
+    if (tagged?.id !== receipt.id || tagged?.ownership_nonce !== receipt.ownership_nonce) {
+      throw new Error("Godel did not persist the Jarvis window ownership nonce");
+    }
+    return receipt;
   }
 
   function panelMatchesReceiptSecurity(panel, command, security) {
@@ -756,6 +778,8 @@
       const owners = ownersById.get(String(id)) ?? [];
       return owners.length === 1 && owners[0] === String(ownedVoice.screen.id);
     };
+    const durableOwnershipMatches = (id, receipt) => Boolean(receipt?.ownership_nonce
+      && ownedVoice.inventory?.ownership_nonces?.[String(id)] === receipt.ownership_nonce);
     const rejectedNativeIds = new Set();
 
     for (const [panel, receipt] of ownedDom) {
@@ -808,8 +832,21 @@
         continue;
       }
       const receipt = managedWindowReceipts.get(id);
+      if (receipt?.document_generation !== documentGeneration
+          && !durableOwnershipMatches(id, receipt)) {
+        rejectedNativeIds.add(id);
+        ownedIds.delete(id);
+        continue;
+      }
       if (!receipt?.command || !panelMatchesCommand(panel, receipt.command)
           || !panelMatchesReceiptSecurity(panel, receipt.command, receipt.security)) {
+        if (durableOwnershipMatches(id, receipt)) {
+          // The user may have reconfigured a Jarvis-created panel after it was
+          // opened. The durable nonce still proves ownership, but leave the
+          // mutation to clearVoiceScreen so main-world rechecks the current
+          // native type and refuses consequential surfaces.
+          continue;
+        }
         // An id can be reused by Godel after a reload. Remove it from this
         // cleanup transaction so the native fallback cannot close a different
         // user-owned window under a stale receipt.
@@ -835,19 +872,13 @@
     // This prevents unbounded buildup without treating screen membership as
     // permission to delete an ordinary Godel window.
     const cleanupSnapshot = await ensureVoiceScreen();
-    const verifiedSnapshotIds = snapshotIds ? windowRoots().flatMap(panel => {
-      const id = String(windowId(panel) ?? "");
-      if (!snapshotIds.has(id)) return [];
-      const command = contextPanel(panel)?.command ?? null;
-      if (!command || !Object.prototype.hasOwnProperty.call(PANEL_TITLES, command)
-          || /CHAT|NOTE|ACCOUNT|BROK|ORDER|TRADE|MESSAGE|ALERT/.test(command)
-          || !panelMatchesCommand(panel, command)) return [];
-      return [id];
-    }) : [];
     const verifiedSafeIds = [...new Set([...managedWindowReceipts]
       .filter(([id, receipt]) => !rejectedNativeIds.has(String(id)) && receipt?.command
+        && durableOwnershipMatches(id, receipt)
         && !/CHAT|NOTE|ACCOUNT|BROK|ORDER|TRADE|MESSAGE|ALERT/.test(receipt.command))
-      .map(([id]) => String(id)).concat(verifiedSnapshotIds))];
+      .map(([id]) => String(id)))];
+    const verifiedOwnershipNonces = Object.fromEntries(verifiedSafeIds.map(id =>
+      [id, managedWindowReceipts.get(id).ownership_nonce]));
     const cleanup = await workspaceInternalAction("clearVoiceScreen", {
       screen_id: cleanupSnapshot.receipt.screen_id,
       expected_window_ids: cleanupSnapshot.screen.window_ids.map(String),
@@ -855,6 +886,7 @@
       preserve_ids: [...borrowedWindowReceipts.keys()],
       only_ids: [...(snapshotIds ?? ownedIds)],
       verified_safe_ids: verifiedSafeIds,
+      ownership_nonces: verifiedOwnershipNonces,
       replace_all_safe: replaceAllSafe
     });
     for (const id of cleanup?.removed_ids ?? []) {
@@ -921,11 +953,15 @@
       // retaining it lets manual stop close the panel through its native DOM
       // callback. Never extend this exception to a different screen/type.
       if (renderedOnActiveVoiceScreen && !borrowedWindowReceipts.has(id)) continue;
-      // Missing ids are stale. An id on another or multiple screens has lost
-      // the Voice-screen ownership proof: forget it, but never close it.
+      // An exact absence proves that the panel was already closed (for example
+      // by the user). Any other mismatch is unresolved ownership evidence: a
+      // moved panel, duplicate membership, or reused id must be retained for a
+      // visible later cleanup failure, never forgotten or mutated heuristically.
       if (owners.length === 1 && owners[0] === voiceScreenId && !borrowedWindowReceipts.has(id)) continue;
-      managedWindowIds.delete(id);
-      managedWindowReceipts.delete(id);
+      if (owners.length === 0 && !renderedPanel) {
+        managedWindowIds.delete(id);
+        managedWindowReceipts.delete(id);
+      }
     }
     const preserved = new Set([...preserveIds].map(String));
     if (lastWindowId) preserved.add(String(lastWindowId));
@@ -3334,6 +3370,24 @@
       && String(input.value ?? "").trim().toUpperCase().startsWith(`${token} `));
   }
 
+  function forgetRememberedPanel(panel) {
+    const closedId = String(windowId(nativeWindowRoot(panel) ?? panel) ?? "");
+    for (const [command, id] of [...commandWindows]) {
+      if (closedId && String(id) === closedId) commandWindows.delete(command);
+    }
+    for (const [command, remembered] of [...commandPanels]) {
+      if (remembered === panel || panel.contains(remembered) || remembered.contains(panel)) {
+        commandPanels.delete(command);
+      }
+    }
+    if (lastPanelElement && (panel === lastPanelElement || panel.contains(lastPanelElement)
+        || lastPanelElement.contains(panel))) {
+      lastWindowId = null;
+      lastPanelElement = null;
+      lastPanelContext = null;
+    }
+  }
+
   async function executeControlStep(step) {
     if (step.operation === "reset_workspace") {
       await executeDurableWorkspaceReset({ recoveryAdoptionAuthorized: true });
@@ -3353,6 +3407,19 @@
     const panel = panelForControl(step.target, activeScreen.roots, activeScreen.activeWindowId)
       ?? uniqueVisiblePanelForControl(step.target);
     if (!panel) throw new Error(`No Godel window matches ${step.target.command ?? step.target.mode}`);
+    const controlWindowId = String(windowId(nativeWindowRoot(panel) ?? panel) ?? "");
+    if (step.operation === "close" && controlWindowId
+        && borrowedWindowReceipts.has(controlWindowId)) {
+      // A reused singleton is user-owned. "Close it" means remove it from the
+      // Jarvis workspace by restoring its exact original screen, never invoke
+      // Godel's destructive close callback on that borrowed panel.
+      await restoreBorrowedWindows({ onlyIds: new Set([controlWindowId]) });
+      if (borrowedWindowReceipts.has(controlWindowId)) {
+        throw new Error(`Could not safely restore borrowed ${step.target.command ?? "Godel"} window`);
+      }
+      forgetRememberedPanel(panel);
+      return;
+    }
     if (step.operation === "move") {
       const planned = layoutEngine.plan({
         viewport: workspaceViewport(), gap: 12,
@@ -3374,23 +3441,10 @@
       await panelInternalAction(panel, "LAYOUT", actions[step.operation]);
       if (step.operation === "close") {
         forgetManagedPanel(panel);
-        const closedId = String(windowId(nativeWindowRoot(panel) ?? panel) ?? "");
-        for (const [command, id] of [...commandWindows]) {
-          if (closedId && String(id) === closedId) commandWindows.delete(command);
-        }
-        for (const [command, remembered] of [...commandPanels]) {
-          if (remembered === panel || panel.contains(remembered) || remembered.contains(panel)) {
-            commandPanels.delete(command);
-          }
-        }
+        forgetRememberedPanel(panel);
       }
     }
     if (step.operation !== "close") rememberPanel(panel, step.target.command, step.target.security);
-    else if (lastPanelElement && (panel === lastPanelElement || panel.contains(lastPanelElement) || lastPanelElement.contains(panel))) {
-      lastWindowId = null;
-      lastPanelElement = null;
-      lastPanelContext = null;
-    }
   }
 
   async function executeConfigureStep(step) {
@@ -3478,6 +3532,24 @@
     const hasExplicitGeometryControl = plan.steps.some(step => step.kind === "control"
       && ["maximize", "restore", "move", "resize"].includes(step.operation));
     let workflowScreenId = null;
+    const rollbackTransaction = async () => {
+      if (!opensNewPanels) return;
+      await ensureVoiceScreen();
+      await restoreBorrowedWindows({ onlyIds: transactionBorrowedIds });
+      const retainedBorrowed = [...transactionBorrowedIds]
+        .filter(id => borrowedWindowReceipts.has(String(id)));
+      if (retainedBorrowed.length) {
+        throw new Error(`could not restore ${retainedBorrowed.length} borrowed Godel window${retainedBorrowed.length === 1 ? "" : "s"}`);
+      }
+      await ensureVoiceScreen();
+      await closeVoiceScreenPanels({ onlyIds: transactionWindowIds, requestId });
+      const retainedNative = [...transactionWindowIds]
+        .filter(id => managedWindowReceipts.has(String(id)));
+      if (retainedNative.length || pendingCleanupReceipts(requestId)) {
+        throw new Error("could not verify closure of every panel opened by this request");
+      }
+      await publishExecutorContext();
+    };
     try {
     const workspacePrepareStartedAt = Date.now();
     try {
@@ -3516,6 +3588,7 @@
       const stepReceiptId = `${String(requestId ?? "workflow")}.${String(step.id ?? index)}`
         .replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 96);
       const transactionIdsBeforeStep = new Set(transactionWindowIds);
+      const transactionBorrowedIdsBeforeStep = new Set(transactionBorrowedIds);
       try {
         if (step.kind === "control") await executeControlStep(step);
         else if (step.kind === "configure") {
@@ -3546,7 +3619,7 @@
             onCommandSubmitted: terminalCommand => {
               submittedTerminalIdentity = terminalPanelIdentity(terminalCommand);
             },
-            onPanelReady: async readyPanel => {
+            onPanelReady: async (readyPanel, { workspaceCommitted = true } = {}) => {
               const native = nativeWindowRoot(readyPanel);
               const nativeId = native ? String(windowId(native) ?? "") : "";
               const creationRoot = native ?? readyPanel;
@@ -3554,7 +3627,9 @@
                 ? !beforeWorkspaceIds.has(nativeId) && !beforeRenderedIds.has(nativeId)
                 : !beforeCommandPanels.has(creationRoot));
               if (createdByWorkflow) {
-                const receipt = rememberManagedPanel(readyPanel, { requestId: stepReceiptId, command: step.command });
+                const receipt = await claimManagedPanel(readyPanel, {
+                  requestId: stepReceiptId, command: step.command, durable: workspaceCommitted
+                });
                 if (!receipt) throw new Error(`Could not establish ownership of the new ${step.command} panel`);
                 if (nativeId) transactionWindowIds.add(nativeId);
               }
@@ -3619,7 +3694,13 @@
               ? provisionalOwnership.createdByWorkflow
               : Boolean(creationRoot && (!beforeCommandPanels.has(creationRoot)
                 || (nativeId && workspaceWindowId && !beforeWorkspaceIds.has(String(workspaceWindowId))))));
-            if (createdByWorkflow) rememberManagedPanel(panel, { requestId: stepReceiptId, command: step.command });
+            if (createdByWorkflow) {
+              if (provisionalOwnership?.createdByWorkflow) {
+                rememberManagedPanel(panel, { requestId: stepReceiptId, command: step.command });
+              } else {
+                await claimManagedPanel(panel, { requestId: stepReceiptId, command: step.command });
+              }
+            }
             const ownershipPhases = panelCommandTimings.get(executedPanel) ?? panelCommandTimings.get(panel);
             if (ownershipPhases) {
               ownershipPhases.ownership_created = createdByWorkflow ? 1 : 0;
@@ -3691,7 +3772,10 @@
           // a Jarvis panel rather than adopting and closing a user's panel.
           if (recoveryCandidates.size === 1) {
             const [root, id] = recoveryCandidates.entries().next().value;
-            const receipt = rememberManagedPanel(root, { requestId: stepReceiptId, command: step.command });
+            const receipt = await claimManagedPanel(root, {
+              requestId: stepReceiptId, command: step.command,
+              durable: Boolean(id && afterWorkspaceIds.has(String(id)))
+            });
             if (receipt && id && !transactionBorrowedIds.has(id)) transactionWindowIds.add(id);
           }
         }
@@ -3707,8 +3791,17 @@
         if (step.failure_policy !== "stop" && step.kind === "command" && step.command !== "Q") {
           const stepNewIds = new Set([...transactionWindowIds]
             .filter(id => !transactionIdsBeforeStep.has(id)));
-          await closeVoiceScreenPanels({ onlyIds: stepNewIds, requestId: stepReceiptId }).catch(() => {});
+          const stepBorrowedIds = new Set([...transactionBorrowedIds]
+            .filter(id => !transactionBorrowedIdsBeforeStep.has(id)));
+          await restoreBorrowedWindows({ onlyIds: stepBorrowedIds });
+          const retainedBorrowed = [...stepBorrowedIds]
+            .filter(id => borrowedWindowReceipts.has(String(id)));
+          await closeVoiceScreenPanels({ onlyIds: stepNewIds, requestId: stepReceiptId });
+          if (retainedBorrowed.length || pendingCleanupReceipts(stepReceiptId)) {
+            throw new Error(`${step.command} failed and its exact rollback could not be verified`, { cause: error });
+          }
           for (const id of stepNewIds) transactionWindowIds.delete(id);
+          for (const id of stepBorrowedIds) transactionBorrowedIds.delete(id);
         }
         if (step.failure_policy === "stop") {
           const failure = new Error(`${step.kind === "control" ? step.operation : step.kind === "configure" ? `configure ${step.target.command}` : step.command} failed: ${error.message}`);
@@ -3765,19 +3858,20 @@
     } finally {
       phases.reconcile_ms = Math.max(0, Date.now() - reconcileStartedAt);
     }
-    return { timings, opened, grounded, layoutWarning, phases };
+    // Cancellation after the final requested step is still a failed
+    // transaction. Check once inside the ownership scope so the ordinary catch
+    // can restore/close everything before control returns to the poller.
+    await ensureNotCancelled(requestId);
+    return { timings, opened, grounded, layoutWarning, phases, rollback: rollbackTransaction };
     } catch (error) {
       if (opensNewPanels) {
         try {
-          await ensureVoiceScreen();
-          await restoreBorrowedWindows({ onlyIds: transactionBorrowedIds });
-          await ensureVoiceScreen();
-          if (plan.layout.preserve_existing === false) await closeVoiceScreenPanels({ replaceAllSafe: true });
-          else await closeVoiceScreenPanels({ onlyIds: transactionWindowIds, requestId });
-          await publishExecutorContext();
-        } catch {
-          // Rollback is bounded to safe windows on the Voice screen. Preserve
-          // the original failure if Godel itself is too unhealthy to clean up.
+          await rollbackTransaction();
+        } catch (cleanupError) {
+          // Preserve both the original fault and the unresolved exact receipts;
+          // silently swallowing cleanup failure makes a leaked window look like
+          // a completed cancellation.
+          error.message = `${error.message}; cleanup incomplete: ${cleanupError.message}`;
         }
       }
       try { error.workflowPhases = { ...phases }; } catch {}
@@ -3814,13 +3908,18 @@
       result.phases.completion_fact_ms = Math.max(0, Date.now() - completionFactStartedAt);
     }
     if (completionError) {
+      try { await result.rollback?.(); }
+      catch (cleanupError) {
+        completionError.message = `${completionError.message}; cleanup incomplete: ${cleanupError.message}`;
+      }
       try { completionError.workflowPhases = { ...result.phases }; } catch {}
       throw completionError;
     }
     return {
       message: result.layoutWarning ? `${message} I couldn't finish the requested placement.` : message,
       steps: result.timings,
-      phases: result.phases
+      phases: result.phases,
+      rollback: result.rollback
     };
   }
 
@@ -4145,8 +4244,10 @@
           if (error instanceof CancelledError || heartbeatFailures >= 3) leaseLost = error;
         });
       }, heartbeatEvery);
+      let completedResult = null;
       try {
         const result = await executePlan(payload.marker, payload.id);
+        completedResult = result;
         // Close the cancellation race after the final DOM action and before
         // any success acknowledgement. The periodic heartbeat may not have
         // observed a server-side cancellation yet.
@@ -4162,7 +4263,11 @@
           // Local execution is not authoritative until the lease owner accepts
           // the terminal state. In particular, a workflow cancelled during its
           // final DOM action must never speak a late success.
-          const message = "Godel action finished, but its result could not be verified.";
+          let message = "Godel action finished, but its result could not be verified.";
+          try { await result.rollback?.(); }
+          catch (cleanupError) {
+            message += ` Cleanup is incomplete: ${cleanupError.message}.`;
+          }
           toast(message, true);
           emitCompletion({ id: payload.id, status: "failed", message,
             durationMs: Date.now() - startedAt, acknowledged: false,
@@ -4182,6 +4287,12 @@
           await releaseForRetry(payload.id, error).catch(() => {});
           toast(error.message, true);
           return;
+        }
+        if (completedResult?.rollback) {
+          try { await completedResult.rollback(); }
+          catch (cleanupError) {
+            error.message = `${error.message}; cleanup incomplete: ${cleanupError.message}`;
+          }
         }
         const status = error instanceof CancelledError ? "cancelled" : "failed";
         const phases = { ...(error.workflowPhases ?? {}), lifecycle_barrier_ms: lifecycleBarrierMs };

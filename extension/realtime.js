@@ -166,6 +166,16 @@
       snapshot: () => ({ segments: segments.map(segment => ({ ...segment })), scheduled: timer != null }) };
   }
 
+  function workflowPollDelay(elapsedMs, {
+    fastMs = 50, regularMs = 160, fastWindowMs = 1_000
+  } = {}) {
+    const elapsed = Math.max(0, Number(elapsedMs) || 0);
+    const fast = Math.max(25, Number(fastMs) || 50);
+    const regular = Math.max(fast, Number(regularMs) || 160);
+    const fastWindow = Math.max(0, Number(fastWindowMs) || 0);
+    return elapsed < fastWindow ? fast : regular;
+  }
+
   function createIntentStore(storage, key) {
     function isActive() {
       try { return storage?.getItem?.(key) === "on"; } catch { return false; }
@@ -183,7 +193,9 @@
     return { isActive, activate: () => setActive(true), deactivate: () => setActive(false) };
   }
 
-  globalThis.GodelVoiceRealtimeState = Object.freeze({ createCoordinator, createTranscriptBatcher, createIntentStore });
+  globalThis.GodelVoiceRealtimeState = Object.freeze({
+    createCoordinator, createTranscriptBatcher, createIntentStore, workflowPollDelay
+  });
 })();
 
 (() => {
@@ -238,13 +250,15 @@
   let sessionRolloverTimer = null;
   let reconnectAttempts = 0;
   const recentAssistantAudits = new Map();
-  const TURN_GRACE_MS = 180;
+  const TURN_GRACE_MS = 120;
   // Semantic VAD can momentarily classify a cough or a nearby voice as user
   // speech. Require a short confirmation before cancelling audible output so
   // ordinary room noise cannot constantly interrupt Jarvis without making a
   // deliberate "stop" or correction feel ignored.
   const BARGE_IN_CONFIRM_MS = 280;
   const TRANSCRIPTION_SETTLE_MS = 1_200;
+  const WORKFLOW_FAST_POLL_MS = 50;
+  const WORKFLOW_FAST_POLL_WINDOW_MS = 1_000;
   const WORKFLOW_POLL_MS = 160;
   const PREFLIGHT_RETRY_MS = 120;
   // OpenAI Realtime sessions have a hard 60-minute limit. Roll over early so
@@ -373,6 +387,7 @@
 
   function waitForWorkflow(id, timeoutMs = 45_000) {
     return new Promise((resolve, reject) => {
+      const startedAt = Date.now();
       let settled = false;
       let pollTimer = null;
       let idleTimer = null;
@@ -426,7 +441,11 @@
             audit("client_error", `${id}-status`, { text: String(error.message).slice(0, 240) });
           }
         }
-        pollTimer = setTimeout(poll, WORKFLOW_POLL_MS);
+        pollTimer = setTimeout(poll, realtimeState.workflowPollDelay(Date.now() - startedAt, {
+          fastMs: WORKFLOW_FAST_POLL_MS,
+          regularMs: WORKFLOW_POLL_MS,
+          fastWindowMs: WORKFLOW_FAST_POLL_WINDOW_MS
+        }));
       }
       window.addEventListener("godel-voice:completion", complete);
       armIdleTimer();
@@ -809,6 +828,12 @@
     else if (event.type === "output_audio_buffer.stopped") {
       if (audio) audio.muted = true;
       assistantSpeaking = false;
+      // The audible output buffer finishing is sufficient proof that the one
+      // active response is complete. Some Realtime transports omit, delay, or
+      // differently identify the later response.done event; waiting only for
+      // that event leaves the response queue permanently blocked in
+      // "Understanding" even though speech already ended.
+      coordinator.responseDone(event.response_id ?? null);
       if (activeWorkflow) render("working", "Operating Godel directly");
       else if (speechActive) render("listening", "I hear you");
       else if (responseRequestedAt) render("thinking", "Responding");

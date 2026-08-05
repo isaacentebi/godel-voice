@@ -173,6 +173,16 @@ test("VoiceInk timing telemetry does not launch clock subprocesses on the reques
   assert.doesNotMatch(delivery, /node -e ['"]process\.stdout\.write\(String\(Date\.now\(\)\)\)/);
 });
 
+test("VoiceInk overlaps build fingerprinting and validates health without another Node startup", () => {
+  const delivery = read("bin/voiceink-deliver");
+  assert.match(delivery, /runtime-build-id\.mjs" > "\$build_id_file" &/);
+  assert.match(delivery, /build_id_pid=\$!/);
+  assert.match(delivery, /wait "\$build_id_pid"/);
+  assert.match(delivery, /health_is_current/);
+  assert.doesNotMatch(delivery, /node -e /);
+  assert.match(delivery, /\[A-Za-z0-9_\.\-\]\{1,96\}/);
+});
+
 test("executor reports bounded workflow phases separately from command timings", () => {
   const content = read("extension/content.js");
   assert.match(content, /lifecycle_barrier_ms: lifecycleBarrierMs/);

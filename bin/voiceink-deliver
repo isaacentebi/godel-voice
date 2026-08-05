@@ -9,6 +9,11 @@ protocol_version="4"
 lsof_bin="$(command -v lsof || true)"
 voice_input="$(</dev/stdin)"
 request_id="$(/usr/bin/openssl rand -hex 16)"
+temporary_files=()
+cleanup_temporary_files() {
+  if (( ${#temporary_files} )); then /bin/rm -f -- "${temporary_files[@]}"; fi
+}
+trap cleanup_temporary_files EXIT
 typeset -i compile_started_at
 compile_started_at=$(( EPOCHREALTIME * 1000 ))
 
@@ -41,6 +46,14 @@ if [[ ! -f "$secret_file" || ! -f "$project_dir/extension/config.local.js" ]]; t
   exit 2
 fi
 
+# Checkout fingerprinting is independent of intent compilation. Overlap both
+# short-lived Node processes so freshness validation adds no serial startup
+# delay to the common local compiler path.
+build_id_file="$(/usr/bin/mktemp "${TMPDIR:-/tmp}/godel-voice-build.XXXXXX")"
+temporary_files+=("$build_id_file")
+/usr/bin/env node "$project_dir/src/runtime-build-id.mjs" > "$build_id_file" &
+build_id_pid=$!
+
 if marker="$(/usr/bin/printf '%s' "$voice_input" | /usr/bin/env node "$project_dir/src/compile-fast-followup.mjs" 2>/dev/null)"; then
   record_voiceink_compile "local_followup"
 elif marker="$(/usr/bin/printf '%s' "$voice_input" | /usr/bin/env node "$project_dir/src/consume-intent.mjs" --marker 2>/dev/null)"; then
@@ -60,17 +73,26 @@ else
   fi
   /bin/rm -f "$compiler_error"
 fi
+wait "$build_id_pid"
+expected_build="$(<"$build_id_file")"
+/bin/rm -f "$build_id_file"
 secret="$(<"$secret_file")"
 auth_config="$(/usr/bin/mktemp "${TMPDIR:-/tmp}/godel-voice-curl.XXXXXX")"
+temporary_files+=("$auth_config")
 /bin/chmod 600 "$auth_config"
 /usr/bin/printf 'header = "Authorization: Bearer %s"\n' "$secret" > "$auth_config"
-trap '/bin/rm -f "$auth_config"' EXIT
 expected_instance="$(/usr/bin/printf '%s' "$project_dir" | /usr/bin/openssl dgst -sha256 -r | /usr/bin/cut -c1-16)"
-expected_build="$(/usr/bin/env node "$project_dir/src/runtime-build-id.mjs")"
+
+health_is_current() {
+  local value="$1"
+  [[ "$value" == *'"protocol_version":'${protocol_version}','* \
+    && "$value" == *'"instance_id":"'${expected_instance}'"'* \
+    && "$value" == *'"build_id":"'${expected_build}'"'* ]]
+}
 
 health="$(/usr/bin/curl --config "$auth_config" --silent --fail --max-time 0.3 "$server_url/health" 2>/dev/null || true)"
-health_ok="$(/usr/bin/printf '%s' "$health" | /usr/bin/env node -e '
-let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{const v=JSON.parse(s);process.stdout.write(v.protocol_version===Number(process.argv[1])&&v.instance_id===process.argv[2]&&v.build_id===process.argv[3]?"yes":"no")}catch{process.stdout.write("no")}})' "$protocol_version" "$expected_instance" "$expected_build")"
+health_ok="no"
+health_is_current "$health" && health_ok="yes"
 if [[ "$health_ok" != "yes" ]]; then
   plist="$HOME/Library/LaunchAgents/com.godelvoice.handoff.plist"
   if [[ "$(uname -s)" == "Darwin" && -f "$plist" ]]; then
@@ -92,8 +114,8 @@ if [[ "$health_ok" != "yes" ]]; then
   fi
   for _ in {1..30}; do
     health="$(/usr/bin/curl --config "$auth_config" --silent --fail --max-time 0.3 "$server_url/health" 2>/dev/null || true)"
-    health_ok="$(/usr/bin/printf '%s' "$health" | /usr/bin/env node -e '
-let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{const v=JSON.parse(s);process.stdout.write(v.protocol_version===Number(process.argv[1])&&v.instance_id===process.argv[2]&&v.build_id===process.argv[3]?"yes":"no")}catch{process.stdout.write("no")}})' "$protocol_version" "$expected_instance" "$expected_build")"
+    health_ok="no"
+    health_is_current "$health" && health_ok="yes"
     [[ "$health_ok" == "yes" ]] && break
     /bin/sleep 0.1
   done
@@ -109,7 +131,10 @@ response="$(/usr/bin/printf '%s' "$marker" | /usr/bin/curl --config "$auth_confi
   -H "Content-Type: text/plain" \
   --data-binary @-)"
 
-workflow_id="$(/usr/bin/printf '%s' "$response" | /usr/bin/env node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{process.stdout.write(JSON.parse(s).id||"")}catch{}})')"
+workflow_id=""
+if [[ "$response" =~ '"id":"([A-Za-z0-9_.-]{1,96})"' ]]; then
+  workflow_id="$match[1]"
+fi
 if [[ -z "$workflow_id" ]]; then
   print -u2 "Godel Voice could not confirm that the workflow was queued. No Godel action was claimed; run npm run doctor and repeat once."
   exit 4

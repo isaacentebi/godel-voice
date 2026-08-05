@@ -1,4 +1,4 @@
-import { deterministicClarification, encodeControlFollowup } from "./control-followup.mjs";
+import { deterministicClarification, deterministicUnsupportedReason, encodeControlFollowup } from "./control-followup.mjs";
 import { compileVoiceWorkflow } from "./compiler.mjs";
 import { compileWorkflowWithValidatedFallback } from "./model-routing.mjs";
 import { encodeWorkflowPlan } from "./workflow-plan.mjs";
@@ -21,6 +21,8 @@ export async function compileNaturalRequest(value, {
   if (localClarification) return { kind: "clarify", message: localClarification, route: "local", inference: null };
   const fastMarker = encodeControlFollowup(request, context);
   if (fastMarker) return { kind: "execute", marker: fastMarker, route: "local", inference: null };
+  const localUnsupported = deterministicUnsupportedReason(request, context);
+  if (localUnsupported) return { kind: "unsupported", message: localUnsupported, route: "local", inference: null };
 
   const routed = await compileWorkflowWithValidatedFallback(request, {
     compile, context, fallbackModel, fallbackProviderOnly

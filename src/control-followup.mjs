@@ -82,6 +82,20 @@ export function deterministicClarification(transcript) {
     : null;
 }
 
+export function deterministicUnsupportedReason(transcript, context = null) {
+  const text = clean(transcript);
+  const focused = String(context?.focused_panel?.command ?? "").toUpperCase();
+  const hdsBubble = /\bbubbles?\b/.test(text)
+    && (focused === "HDS" || /\b(?:institutional )?(?:holders?|owners?|ownership)(?: window| panel)?\b/.test(text));
+  if (hdsBubble) return "Godel's current Holders panel does not expose a verified Bubble control, so Jarvis will not pretend that view changed.";
+  const emValuation = /\b(?:forward\s+)?(?:p\s*\/?\s*e|p e|pe|pee|piece|price to earnings|ev\s*(?:over|\/)\s*ebitda)\b/.test(text)
+    || /\bforward\s+p\b/.test(text);
+  if (emValuation && (focused === "EM" || /\b(?:earnings? matrix|matrix|multiple|valuation|forward)\b/.test(text))) {
+    return "Godel's current Earnings Matrix did not expose the requested authenticated Multiples row, so Jarvis will not read or invent it.";
+  }
+  return null;
+}
+
 function resolvedEquities(value) {
   return resolveTranscriptSecurities(value).filter(item => item.asset_class === "EQ");
 }
@@ -198,6 +212,70 @@ function exactTargetForOpenedStep(step) {
 function exactTargetForLastOpenedStep(plan) {
   const opened = [...(plan?.steps ?? [])].reverse().find(step => step.kind === "command");
   return exactTargetForOpenedStep(opened);
+}
+
+function exactNamedWindowTarget(value, prior = null) {
+  const text = String(value ?? "").trim();
+  if (/^(?:it|that|this|the window|the panel)$/.test(text)) return prior;
+  const target = targetFor(text);
+  if (target.command) return { mode: "command", command: target.command, security: target.security };
+  const security = resolvedEquities(text)[0]?.ticker ?? null;
+  if (security && /\bmatrix\b/.test(text)) return { mode: "command", command: "EM", security };
+  if (security && /\bestimates?\b/.test(text)) return { mode: "command", command: "ERN", security };
+  if (security && /\bchart\b/.test(text)) return { mode: "command", command: "G", security };
+  if (/\b(?:focused|active)\b/.test(text)) return { mode: "focused", command: null, security: null };
+  return null;
+}
+
+function chainedWindowControlPlan(text) {
+  if (/\b(?:open|launch|create|build|display)\b|\bpull(?: up)?\b|\bbring up\b/.test(text)) return null;
+  const controlVerbs = text.match(/\b(?:move|put|place|send|shrink|resize|grow|focus|maximi[sz]e|restore|close|dismiss)\b/g) ?? [];
+  if (controlVerbs.length < 2) return null;
+  const segmented = text
+    .replace(/\s+(?=(?:shrink|resize|grow|focus|maximi[sz]e|restore|close|dismiss)\b)/g, " | ")
+    .split(/\s+(?:and then|then|and)\s+|\s*\|\s*/)
+    .map(value => value.trim()).filter(Boolean);
+  const placements = "top[ -]?left|top[ -]?right|bottom[ -]?left|bottom[ -]?right|upper[ -]?left|upper[ -]?right|lower[ -]?left|lower[ -]?right|left|right|top|bottom|full";
+  const canonicalPlacement = value => String(value).toLowerCase()
+    .replace(/^upper/, "top").replace(/^lower/, "bottom").replace(/\s+/g, "-");
+  const steps = [];
+  let current = null;
+  for (const clause of segmented) {
+    const move = new RegExp(`^(?:move|put|place|send)\\s+(?:the\\s+)?(.+?)\\s+(?:to\\s+|on\\s+)?(?:the\\s+)?(${placements})$`).exec(clause);
+    if (move) {
+      current = exactNamedWindowTarget(move[1], current);
+      if (!current) return null;
+      steps.push({ kind: "control", operation: "move", target: current, value: canonicalPlacement(move[2]) });
+      continue;
+    }
+    const resize = /^(?:shrink|resize|grow|make)\s+(?:it|that|this)(?:\s+(?:window|panel))?(?:\s+(bigger|larger|wider|taller|smaller|narrower|shorter))?$/.exec(clause);
+    if (resize) {
+      if (!current) return null;
+      const larger = /\b(?:grow|bigger|larger|wider|taller)\b/.test(clause);
+      steps.push({ kind: "control", operation: "resize", target: current, value: larger ? "larger" : "smaller" });
+      continue;
+    }
+    const focus = /^focus\s+(?:the\s+)?(.+)$/.exec(clause);
+    if (focus) {
+      current = exactNamedWindowTarget(focus[1], current);
+      if (!current) return null;
+      steps.push({ kind: "control", operation: "focus", target: current, value: null });
+      continue;
+    }
+    const maximize = /^maximi[sz]e\s+(.+)$/.exec(clause);
+    if (maximize) {
+      current = exactNamedWindowTarget(maximize[1], current);
+      if (!current) return null;
+      steps.push({ kind: "control", operation: "maximize", target: current, value: null });
+      continue;
+    }
+    return null;
+  }
+  if (steps.length < 2) return null;
+  return validateWorkflowPlan({
+    version: 2, failure_policy: "stop_on_any", layout: null,
+    steps: steps.map((step, index) => ({ ...step, id: `control-${index + 1}`, required: true }))
+  });
 }
 
 function exactTerminalStep(command, terminalCommand, id, placement = null) {
@@ -321,6 +399,40 @@ export function parseControlFollowup(transcript, context = null) {
   }
 
   const security = resolvedEquities(text)[0]?.ticker ?? null;
+
+  const chainedControls = chainedWindowControlPlan(text);
+  if (chainedControls) return chainedControls;
+
+  // One common conversational replacement has three explicit operations:
+  // close the focused panel, open a named panel into a zone, then resize that
+  // exact new panel. Compile it atomically so neither geometry instruction is
+  // silently lost to the generic close/open recursion.
+  const replacement = new RegExp(
+    `^(?:close|dismiss|remove)\\s+(.+?)\\s+(?:and then|then)\\s+(?:open|show|launch|display|pull up|bring up)\\s+(.+?)\\s+(?:in its place\\s+)?(?:on|to)?\\s*(?:the\\s+)?(top[ -]?left|top[ -]?right|bottom[ -]?left|bottom[ -]?right|left|right|top|bottom|full)\\s+(?:and\\s+)?(?:make|resize|grow)\\s+(?:it|that|this)\\s+(bigger|larger|wider|taller|smaller|narrower|shorter)$`
+  ).exec(text);
+  if (replacement) {
+    const closeTarget = exactNamedWindowTarget(replacement[1]);
+    const openTarget = exactNamedWindowTarget(replacement[2]);
+    const canOpen = directGlobalOpen.has(openTarget.command)
+      || (directSecurityOpen.has(openTarget.command) && openTarget.security);
+    if (closeTarget && canOpen) {
+      const placement = replacement[3].toLowerCase().replace(/\s+/g, "-");
+      const size = /^(?:bigger|larger|wider|taller)$/.test(replacement[4]) ? "larger" : "smaller";
+      const openStep = {
+        ...commandStep(openTarget.command, directSecurityOpen.has(openTarget.command) ? openTarget.security : null, "command-2"),
+        layout: { placement }
+      };
+      const exactOpenTarget = exactTargetForOpenedStep(openStep);
+      return validateWorkflowPlan({
+        version: 2, failure_policy: "stop_on_required", layout: workflowLayout("grid"),
+        steps: [
+          { id: "control-1", kind: "control", operation: "close", target: closeTarget, value: null, required: false },
+          openStep,
+          { id: "control-3", kind: "control", operation: "resize", target: exactOpenTarget, value: size, required: true }
+        ]
+      });
+    }
+  }
 
   // Several account-adjacent surfaces are safe to open but contain buttons
   // that could mutate external state. Their zero-model lane is therefore
@@ -486,16 +598,11 @@ export function parseControlFollowup(transcript, context = null) {
   }
   const forwardPE = /\bforward\s+(?:p\s*\/?\s*e|p e|pe|pee|piece|p)(?:\s+(?:multiple|valuation|chart))?\b/.test(text);
   if (forwardPE && security) {
-    return validateWorkflowPlan({
-      version: 2, failure_policy: "stop_on_any", layout: null,
-      steps: [{
-        ...commandStep("EM", security),
-        actions: [{
-          feature: "valuation", operation: "read",
-          value: { row: "P/E", section: "Multiples", semantic_unit: "Multiple" }
-        }]
-      }]
-    });
+    // The current live EM render does not expose an authenticated P/E row in
+    // the Multiples table. Do not open the panel and pretend the requested
+    // valuation read succeeded; keep this off the deterministic lane until a
+    // fresh rendered postcondition is proven.
+    return null;
   }
 
   // Godel accepts candle resolution as a native CLI argument after G. Keep
@@ -618,7 +725,12 @@ export function parseControlFollowup(transcript, context = null) {
     });
   }
 
-  if (explicitlyOpening && openClauses.length === 2 && !directOpenModifier.test(modifierScanText)) {
+  const implicitTwoSurfaceRequest = openClauses.length === 2 && openClauses.every(clause => {
+    const clauseTarget = targetFor(clause);
+    return directGlobalOpen.has(clauseTarget.command)
+      || (directSecurityOpen.has(clauseTarget.command) && clauseTarget.security);
+  });
+  if ((explicitlyOpening || implicitTwoSurfaceRequest) && openClauses.length === 2 && !directOpenModifier.test(modifierScanText)) {
     const pair = openClauses.map((clause, index) => {
       const clauseTarget = targetFor(clause);
       const allowed = directGlobalOpen.has(clauseTarget.command)
@@ -688,6 +800,7 @@ export function parseControlFollowup(transcript, context = null) {
     || directOpenModifier.test(modifierScanText);
   if (explicitlyOpening && target.command === "EM" && security) {
     const emOpen = compileEMFollowup({ command: "EM", target }, transcript);
+    if (emOpen?.actions?.some(action => action.feature === "valuation")) return null;
     if (emOpen?.ready_for_live_executor && emOpen.actions.length) {
       return validateWorkflowPlan({
         version: 2, failure_policy: "stop_on_any", layout: null,
@@ -817,6 +930,7 @@ export function parseControlFollowup(transcript, context = null) {
 
   if (target.command === "EM" && !explicitlyOpening && !explicitWindowControl) {
     const candidate = compileEMFollowup({ command: "EM", target }, transcript);
+    if (candidate?.actions?.some(action => action.feature === "valuation")) return null;
     if (candidate?.ready_for_live_executor) {
       return validateWorkflowPlan({
         version: 2, failure_policy: "stop_on_any", layout: null,
@@ -925,6 +1039,7 @@ export function parseControlFollowup(transcript, context = null) {
     const value = /\bbubbles?\b/.test(text) ? "Bubble"
       : /\btreemap\b|\btree map\b/.test(text) ? "Treemap"
         : /\btable\b/.test(text) ? "Table" : null;
+    if (value === "Bubble") return null;
     if (value) return validateWorkflowPlan({
       version: 2, failure_policy: "stop_on_any", layout: null,
       steps: [{ id: "configure-1", kind: "configure", target, actions: [{ feature: "view", operation: "select", value }], required: true }]
@@ -935,6 +1050,7 @@ export function parseControlFollowup(transcript, context = null) {
     const value = /\bbubbles?\b/.test(text) ? "Bubble"
       : /\btreemap\b|\btree map\b/.test(text) ? "Treemap"
         : /\btable\b/.test(text) ? "Table" : null;
+    if (value === "Bubble") return null;
     if (value) return validateWorkflowPlan({
       version: 2, failure_policy: "stop_on_any", layout: null,
       steps: [{

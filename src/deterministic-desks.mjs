@@ -280,7 +280,9 @@ export function compileDeterministicDesk({ transcript, text, security, explicitl
   const fundamentalMetric = /\b(?:revenues?|sales|ebitda|ebit|nopat|margins?|operation margins?|p\s*\/?\s*e|valuation|fundamental)\b/.test(text);
   const unsupportedGFMetric = /\b(?:operating income|operating profit|nopat|ebitda|ebit)\b/.test(text);
   if (companies.length >= 2 && comparisonIntent && unsupportedGFMetric) return null;
-  if (companies.length >= 2 && comparisonIntent && fundamentalMetric && !heatmap) {
+  const implicitFundamentalComparison = companies.length >= 2 && fundamentalMetric
+    && /\b(?:annual|quarterly|max(?:imum)?|all time|estimates?|overlay|split|one|three|five|ten)\b/.test(text);
+  if (companies.length >= 2 && (comparisonIntent || implicitFundamentalComparison) && fundamentalMetric && !heatmap) {
     const [base, ...peers] = companies;
     const gf = compileChartOptionsFollowup({
       command: "GF",

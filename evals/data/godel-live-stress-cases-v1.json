@@ -31,15 +31,13 @@
       }
     },
     {
-      "id": "em-amazon-forward-pe",
+      "id": "em-amazon-open",
       "read_only": true,
-      "phrase": "open Amazon earnings matrix and read forward P E",
+      "phrase": "open Amazon earnings matrix",
       "expected_semantics": {
         "layout": { "mode": "preserve", "direction": "row", "gap_px": 12, "preset": "grid", "preserve_existing": false, "new_screen": false },
         "postconditions": [
-          { "kind": "command", "command": "EM", "security": "AMZN", "terminal_command": "AMZN EQ EM", "arguments": [], "actions": [
-            { "feature": "valuation", "operation": "read", "value": { "row": "P/E", "section": "Multiples", "semantic_unit": "Multiple" } }
-          ], "placement": null }
+          { "kind": "command", "command": "EM", "security": "AMZN", "terminal_command": "AMZN EQ EM", "arguments": [], "actions": [], "placement": null }
         ]
       }
     },
@@ -60,15 +58,13 @@
       }
     },
     {
-      "id": "hds-meta-bubble",
+      "id": "hds-meta-open",
       "read_only": true,
-      "phrase": "open Meta institutional holders as a bubble",
+      "phrase": "open Meta institutional holders",
       "expected_semantics": {
         "layout": { "mode": "preserve", "direction": "row", "gap_px": 12, "preset": "grid", "preserve_existing": false, "new_screen": false },
         "postconditions": [
-          { "kind": "command", "command": "HDS", "security": "META", "terminal_command": "META EQ HDS", "arguments": [], "actions": [
-            { "feature": "view", "operation": "select", "value": "Bubble" }
-          ], "placement": null }
+          { "kind": "command", "command": "HDS", "security": "META", "terminal_command": "META EQ HDS", "arguments": [], "actions": [], "placement": null }
         ]
       }
     },

@@ -606,8 +606,11 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /tool_result/);
   assert.doesNotMatch(source, /track\.enabled = enabled/);
   assert.match(source, /\/realtime\/preflight/);
-  assert.match(source, /TURN_GRACE_MS = 180/);
+  assert.match(source, /TURN_GRACE_MS = 120/);
+  assert.match(source, /WORKFLOW_FAST_POLL_MS = 50/);
+  assert.match(source, /WORKFLOW_FAST_POLL_WINDOW_MS = 1_000/);
   assert.match(source, /WORKFLOW_POLL_MS = 160/);
+  assert.match(source, /realtimeState\.workflowPollDelay/);
   assert.match(source, /PREFLIGHT_RETRY_MS = 120/);
   assert.match(source, /SESSION_ROLLOVER_MS = 50 \* 60_000/);
   assert.match(source, /scheduleSessionRollover/);
@@ -687,4 +690,11 @@ test("verified successes are spoken exactly and first-audio latency is audited s
     "exact and grounded speech both stay outside the default conversation");
   assert.match(source, /return await api\("\/realtime\/preflight", options\)/);
   assert.match(source, /error\?\.status && error\.status < 500/);
+});
+
+test("audible buffer completion releases the response queue without waiting for response.done", () => {
+  const source = fs.readFileSync(new URL("../extension/realtime.js", import.meta.url), "utf8");
+  const stopped = source.slice(source.indexOf('event.type === "output_audio_buffer.stopped"'),
+    source.indexOf('event.type === "error"'));
+  assert.match(stopped, /coordinator\.responseDone\(event\.response_id \?\? null\)/);
 });

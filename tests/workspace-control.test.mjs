@@ -87,7 +87,7 @@ test("Jarvis replaces safe windows only inside its dedicated Voice screen", () =
   assert.match(content, /activeScreenInfo/);
   assert.match(content, /dedicated Voice screen/);
   assert.match(content, /const managedWindowReceipts = new Map/);
-  assert.match(content, /if \(createdByWorkflow\) rememberManagedPanel\(panel, \{ requestId: stepReceiptId, command: step\.command \}\)/);
+  assert.match(content, /if \(createdByWorkflow\) \{[\s\S]{0,360}claimManagedPanel\(panel/);
   assert.match(content, /managedWindowReceipts\.has\(id\)/);
   assert.match(content, /CHAT\|NOTE\|ACCOUNT\|BROK\|ORDER\|TRADE\|MESSAGE\|ALERT/);
   assert.match(content, /destructive or blocking failure/);
@@ -175,7 +175,9 @@ test("failed workflows roll back only newly opened safe Voice windows", () => {
   assert.match(content, /beforeRenderedIds = new Set/);
   assert.match(content, /transactionWindowIds\.add/);
   assert.match(content, /closeVoiceScreenPanels\(\{ onlyIds: transactionWindowIds, requestId \}\)/);
-  assert.match(content, /if \(plan\.layout\.preserve_existing === false\) await closeVoiceScreenPanels\(\{ replaceAllSafe: true \}\)/);
+  assert.match(content, /const rollbackTransaction = async \(\) =>/);
+  assert.match(content, /await rollbackTransaction\(\)/);
+  assert.match(content, /cleanup incomplete:/);
   assert.match(content, /const ownedIds = new Set\(\[\.\.\.requestedIds\]\.filter\(id => managedWindowReceipts\.has\(id\)\)\)/);
 });
 
@@ -184,7 +186,11 @@ test("new panels are receipted before nested actions and optional failures roll 
   assert.match(content, /await onPanelReady\(panel, \{ terminalCommand, workspaceCommitted, phases \}\)/);
   assert.match(content, /requestId: stepReceiptId, command: step\.command/);
   assert.match(content, /const stepNewIds = new Set/);
+  assert.match(content, /const stepBorrowedIds = new Set/);
+  assert.match(content, /await restoreBorrowedWindows\(\{ onlyIds: stepBorrowedIds \}\)/);
   assert.match(content, /closeVoiceScreenPanels\(\{ onlyIds: stepNewIds, requestId: stepReceiptId \}\)/);
+  assert.match(content, /pendingCleanupReceipts\(stepReceiptId\)/);
+  assert.doesNotMatch(content, /closeVoiceScreenPanels\(\{ onlyIds: stepNewIds, requestId: stepReceiptId \}\)\.catch/);
   assert.match(content, /receipt\.request_id === requestedReceipt \|\| receipt\.request_id\?\.startsWith/);
   assert.match(content, /const beforeInventory = await workspaceInternalAction\("workspaceInventory"\)/);
   assert.doesNotMatch(content, /const beforeInventory = await workspaceInternalAction\("workspaceInventory"\)\.catch/);
@@ -209,7 +215,7 @@ test("completion narration names only completed panels and admits skipped comman
   assert.match(content, /completionMessage\(workflow, result\.grounded, result\.timings\)/);
 });
 
-test("Voice workspace cleanup atomically prunes stale Jarvis layout records", () => {
+test("Voice workspace cleanup atomically prunes only authenticated Jarvis layout records", () => {
   assert.match(bridge, /action === "clearVoiceScreen"/);
   assert.match(bridge, /Voice cleanup requires explicit Jarvis ownership receipts/);
   assert.match(bridge, /const replaceAllSafe = payload\.replace_all_safe === true/);
@@ -222,10 +228,10 @@ test("Voice workspace cleanup atomically prunes stale Jarvis layout records", ()
   assert.match(bridge, /consequentialWindowType/);
   assert.match(content, /workspaceInternalAction\("clearVoiceScreen"/);
   assert.match(content, /preserve_ids: \[\.\.\.borrowedWindowReceipts\.keys\(\)\]/);
-  assert.match(content, /const verifiedSnapshotIds = snapshotIds \? windowRoots\(\)\.flatMap/);
-  assert.match(content, /!panelMatchesCommand\(panel, command\)/);
+  assert.doesNotMatch(content, /const verifiedSnapshotIds = snapshotIds/);
+  assert.match(content, /durableOwnershipMatches\(id, receipt\)/);
   assert.match(content, /only_ids: \[\.\.\.\(snapshotIds \?\? ownedIds\)\]/);
-  assert.match(bridge, /catch \{ if \(!verifiedSafeIds\.has\(rawId\)\) blockedIds\.add\(rawId\); \}/);
+  assert.match(bridge, /if \(!verifiedSafeIds\.has\(rawId\) \|\| !hasExactOwnershipNonce\(current, rawId\)\) \{/);
   assert.match(content, /function pendingCleanupReceipts\(requestId = null, createdBefore = null\)/);
   assert.match(content, /attempt < 5/);
   assert.match(content, /await pause\(100 \* \(2 \*\* attempt\)\)/);
@@ -288,11 +294,11 @@ test("an authorized reset performs one bounded fresh sweep of current Voice stat
   assert.match(content, /const current = await executeDurableWorkspaceReset/);
 });
 
-test("automatic recovery adopts a nonempty Voice screen only under the explicit local cleanup policy", () => {
+test("ordinary startup reuses a nonempty Voice screen without adopting its user panels", () => {
   assert.match(content, /Owned Voice workspace is unavailable; cleanup was not verified/);
   assert.match(content, /if \(!reset\.recovery_adoption_authorized\) \{\s*throw new Error\("Automatic Voice recovery cannot adopt an unowned screen"\)/);
-  assert.match(content, /An unowned nonempty Voice screen already exists; refusing to create a duplicate/);
-  assert.match(content, /existingVoice\.window_ids\.length === 0/);
+  assert.match(content, /screen = existingVoice \?\? null/);
+  assert.doesNotMatch(content, /An unowned nonempty Voice screen already exists; refusing to create a duplicate/);
   assert.match(content, /reset_workspace[\s\S]{0,180}recoveryAdoptionAuthorized: true/);
   assert.match(content, /executeDurableWorkspaceReset\(\{ requestId, createdBefore, recoveryAdoptionAuthorized \}\)/);
   assert.match(content, /else if \(config\.cleanupVoiceOnStart === true\)[\s\S]{0,300}recoveryAdoptionAuthorized: true/);
@@ -325,8 +331,11 @@ test("a receipted connected panel survives a missing Godel layout-store id for m
 
 test("managed receipts retain Godel's alphanumeric native ids across a content-script restart", () => {
   assert.ok(content.includes("receipt && /^[A-Za-z0-9_-]{1,120}$/.test(String(receipt.id"));
-  assert.match(content, /receipt\.document_generation === generation/);
+  assert.match(content, /older document are evidence of unfinished cleanup/);
+  assert.match(content, /receipt\?\.document_generation !== documentGeneration/);
+  assert.match(content, /durableOwnershipMatches\(id, receipt\)/);
   assert.match(content, /document_generation: documentGeneration/);
+  assert.match(content, /ownership_nonce:/);
 });
 
 test("id-less Godel panels keep an exact title-toolbar receipt for later cleanup", () => {
@@ -347,8 +356,54 @@ test("replacement cleanup stays within native Voice membership and exact DOM rec
   assert.match(content, /if \(receipt\.id && !belongsOnlyToVoice\(receipt\.id\)\)/);
   assert.match(content, /receipt\.document_generation !== documentGeneration/);
   assert.match(content, /verified_safe_ids: verifiedSafeIds/);
-  assert.match(bridge, /else if \(!verifiedSafeIds\.has\(rawId\)\) blockedIds\.add\(rawId\)/);
+  assert.match(bridge, /if \(!verifiedSafeIds\.has\(rawId\) \|\| !hasExactOwnershipNonce\(current, rawId\)\) \{/);
   assert.match(bridge, /knownIds\]\.filter\(id => verifiedSafeIds\.has\(id\)/);
+});
+
+test("replace and reload cleanup never treat Voice-screen membership as panel ownership", () => {
+  assert.match(bridge, /Screen membership and a harmless-looking command type are location/);
+  assert.match(bridge, /if \(!verifiedSafeIds\.has\(rawId\) \|\| !hasExactOwnershipNonce\(current, rawId\)\)/);
+  assert.match(content, /verified_safe_ids: verifiedSafeIds/);
+  assert.match(content, /ownership_nonces: verifiedOwnershipNonces/);
+  assert.doesNotMatch(content, /verifiedSnapshotIds/);
+});
+
+test("durable ownership nonces make crash recovery exact across a Godel reload", () => {
+  assert.match(bridge, /const OWNERSHIP_FIELD = "__godel_voice_owner_v1"/);
+  assert.match(bridge, /action === "tagOwnedWindow"/);
+  assert.match(bridge, /Godel window already has a different ownership tag/);
+  assert.match(bridge, /\[rawId\]: \{ \.\.\.liveRecord, \[OWNERSHIP_FIELD\]: nonce \}/);
+  assert.match(bridge, /ownership_nonces: Object\.fromEntries/);
+  assert.match(bridge, /!hasExactOwnershipNonce\(layout, id\)/);
+  assert.match(content, /function newOwnershipNonce\(\)/);
+  assert.match(content, /async function claimManagedPanel/);
+  assert.match(content, /workspaceInternalAction\("tagOwnedWindow"/);
+  assert.match(content, /ownedVoice\.inventory\?\.ownership_nonces/);
+  assert.match(content, /receipt\?\.document_generation !== documentGeneration\s*&& !durableOwnershipMatches\(id, receipt\)/);
+  assert.match(content, /if \(durableOwnershipMatches\(id, receipt\)\) \{[\s\S]{0,260}clearVoiceScreen/);
+});
+
+test("closing a borrowed singleton restores the user panel instead of destroying it", () => {
+  const control = content.slice(content.indexOf("async function executeControlStep"),
+    content.indexOf("async function executeConfigureStep"));
+  assert.match(control, /step\.operation === "close" && controlWindowId/);
+  assert.match(control, /borrowedWindowReceipts\.has\(controlWindowId\)/);
+  assert.match(control, /await restoreBorrowedWindows\(\{ onlyIds: new Set\(\[controlWindowId\]\) \}\)/);
+  assert.match(control, /Could not safely restore borrowed/);
+  assert.ok(control.indexOf("await restoreBorrowedWindows")
+    < control.indexOf('panelInternalAction(panel, "LAYOUT", actions[step.operation])'));
+});
+
+test("late cancellation and unverified completion roll back the completed DOM transaction", () => {
+  assert.match(content, /await ensureNotCancelled\(requestId\);\s*return \{ timings, opened, grounded, layoutWarning, phases, rollback: rollbackTransaction \}/);
+  assert.match(content, /rollback: result\.rollback/);
+  const poll = content.slice(content.indexOf("async function poll()"),
+    content.indexOf("async function runNextLoop"));
+  assert.match(poll, /let completedResult = null/);
+  assert.match(poll, /completedResult = result/);
+  assert.match(poll, /await result\.rollback\?\.\(\)/);
+  assert.match(poll, /if \(completedResult\?\.rollback\)/);
+  assert.match(poll, /await completedResult\.rollback\(\)/);
 });
 
 test("retained cleanup receipts become a terminal visible failure after bounded retries", () => {

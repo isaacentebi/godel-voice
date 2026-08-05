@@ -45,14 +45,14 @@ test("current HDS/EQS corpus is strict, unique and split by readiness", () => {
   assert.equal(cases.filter(item => item.tags.includes("range-filter")).length, 14);
 });
 
-test("all exact HDS views have opening and immediate-followup coverage", () => {
+test("HDS corpus retains all documented views while the live-failed Bubble control stays gated", () => {
   const hds = cases.filter(item => item.tags.includes("hds") && item.expected.kind === "execute");
   const views = new Set(hds.flatMap(item => item.expected.steps ?? []).flatMap(step => step.actions ?? []).filter(action => action.feature === "view").map(action => action.value));
   assert.deepEqual([...views].sort(), ["Bubble", "Table", "Treemap"]);
   assert.ok(hds.filter(item => item.tags.includes("follow-up")).length >= 4);
 
   const bubble = parseControlFollowup("make the holders window bubbles");
-  assert.deepEqual(bubble.steps[0].actions, [{ feature: "view", operation: "select", value: "Bubble" }]);
+  assert.equal(bubble, null);
   const table = parseControlFollowup("put this institutional holders back in the table");
   assert.deepEqual(table.steps[0].actions, [{ feature: "view", operation: "select", value: "Table" }]);
   const treemap = parseControlFollowup("switch the ownership window to the tree map");

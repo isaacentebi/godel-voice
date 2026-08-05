@@ -297,3 +297,12 @@ test("Realtime intent storage failure never prevents the current document from s
   assert.equal(store.activate(), true);
   assert.equal(store.deactivate(), false);
 });
+
+test("Realtime polls short workflows quickly, then backs off to the regular cadence", () => {
+  const state = loadState();
+  assert.equal(state.workflowPollDelay(0), 50);
+  assert.equal(state.workflowPollDelay(999), 50);
+  assert.equal(state.workflowPollDelay(1_000), 160);
+  assert.equal(state.workflowPollDelay(60_000), 160);
+  assert.equal(state.workflowPollDelay(-1, { fastMs: 1, regularMs: 5, fastWindowMs: 10 }), 25);
+});

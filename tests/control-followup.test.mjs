@@ -139,6 +139,70 @@ test("post-open geometry controls keep exact identity through recursive composit
   assert.deepEqual(plan.steps.slice(1).map(step => step.value), ["left", "larger"]);
 });
 
+test("a close-open-place-resize replacement keeps every operation and exact new identity", async () => {
+  const phrase = "close the focused window then pull up Amazon estimates in its place on the left and make it larger";
+  const plan = parseControlFollowup(phrase);
+  assert.deepEqual(plan.steps.map(step => step.command ?? step.operation), ["close", "ERN", "resize"]);
+  assert.deepEqual(plan.steps[0].target, { mode: "focused", command: null, security: null });
+  assert.equal(plan.steps[1].terminal_command, "AMZN EQ ERN");
+  assert.equal(plan.steps[1].layout.placement, "left");
+  assert.deepEqual(plan.steps[2].target, { mode: "command", command: "ERN", security: "AMZN" });
+  assert.equal(plan.steps[2].value, "larger");
+  const compiled = await compileNaturalRequest(phrase, {
+    compile: async () => { throw new Error("model forbidden"); }
+  });
+  assert.equal(compiled.route, "local");
+});
+
+test("multi-window control sequences preserve spoken order and named identities", async () => {
+  const phrase = "move the Apple chart upper right shrink it then focus the Meta matrix and maximize that";
+  const plan = parseControlFollowup(phrase);
+  assert.deepEqual(plan.steps.map(step => [step.operation, step.target.command, step.target.security, step.value]), [
+    ["move", "G", "AAPL", "top-right"],
+    ["resize", "G", "AAPL", "smaller"],
+    ["focus", "EM", "META", null],
+    ["maximize", "EM", "META", null]
+  ]);
+  const compiled = await compileNaturalRequest(phrase, {
+    compile: async () => { throw new Error("model forbidden"); }
+  });
+  assert.equal(compiled.route, "local");
+});
+
+test("two independently named company panels open locally without an imperative", async () => {
+  const phrase = "Amazon earnings matrix and Meta analyst ratings";
+  const plan = parseControlFollowup(phrase);
+  assert.deepEqual(plan.steps.map(step => step.terminal_command), ["AMZN EQ EM", "META EQ ANR"]);
+  const compiled = await compileNaturalRequest(phrase, {
+    compile: async () => { throw new Error("model forbidden"); }
+  });
+  assert.equal(compiled.route, "local");
+});
+
+test("live-failed EM valuation and HDS Bubble requests fail closed before any model call", async () => {
+  assert.equal(parseControlFollowup("open Amazon earnings matrix and read forward P E"), null);
+  assert.equal(parseControlFollowup("read the P E multiple", {
+    focused_panel: { command: "EM", security: "AMZN", connected: true }
+  }), null);
+  assert.equal(parseControlFollowup("open Meta institutional holders as a bubble"), null);
+  assert.equal(parseControlFollowup("switch this to Bubble", {
+    focused_panel: { command: "HDS", security: "META", connected: true }
+  }), null);
+  for (const [phrase, context] of [
+    ["open Amazon earnings matrix and read forward P E", null],
+    ["open Meta institutional holders as a bubble", null],
+    ["read the P E multiple", { focused_panel: { command: "EM", security: "AMZN", connected: true } }],
+    ["switch this to Bubble", { focused_panel: { command: "HDS", security: "META", connected: true } }]
+  ]) {
+    const compiled = await compileNaturalRequest(phrase, {
+      context,
+      compile: async () => { throw new Error("model forbidden"); }
+    });
+    assert.equal(compiled.kind, "unsupported", phrase);
+    assert.equal(compiled.route, "local", phrase);
+  }
+});
+
 test("mixed Godel surfaces preserve clause-level left and right placement", () => {
   const plan = parseControlFollowup("open the market heatmap on the left and Meta earnings matrix on the right");
   assert.deepEqual(plan.steps.map(step => [step.command, step.layout?.placement]), [
@@ -238,19 +302,13 @@ test("after-hours and premarket questions use Godel's grounded Q header", () => 
   }
 });
 
-test("VoiceInk forward-P/E variants route to the grounded earnings matrix", () => {
+test("VoiceInk forward-P/E variants fail closed after the live EM row disappeared", () => {
   for (const voice of [
     "now can we see forward p for meta",
     "do we have a chart of forward piece for Meta",
     "a forward P chart for Amazon"
   ]) {
-    const step = parseControlFollowup(voice).steps[0];
-    assert.equal(step.command, "EM", voice);
-    assert.match(step.terminal_command, /^(?:META|AMZN) EQ EM$/, voice);
-    assert.deepEqual(step.actions, [{
-      feature: "valuation", operation: "read",
-      value: { row: "P/E", section: "Multiples", semantic_unit: "Multiple" }
-    }], voice);
+    assert.equal(parseControlFollowup(voice), null, voice);
   }
 });
 
@@ -470,18 +528,11 @@ test("compiles short nested followups without an LLM", () => {
 });
 
 test("switches an existing holders panel among its exact native views", () => {
-  const bubble = parseControlFollowup("switch the Meta institutional holders to bubbles").steps[0];
-  assert.deepEqual(bubble.target, { mode: "command", command: "HDS", security: "META" });
-  assert.deepEqual(bubble.actions, [{ feature: "view", operation: "select", value: "Bubble" }]);
+  assert.equal(parseControlFollowup("switch the Meta institutional holders to bubbles"), null);
   const treemap = parseControlFollowup("show the holders window as a tree map").steps[0];
   assert.deepEqual(treemap.actions, [{ feature: "view", operation: "select", value: "Treemap" }]);
-  const opener = parseControlFollowup("open Meta institutional holders as a bubble").steps[0];
-  assert.equal(opener.kind, "command");
-  assert.equal(opener.command, "HDS");
-  assert.deepEqual(opener.actions, [{ feature: "view", operation: "select", value: "Bubble" }]);
-  const noisy = parseControlFollowup("uh show me micro soft institushunal holders in the bub bull view").steps[0];
-  assert.equal(noisy.terminal_command, "MSFT EQ HDS");
-  assert.deepEqual(noisy.actions, [{ feature: "view", operation: "select", value: "Bubble" }]);
+  assert.equal(parseControlFollowup("open Meta institutional holders as a bubble"), null);
+  assert.equal(parseControlFollowup("uh show me micro soft institushunal holders in the bub bull view"), null);
 });
 
 test("runs and clears an existing equity screener locally", () => {
@@ -500,8 +551,8 @@ test("uses recent authenticated panel context for bounded pronouns", () => {
   assert.deepEqual(run.actions, [{ feature: "screen", operation: "run", value: null }]);
   const hds = parseControlFollowup("make the holders window bubbles", {
     focused_panel: { command: "HDS", security: "META" }
-  }).steps[0];
-  assert.deepEqual(hds.target, { mode: "focused", command: "HDS", security: "META" });
+  });
+  assert.equal(hds, null);
 });
 
 test("compiles spoken EQS ranges and a trailing run as one atomic workflow", () => {
@@ -525,16 +576,11 @@ test("compiles earnings-matrix metric followups without an LLM", () => {
   const valuation = parseControlFollowup("read the pee e multiple", {
     focused_panel: { command: "EM", security: "AMZN" }
   });
-  assert.deepEqual(valuation.steps[0].target, { mode: "focused", command: "EM", security: "AMZN" });
-  assert.deepEqual(valuation.steps[0].actions, [{
-    feature: "valuation", operation: "read",
-    value: { row: "P/E", section: "Multiples", semantic_unit: "Multiple" }
-  }]);
+  assert.equal(valuation, null);
 
   for (const voice of ["what is the p e multiple", "tell me the price to earnings multiple", "read EV over e bit duh"]) {
     const plan = parseControlFollowup(voice, { focused_panel: { command: "EM", security: "AMZN" } });
-    assert.equal(plan.steps[0].target.command, "EM", voice);
-    assert.equal(plan.steps[0].actions[0].value.semantic_unit, "Multiple", voice);
+    assert.equal(plan, null, voice);
   }
   assert.equal(parseControlFollowup("tell me the p e percentage", {
     focused_panel: { command: "EM", security: "AMZN" }

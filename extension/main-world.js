@@ -3,7 +3,10 @@
 
   const REQUEST = "godel-voice:panel-action";
   const RESPONSE = "godel-voice:panel-action-result";
+  const OWNERSHIP_FIELD = "__godel_voice_owner_v1";
   let webpackRequire = null;
+
+  const validOwnershipNonce = value => /^gv1_[a-f0-9]{32}$/.test(String(value ?? ""));
 
   function respond(detail) {
     window.dispatchEvent(new CustomEvent(RESPONSE, { detail }));
@@ -1152,6 +1155,10 @@
         total_windows: current.screenIds.reduce((total, id) => total + current.screens[id].windowIds.length, 0),
         layout_window_ids: layoutWindowIds,
         orphan_window_record_ids: layoutWindowIds.filter(id => !referencedIds.has(id)),
+        ownership_nonces: Object.fromEntries(layoutWindowIds.flatMap(id => {
+          const nonce = current.windows[id]?.[OWNERSHIP_FIELD];
+          return validOwnershipNonce(nonce) ? [[id, String(nonce)]] : [];
+        })),
         screens: current.screenIds.map(id => ({
           id: String(id), title: current.screens[id].title,
           active: String(id) === String(current.activeScreenId),
@@ -1159,6 +1166,55 @@
           window_ids: current.screens[id].windowIds.map(String)
         }))
       };
+    }
+    if (action === "tagOwnedWindow") {
+      const rawId = String(payload.id ?? "");
+      const rawScreenId = String(payload.screen_id ?? "");
+      const nonce = String(payload.ownership_nonce ?? "");
+      if (!/^[A-Za-z0-9_-]{1,120}$/.test(rawId) || !/^\d+$/.test(rawScreenId)
+          || !validOwnershipNonce(nonce)) {
+        throw new Error("Invalid Jarvis ownership tag");
+      }
+      const screenId = Number(rawScreenId);
+      const owners = current.screenIds.filter(id =>
+        current.screens[id].windowIds.some(candidate => String(candidate) === rawId));
+      const record = current.windows[rawId];
+      if (owners.length !== 1 || Number(owners[0]) !== screenId
+          || !record || typeof record !== "object" || Array.isArray(record)) {
+        throw new Error("Jarvis can tag only one exact window on its owned screen");
+      }
+      const existing = record[OWNERSHIP_FIELD];
+      if (existing != null && existing !== nonce) {
+        throw new Error("Godel window already has a different ownership tag");
+      }
+      let rejected = null;
+      context.setLayout(layoutValue => {
+        let layout;
+        try { layout = assertLayoutShape(layoutValue); }
+        catch (error) { rejected = error; return layoutValue; }
+        const liveOwners = layout.screenIds.filter(id =>
+          layout.screens[id].windowIds.some(candidate => String(candidate) === rawId));
+        const liveRecord = layout.windows[rawId];
+        if (liveOwners.length !== 1 || Number(liveOwners[0]) !== screenId
+            || !liveRecord || typeof liveRecord !== "object" || Array.isArray(liveRecord)
+            || (liveRecord[OWNERSHIP_FIELD] != null && liveRecord[OWNERSHIP_FIELD] !== nonce)) {
+          rejected = new Error("Godel window changed during ownership tagging");
+          return layoutValue;
+        }
+        return {
+          ...layout,
+          windows: {
+            ...layout.windows,
+            [rawId]: { ...liveRecord, [OWNERSHIP_FIELD]: nonce }
+          }
+        };
+      });
+      await waitForElement(() => {
+        if (rejected) throw rejected;
+        const layout = assertLayoutShape(workspaceContextFor(document.documentElement).layout);
+        return layout.windows[rawId]?.[OWNERSHIP_FIELD] === nonce;
+      }, `${rawId} Jarvis ownership tag`, 3000);
+      return { id: rawId, ownership_nonce: nonce };
     }
     if (action === "createOwnedScreen") {
       const title = validateScreenName(payload.name ?? "Voice");
@@ -1204,26 +1260,48 @@
       const knownIds = new Set((Array.isArray(payload.known_ids) ? payload.known_ids : []).map(String));
       const verifiedSafeIds = new Set((Array.isArray(payload.verified_safe_ids)
         ? payload.verified_safe_ids : []).map(String));
+      const requestedOwnershipNonces = payload.ownership_nonces
+        && typeof payload.ownership_nonces === "object" && !Array.isArray(payload.ownership_nonces)
+        ? Object.fromEntries(Object.entries(payload.ownership_nonces).filter(([id, nonce]) =>
+          /^[A-Za-z0-9_-]{1,120}$/.test(id) && validOwnershipNonce(nonce))
+          .map(([id, nonce]) => [String(id), String(nonce)]))
+        : {};
       const expectedWindowIds = (Array.isArray(payload.expected_window_ids) ? payload.expected_window_ids : null)?.map(String);
       if (!expectedWindowIds) throw new Error("Voice cleanup requires an exact workspace snapshot");
-      for (const id of [...preserveIds, ...onlyIds, ...knownIds, ...verifiedSafeIds, ...expectedWindowIds]) {
+      for (const id of [...preserveIds, ...onlyIds, ...knownIds, ...verifiedSafeIds,
+        ...Object.keys(requestedOwnershipNonces), ...expectedWindowIds]) {
         if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) throw new Error("Invalid Godel cleanup window id");
       }
+      const hasExactOwnershipNonce = (layout, id) => {
+        const expected = requestedOwnershipNonces[String(id)];
+        return validOwnershipNonce(expected)
+          && layout.windows[String(id)]?.[OWNERSHIP_FIELD] === expected;
+      };
       const duplicateIds = voice.windowIds.map(String).filter(id => current.screenIds.some(screenId =>
         String(screenId) !== String(voice.id) && current.screens[screenId].windowIds.some(candidate => String(candidate) === id)));
       if (duplicateIds.length) throw new Error("Godel layout contains windows assigned to more than one screen");
       const blockedIds = new Set();
       for (const rawId of voice.windowIds.map(String)) {
+        // Screen membership and a harmless-looking command type are location
+        // facts, not ownership proof. A user can open an ordinary chart on the
+        // dedicated Voice screen while Jarvis is running. Cleanup may remove
+        // only ids authenticated by the isolated-world creation ledger; all
+        // other windows stay in place, including after reload recovery.
+        if (!verifiedSafeIds.has(rawId) || !hasExactOwnershipNonce(current, rawId)) {
+          blockedIds.add(rawId);
+          continue;
+        }
         const nativeRoot = document.getElementById(`${rawId}-window`);
         if (nativeRoot instanceof HTMLElement) {
           try { if (consequentialWindowType(commandTypeFor(nativeRoot))) blockedIds.add(rawId); }
-          catch { if (!verifiedSafeIds.has(rawId)) blockedIds.add(rawId); }
-        } else if (!verifiedSafeIds.has(rawId)) blockedIds.add(rawId);
+          catch { blockedIds.add(rawId); }
+        }
       }
       const removeIds = new Set(voice.windowIds.map(String).filter(id =>
         !preserveIds.has(id) && !blockedIds.has(id) && (replaceAllSafe || onlyIds.has(id))));
       const referencedIds = new Set(current.screenIds.flatMap(id => current.screens[id].windowIds.map(String)));
       const orphanRecordCandidates = new Set([...knownIds].filter(id => verifiedSafeIds.has(id)
+        && hasExactOwnershipNonce(current, id)
         && !referencedIds.has(id)
         && Object.prototype.hasOwnProperty.call(current.windows, id)));
       let rejected = null;
@@ -1235,7 +1313,8 @@
         const liveWindowIds = liveVoice?.windowIds?.map(String) ?? [];
         if (!liveVoice || liveWindowIds.length !== expectedWindowIds.length
             || liveWindowIds.some((id, index) => id !== expectedWindowIds[index])
-            || [...removeIds].some(id => !liveWindowIds.includes(id))) {
+            || [...removeIds].some(id => !liveWindowIds.includes(id)
+              || !hasExactOwnershipNonce(layout, id))) {
           rejected = new Error("Godel Voice workspace changed during cleanup");
           return layoutValue;
         }
