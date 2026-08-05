@@ -453,3 +453,59 @@ test("noisy quick quote uses the authenticated chart surface", () => {
   assert.equal(step.command, "G");
   assert.equal(step.terminal_command, "ORCL US EQ G");
 });
+
+test("bulk cleanup preserves an and-connected open and its trailing maximize", () => {
+  const context = { panels: [
+    { command: "HMAP", connected: true },
+    { command: "G", security: "AMZN", connected: true }
+  ] };
+  const opened = parseControlFollowup("close all windows and open Meta earnings matrix", context);
+  assert.deepEqual(opened.steps.map(step => step.kind), ["control", "control", "command"]);
+  assert.equal(opened.steps.at(-1).terminal_command, "META US EQ EM");
+
+  const maximized = parseControlFollowup(
+    "close everything then open Meta earnings matrix and maximize it",
+    context
+  );
+  assert.deepEqual(maximized.steps.map(step => step.kind), ["control", "control", "command", "control"]);
+  assert.deepEqual(maximized.steps.slice(-2).map(step => step.command ?? step.operation), ["EM", "maximize"]);
+});
+
+test("close-open compositions retain every requested open and window action", () => {
+  const context = { focused_panel: { command: "G", security: "AMZN" } };
+  const full = parseControlFollowup(
+    "close the chart and open Meta earnings estimates full screen",
+    context
+  );
+  assert.deepEqual(full.steps.map(step => step.command ?? step.operation), ["close", "ERN", "maximize"]);
+
+  const resized = parseControlFollowup(
+    "close the chart and open Meta earnings estimates and make it bigger",
+    context
+  );
+  assert.deepEqual(resized.steps.map(step => step.command ?? step.operation), ["close", "ERN", "resize"]);
+  assert.equal(resized.steps.at(-1).value, "larger");
+
+  const multiple = parseControlFollowup(
+    "close the chart and open the heatmap and active halts",
+    context
+  );
+  assert.deepEqual(multiple.steps.map(step => step.command ?? step.operation), ["close", "HMAP", "HALT"]);
+  assert.deepEqual(multiple.steps.at(-1).actions, [
+    { feature: "tab", operation: "select", value: "Active" }
+  ]);
+});
+
+test("window corrections use the final clause and ambiguous plurals fail closed", () => {
+  const context = { focused_panel: { command: "HMAP" } };
+  const moved = parseControlFollowup("move it left no wait right", context);
+  assert.equal(moved.steps[0].operation, "move");
+  assert.equal(moved.steps[0].value, "right");
+
+  const restored = parseControlFollowup("maximize it no wait restore it", context);
+  assert.equal(restored.steps[0].operation, "restore");
+
+  assert.equal(parseControlFollowup("close both charts", context), null);
+  assert.equal(parseControlFollowup("close those two charts", context), null);
+  assert.equal(parseControlFollowup("move them left", context), null);
+});

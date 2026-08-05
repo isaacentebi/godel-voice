@@ -3,6 +3,7 @@ import fs from "node:fs";
 import test from "node:test";
 import { parseControlFollowup } from "../src/control-followup.mjs";
 import { compileChartOptionsFollowup } from "../src/commands/chart-options-followup.mjs";
+import { compileDeterministicDesk } from "../src/deterministic-desks.mjs";
 
 const cases = JSON.parse(fs.readFileSync(new URL("../evals/data/deterministic-desk-cases-v1.json", import.meta.url)));
 const catalog = JSON.parse(fs.readFileSync(new URL("../catalog/contracts/deterministic-desks-v1.json", import.meta.url)));
@@ -17,7 +18,143 @@ test("every deterministic desk case compiles or declines exactly", () => {
     }
     assert.deepEqual(plan.steps.map(step => step.command), item.expected_commands, item.id);
     assert.equal(plan.layout.preset, item.expected_layout, item.id);
+    if (Object.hasOwn(item, "expected_new_screen")) {
+      assert.equal(plan.layout.new_screen, item.expected_new_screen, item.id);
+    }
   }
+});
+
+test("a named research desk keeps every requested native panel in spoken order", () => {
+  const plan = parseControlFollowup(
+    "build a clean amazon research desk with description matrix estimates filings transcript and news"
+  );
+  assert.deepEqual(plan.steps.map(step => step.command), ["DES", "EM", "ERN", "CF", "TRAN", "N"]);
+  assert.deepEqual(plan.steps.map(step => step.terminal_command), [
+    "AMZN US EQ DES", "AMZN US EQ EM", "AMZN US EQ ERN",
+    "AMZN US EQ CF", "AMZN US EQ TRAN", "AMZN US EQ N"
+  ]);
+});
+
+test("noisy VoiceInk company desk language stays deterministic", () => {
+  const plan = parseControlFollowup(
+    "jarvis clean screen for micro soft uh company overview earnins matt tricks estimates fill ins holders and news arrange it like a research desk"
+  );
+  assert.deepEqual(plan.steps.map(step => step.command), ["DES", "EM", "ERN", "CF", "HDS", "N"]);
+  assert.ok(plan.steps.every(step => step.terminal_command.startsWith("MSFT US EQ ")));
+  assert.equal(plan.layout.new_screen, true);
+});
+
+test("a corrected earnings desk honors explicit panels and placement", () => {
+  const plan = parseControlFollowup(
+    "no wait open a microsoft earnings desk with company overview earnings matrix filings and a price chart in the upper right"
+  );
+  assert.deepEqual(plan.steps.map(step => step.command), ["DES", "EM", "CF", "G"]);
+  assert.equal(plan.steps.at(-1).layout.placement, "top-right");
+});
+
+test("macro strip opens native market surfaces on a fresh screen", () => {
+  const plan = parseControlFollowup("put world indexes futures commodities and fx across a fresh screen");
+  assert.deepEqual(plan.steps.map(step => step.command), ["WEI", "WEIF", "GLCO", "FX"]);
+  assert.equal(plan.layout.preset, "market");
+  assert.equal(plan.layout.new_screen, true);
+});
+
+test("market maps remain distinct and preserve spoken placement", () => {
+  const plan = parseControlFollowup(
+    "new market screen index sector wheel upper left world exchange opening map lower left heat map upper right and active halts lower right"
+  );
+  assert.deepEqual(plan.steps.map(step => step.command), ["IMAP", "MAP", "HMAP", "HALT"]);
+  assert.deepEqual(plan.steps.map(step => step.layout.placement), [
+    "top-left", "bottom-left", "top-right", "bottom-right"
+  ]);
+  assert.deepEqual(plan.steps.at(-1).actions, [
+    { feature: "tab", operation: "select", value: "Active" }
+  ]);
+});
+
+test("market placement binds both preposed and relational phrases", () => {
+  const preposed = parseControlFollowup(
+    "new market screen on the left put the heatmap and on the right active halts"
+  );
+  assert.deepEqual(preposed.steps.map(step => step.layout.placement), ["left", "right"]);
+
+  const relational = parseControlFollowup(
+    "new market screen put the heatmap on the left and beneath it active halts"
+  );
+  assert.deepEqual(relational.steps.map(step => step.layout.placement), ["left", "bottom"]);
+});
+
+test("macro aliases retain every requested surface including verified VIX", () => {
+  const custom = parseControlFollowup(
+    "new macro screen with world markets futures commodities and currencies"
+  );
+  assert.deepEqual(custom.steps.map(step => step.command), ["WEI", "WEIF", "GLCO", "FX"]);
+  assert.equal(custom.layout.new_screen, true);
+
+  const vix = parseControlFollowup(
+    "open a market dashboard with global indices futures commodities and VIX"
+  );
+  assert.deepEqual(vix.steps.map(step => step.command), ["WEI", "WEIF", "GLCO", "G"]);
+  assert.equal(vix.steps.at(-1).terminal_command, "VIX CBOE IDX G");
+});
+
+test("custom macro content is never replaced by the default desk", () => {
+  const commodity = parseControlFollowup("open a macro monitor with commodities");
+  assert.deepEqual(commodity.steps.map(step => step.command), ["GLCO"]);
+
+  const freshDefault = parseControlFollowup("new macro screen");
+  assert.deepEqual(freshDefault.steps.map(step => step.command), ["WEI", "WEIF", "G"]);
+  assert.equal(freshDefault.layout.new_screen, true);
+
+  assert.equal(
+    parseControlFollowup("fresh market screen heatmap active halts and market movers"),
+    null
+  );
+});
+
+test("long market overview remains a single ordered zero-model plan", () => {
+  const plan = parseControlFollowup(
+    "new screen world indices index futures commodities fx heat map impact map all halts most active stocks most active options top Reuters trending tickers and IPO calendar"
+  );
+  assert.deepEqual(plan.steps.map(step => step.command), [
+    "WEI", "WEIF", "GLCO", "FX", "HMAP", "IMAP", "HALT", "MOST", "MOSO", "TOP", "TREND", "IPO"
+  ]);
+  assert.deepEqual(plan.steps[6].actions, [
+    { feature: "tab", operation: "select", value: "All" }
+  ]);
+  assert.equal(plan.layout.new_screen, true);
+});
+
+test("mixed market and company requests never compile as a partial desk", () => {
+  const plan = compileDeterministicDesk({
+    transcript: "new screen world indices and amazon earnings matrix",
+    text: "new screen world indices and amazon earnings matrix",
+    security: "AMZN",
+    explicitlyOpening: true
+  });
+  assert.equal(plan, null);
+});
+
+test("unverified research configuration stays off the deterministic desk route", () => {
+  for (const transcript of [
+    "open an Amazon research desk with annual financial statements and filings",
+    "open an Amazon research desk with earnings matrix and filings if available"
+  ]) {
+    assert.equal(compileDeterministicDesk({
+      transcript, text: transcript.toLowerCase(), security: "AMZN", explicitlyOpening: true
+    }), null, transcript);
+  }
+});
+
+test("close-open-maximize compiles as one ordered replacement", () => {
+  const plan = parseControlFollowup(
+    "close the previous chart open meta earnings estimates and make that full screen"
+  );
+  assert.deepEqual(plan.steps.map(step => step.kind), ["control", "command", "control"]);
+  assert.deepEqual(plan.steps.filter(step => step.kind === "control").map(step => step.operation), [
+    "close", "maximize"
+  ]);
+  assert.equal(plan.steps[1].terminal_command, "META US EQ ERN");
 });
 
 test("market fundamentals desk preserves both requested metrics atomically", () => {

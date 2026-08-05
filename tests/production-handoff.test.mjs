@@ -42,6 +42,13 @@ test("command and nested-action execution use rendered postconditions instead of
 test("panel identity uses exact native types or exact rendered titles", () => {
   const content = read("extension/content.js");
   assert.match(content, /ANR: \["ANALYST RATINGS"\]/);
+  assert.match(content, /GLCO: \["GLOBAL COMMODITY FUTURES", "GLCO"\]/);
+  assert.match(content, /FX: \["FOREX PAIRS", "FX"\]/);
+  assert.match(content, /MOSO: \["MOST ACTIVE OPTIONS", "MOSO"\]/);
+  assert.match(content, /TOP: \["TOP NEWS", "TOP"\]/);
+  assert.match(content, /TREND: \["TRENDING ON GODEL", "TREND"\]/);
+  assert.match(content, /IPO: \["INITIAL PUBLIC OFFERINGS", "IPO"\]/);
+  assert.match(content, /MAP: \["WORLD VENUE MAP", "MAP"\]/);
   assert.match(content, /ANR: "ANALYST_RATINGS"/);
   assert.match(content, /panelTitleNodes\(command\)\.some/);
   assert.match(content, /panelMatchesTerminalIdentity\(root, identity\)/);
@@ -84,8 +91,8 @@ test("workflow layout failures retain completed step timings and an exact layout
   assert.match(content, /status: "skipped"/);
   assert.match(content, /I couldn't finish the requested placement/);
   assert.match(content, /panelInternalAction\(livePanel, "LAYOUT", "setGeometry"/);
-  assert.match(content, /const root = windowRoots\(\)\[0\]/);
-  assert.match(content, /document\.querySelector\('\[id\$="-window"\]'\)/);
+  assert.match(content, /document\.getElementById\("godel-voice-workspace-anchor"\)/);
+  assert.match(content, /panelInternalAction\(root, "WORKSPACE", action, payload\)/);
   assert.match(mainWorld, /action === "setWindowGeometry"/);
 });
 

@@ -15,9 +15,27 @@
       "id": "company-research-desk",
       "status": "deterministic",
       "layout": "research",
-      "commands": ["DES", "EM", "TRAN", "CF"],
+      "commands": ["DES", "FA", "EM", "ERN", "CF", "TRAN", "ANR", "HDS", "RES", "N", "G"],
       "execution_shape": "pure-cli",
-      "examples": ["open a research desk for Meta"]
+      "enabled_composition": "Any two or more explicitly requested native panels, kept in spoken order; defaults remain DES, EM, TRAN, CF.",
+      "blocked_semantics": ["statement-period configuration", "optional panel semantics", "downloads and exports"],
+      "examples": [
+        "open a research desk for Meta",
+        "build an Amazon research desk with description matrix estimates filings transcript and news"
+      ]
+    },
+    {
+      "id": "market-monitor-desk",
+      "status": "deterministic-partial-nested",
+      "layout": "market",
+      "commands": ["WEI", "WEIF", "GLCO", "FX", "HMAP", "IMAP", "MAP", "HALT", "MOST", "MOSO", "TOP", "TREND", "IPO"],
+      "execution_shape": "pure-cli+verified-nested",
+      "enabled_nested_actions": ["HALT.tab.select", "HMAP.view.select", "IMAP.view.select"],
+      "blocked_nested_actions": ["HMAP.filters.configure", "IMAP.filters.configure", "MOST.filters.configure", "MOSO.filters.configure", "export"],
+      "examples": [
+        "put world indexes futures commodities and FX across a fresh screen",
+        "new market screen index sector wheel upper left world exchange opening map lower left heat map upper right and active halts lower right"
+      ]
     },
     {
       "id": "options-desk",

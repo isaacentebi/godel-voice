@@ -27,6 +27,7 @@ test("native workspace bridge uses exact Godel lifecycle contracts", () => {
   assert.match(bridge, /workspace layout shape changed/);
   assert.match(bridge, /const tabButtons = \[\.\.\.document\.querySelectorAll/);
   assert.match(bridge, /workspaceContextFor\(contextRoot \?\? root\)/);
+  assert.match(bridge, /const contextRoot = root\.matches\?\.\('\[id\$="-window"\]'\) \? root : null/);
   assert.match(bridge, /String\(screen\.id\) !== String\(screenId\)/);
   assert.match(bridge, /screen\.windowIds\.length > 0 && !\("activeWindowId" in screen\)/);
   assert.doesNotMatch(bridge, /style\.(left|top|width|height)\s*=/);
@@ -106,6 +107,15 @@ test("workspace inventory exposes bounded state needed for recovery diagnostics"
   assert.match(bridge, /window_ids: current\.screens\[id\]\.windowIds\.map\(String\)/);
 });
 
+test("global workspace actions never inherit a stale panel screen provider", () => {
+  assert.match(content, /document\.getElementById\("godel-voice-workspace-anchor"\)/);
+  assert.match(content, /root\.id = "godel-voice-workspace-anchor"/);
+  assert.match(content, /root\.hidden = true/);
+  assert.match(content, /document\.documentElement\.append\(root\)/);
+  assert.match(content, /panelInternalAction\(root, "WORKSPACE", action, payload\)/);
+  assert.doesNotMatch(content, /const root = windowRoots\(\)\[0\][\s\S]{0,180}panelInternalAction\(root, "WORKSPACE"/);
+});
+
 test("singleton panels borrowed from another screen are restored instead of closed", () => {
   assert.match(bridge, /action === "moveWindowToScreen"/);
   assert.match(bridge, /sources\.length !== 1/);
@@ -118,6 +128,15 @@ test("singleton panels borrowed from another screen are restored instead of clos
   assert.match(content, /borrowedWindowReceipts\.set\(nativeId, receipt\)/);
   assert.match(content, /transactionBorrowedIds\.add\(nativeId\)/);
   assert.match(content, /await restoreBorrowedWindows\(\{ onlyIds: transactionBorrowedIds \}\)/);
+});
+
+test("fresh rendered windows wait for Godel's layout store before transfer", () => {
+  assert.match(content, /async function moveWindowToWorkflowScreen\(id, targetScreenId\)/);
+  assert.match(content, /attempt < 20/);
+  assert.match(content, /Expected one Godel screen for window/);
+  assert.match(content, /found 0/);
+  assert.match(content, /await pause\(25\)/);
+  assert.match(content, /await moveWindowToWorkflowScreen\(nativeId, workflowScreenId\)/);
 });
 
 test("compound commands wait for Godel's bounded layout commit before opening another panel", () => {
@@ -158,7 +177,7 @@ test("contextual controls target last, focused, or remembered command windows", 
   assert.match(content, /attempt < 20/);
   assert.match(content, /await pause\(25\)/);
   assert.match(content, /workspaceInternalAction\("setWindowGeometry"/);
-  assert.match(content, /document\.querySelector\('\[id\$="-window"\]'\)/);
+  assert.match(content, /document\.getElementById\("godel-voice-workspace-anchor"\)/);
   assert.match(content, /panelForControl\(step\.target, await activeScreenRoots\(\)\)/);
   assert.match(content, /roots\.filter\(root => panelMatchesCommand\(root, target\.command\)\)/);
   assert.match(bridge, /screen\.activeWindowId == null/);
@@ -166,4 +185,10 @@ test("contextual controls target last, focused, or remembered command windows", 
   assert.match(content, /panelExposureScore\(b\) - panelExposureScore\(a\)/);
   assert.match(content, /document\.elementFromPoint/);
   assert.match(content, /openExport/);
+});
+
+test("explicit post-open geometry is never undone by automatic layout", () => {
+  assert.match(content, /const hasExplicitGeometryControl = plan\.steps\.some/);
+  assert.match(content, /\["maximize", "restore", "move", "resize"\]\.includes\(step\.operation\)/);
+  assert.match(content, /if \(!hasExplicitGeometryControl\) await arrangeWorkflow\(plan, opened\)/);
 });

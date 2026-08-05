@@ -5,6 +5,11 @@
   {"id":"desk-market-amazon-fundamentals","utterance":"open a heatmap on the left side and an Amazon chart on the right side with operating margins and revenues","expected_commands":["HMAP","GF"],"expected_layout":"market"},
   {"id":"desk-price-comparison","utterance":"compare Amazon Meta and Microsoft over five years side by side","expected_commands":["HMS"],"expected_layout":"comparison"},
   {"id":"desk-fundamental-gf","utterance":"compare Amazon and Microsoft revenue","expected_commands":["GF"],"expected_layout":"comparison"},
+  {"id":"desk-custom-research-amazon","utterance":"build a clean Amazon research desk with description matrix estimates filings transcript and news","expected_commands":["DES","EM","ERN","CF","TRAN","N"],"expected_layout":"research","expected_new_screen":false},
+  {"id":"desk-noisy-research-microsoft","utterance":"Jarvis clean screen for micro soft uh company overview earnins matt tricks estimates fill ins holders and news arrange it like a research desk","expected_commands":["DES","EM","ERN","CF","HDS","N"],"expected_layout":"research","expected_new_screen":true},
+  {"id":"desk-macro-strip","utterance":"put world indexes futures commodities and FX across a fresh screen","expected_commands":["WEI","WEIF","GLCO","FX"],"expected_layout":"market","expected_new_screen":true},
+  {"id":"desk-market-maps","utterance":"new market screen index sector wheel upper left world exchange opening map lower left heat map upper right and active halts lower right","expected_commands":["IMAP","MAP","HMAP","HALT"],"expected_layout":"market","expected_new_screen":true},
+  {"id":"desk-market-overview","utterance":"new screen world indices index futures commodities FX heat map impact map all halts most active stocks most active options top Reuters trending tickers and IPO calendar","expected_commands":["WEI","WEIF","GLCO","FX","HMAP","IMAP","HALT","MOST","MOSO","TOP","TREND","IPO"],"expected_layout":"market","expected_new_screen":true},
   {"id":"desk-block-unverified-options-expiry","utterance":"open an Nvidia options desk for the next monthly expiry","expected_kind":"decline"},
   {"id":"desk-block-missing-security","utterance":"open an earnings research desk","expected_kind":"decline"}
 ]

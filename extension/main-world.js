@@ -1118,7 +1118,10 @@
   }
 
   async function runWorkspace(root, action, payload) {
-    const contextRoot = root.matches?.('[id$="-window"]') ? root : root.querySelector('[id$="-window"]');
+    // A workspace request delivered through the dedicated fiber-free anchor
+    // must resolve from Godel's screen tabs, not from an arbitrary descendant
+    // window whose React provider can still be bound to another screen.
+    const contextRoot = root.matches?.('[id$="-window"]') ? root : null;
     if (action === "activeScreenInfo") {
       const tabs = screenTabs();
       const active = tabs.items.find(item => String(item.id) === String(tabs.activeItemId));

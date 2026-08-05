@@ -131,6 +131,51 @@ function workflowLayout(preset = "grid") {
   return { mode: "tile", direction: "row", gap_px: 12, preset, preserve_existing: false, new_screen: false };
 }
 
+function asksForNewScreen(text) {
+  return /\b(?:on |in )?(?:a )?(?:new|second) (?:screen|tab)\b|\b(?:new|fresh|clean|blank) (?:market |research |company |macro )?screen\b/.test(text);
+}
+
+function trailingOpenControl(text) {
+  const placements = "top[ -]?left|top[ -]?right|bottom[ -]?left|bottom[ -]?right|left|right|top|bottom|full";
+  const specs = [
+    {
+      pattern: /^(.*?)(?:\s+(?:and then|then|and))?\s+(?:make\s+(?:it|that|this)\s+full ?screen|full ?screen|maximi[sz]e(?:\s+(?:it|that|this|the\s+.+))?)$/,
+      operation: "maximize", value: null
+    },
+    {
+      pattern: /^(.*?)(?:\s+(?:and then|then|and))?\s+(?:make|resize|grow|shrink)\s+(?:it|that|this)\s+(bigger|larger|wider|taller|smaller|narrower|shorter)$/,
+      operation: "resize"
+    },
+    {
+      pattern: new RegExp(`^(.*?)(?:\\s+(?:and then|then|and))?\\s+(?:put|move|place|send)\\s+(?:it|that|this)\\s+(?:on|to)?\\s*(?:the\\s+)?(${placements})$`),
+      operation: "move"
+    },
+    {
+      pattern: new RegExp(`^(.*?)(?:\\s+(?:and then|then|and))?\\s+(?:on|to)\\s+(?:the\\s+)?(${placements})$`),
+      operation: "move"
+    }
+  ];
+  for (const spec of specs) {
+    const match = spec.pattern.exec(text);
+    const core = match?.[1]?.trim();
+    if (!core || !/\b(?:open|launch|create|build|display)\b|\bpull(?: up)?\b|\bbring up\b|\bshow\b/.test(core)) continue;
+    let value = spec.value ?? null;
+    if (spec.operation === "resize") value = /\b(?:bigger|larger|wider|taller)\b/.test(match[2]) ? "larger" : "smaller";
+    if (spec.operation === "move") value = String(match[2]).toLowerCase().replace(/\s+/g, "-");
+    const tail = text.slice(core.length);
+    const namedTarget = targetFor(tail);
+    return {
+      core,
+      operation: spec.operation,
+      value,
+      target: namedTarget.command
+        ? { mode: "command", command: namedTarget.command, security: namedTarget.security }
+        : { mode: "last", command: null, security: null }
+    };
+  }
+  return null;
+}
+
 function exactTerminalStep(command, terminalCommand, id, placement = null) {
   return {
     id, kind: "command", command, terminal_command: terminalCommand,
@@ -170,6 +215,13 @@ export function parseControlFollowup(transcript, context = null) {
     }
   }
 
+  // Plural geometry and close requests need exact panel identities. Reducing
+  // “both charts” or “move them” to one focused/last panel is a silent partial
+  // action, so keep those phrases off the deterministic executor.
+  if ((/\b(?:close|dismiss|remove|maximize|maximise|restore|move|put|place|resize|make)\b/.test(text)
+      && /\b(?:both|these two|those two|the two)\b/.test(text))
+      || /\b(?:move|put|place|resize|make|maximize|maximise|restore)\s+them\b/.test(text)) return null;
+
   // Close every currently authenticated, non-consequential Godel panel when
   // the exact live context is available. Without that context, bulk language
   // still fails closed instead of degrading to a single arbitrary close.
@@ -181,7 +233,7 @@ export function parseControlFollowup(transcript, context = null) {
     const panels = Array.isArray(context?.panels) ? context.panels.filter(panel =>
       panel?.connected !== false && typeof panel?.command === "string"
       && !unsafe.has(String(panel.command).toUpperCase())).slice(0, 12) : [];
-    const continuation = /\b(?:and\s+then|then)\b[\s,:-]*(.+)$/.exec(text)?.[1]?.trim() ?? "";
+    const continuation = /\b(?:and\s+then|then|and)\b[\s,:-]*(?=(?:open|show|pull(?: up)?|bring up|build|create|compare)\b)(.+)$/.exec(text)?.[1]?.trim() ?? "";
     const nextPlan = continuation && /\b(?:open|show|pull|bring|build|create|compare)\b/.test(continuation)
       ? parseControlFollowup(continuation, context) : null;
     if (continuation && !nextPlan) return null;
@@ -294,9 +346,13 @@ export function parseControlFollowup(transcript, context = null) {
 
   // “Macro monitor” is a human concept rather than one Godel mnemonic. Build
   // a useful three-panel macro desk from native surfaces and tile it.
-  if (explicitlyOpening && /\bmacro (?:monitor|desk|dashboard|screen)\b/.test(text)) {
+  const macroRemainder = text.replace(/\bmacro (?:monitor|desk|dashboard|screen)\b/, "");
+  const macroHasRequestedContents = /\bwith\b|\b(?:indices|indexes|world markets|global markets|futures|commodities|forex|fx|currencies|vix|volatility|heatmap|halts?|most active|market movers?)\b/.test(macroRemainder);
+  if (explicitlyOpening && /\bmacro (?:monitor|desk|dashboard|screen)\b/.test(text) && !macroHasRequestedContents) {
+    const macroLayout = workflowLayout("market");
+    macroLayout.new_screen = asksForNewScreen(text);
     return validateWorkflowPlan({
-      version: 2, failure_policy: "stop_on_required", layout: workflowLayout("market"),
+      version: 2, failure_policy: "stop_on_required", layout: macroLayout,
       steps: [
         exactTerminalStep("WEI", "WEI", "command-1", "top-left"),
         exactTerminalStep("WEIF", "WEIF", "command-2", "top-right"),
@@ -378,6 +434,28 @@ export function parseControlFollowup(transcript, context = null) {
   // an exact supported surface and, for security-scoped commands, a known
   // company. Anything involving configuration remains on the strict path.
   const openClauses = text.split(/\b(?:and then|then|and)\b/).map(value => value.trim()).filter(Boolean);
+
+  // Compose one complete open request with its trailing verified window
+  // control. This lane runs before generic window handling so “open X and
+  // maximize it” cannot turn into a maximize against a panel that was never
+  // opened.
+  const openControl = !/\b(?:close|dismiss|remove)\b/.test(text) ? trailingOpenControl(text) : null;
+  if (explicitlyOpening && openControl) {
+    const openingPlan = parseControlFollowup(openControl.core, context);
+    if (!openingPlan?.steps?.some(step => step.kind === "command")) return null;
+    return validateWorkflowPlan({
+      version: 2, failure_policy: openingPlan.failure_policy, layout: openingPlan.layout,
+      steps: [
+        ...openingPlan.steps,
+        {
+          id: `control-${openingPlan.steps.length + 1}`, kind: "control",
+          operation: openControl.operation, target: openControl.target,
+          value: openControl.value, required: true
+        }
+      ]
+    });
+  }
+
   if (explicitlyOpening && openClauses.length === 2 && !directOpenModifier.test(text)) {
     const pair = openClauses.map((clause, index) => {
       const clauseTarget = targetFor(clause);
@@ -394,10 +472,11 @@ export function parseControlFollowup(transcript, context = null) {
   // The close is optional so a missing prior panel cannot prevent the newly
   // requested information from opening.
   if (/\b(close|dismiss|remove)\b/.test(text) && explicitlyOpening) {
-    const clauses = text.split(/\b(?:open|launch|create|build)\b|\bpull up\b|\bbring up\b/);
-    const openingTarget = targetFor(clauses.at(-1) ?? text);
-    if (openingTarget.command) {
-      const closeClause = clauses.slice(0, -1).join(" ");
+    const opener = /\b(?:open|launch|create|build|display)\b|\bpull(?: up)?\b|\bbring up\b|\bshow\b/.exec(text);
+    if (opener) {
+      const openingPlan = parseControlFollowup(text.slice(opener.index), context);
+      if (!openingPlan?.steps?.some(step => step.kind === "command")) return null;
+      const closeClause = text.slice(0, opener.index);
       const namedClose = targetFor(closeClause);
       const contextual = context?.focused_panel?.command
         ? { mode: "focused", command: null, security: null }
@@ -405,12 +484,13 @@ export function parseControlFollowup(transcript, context = null) {
       const closeTarget = namedClose.command
         ? { mode: "command", command: namedClose.command, security: namedClose.security }
         : contextual;
+      const steps = [
+        { id: "control-1", kind: "control", operation: "close", target: closeTarget, value: null, required: false },
+        ...openingPlan.steps.map((step, index) => ({ ...step, id: `${step.kind}-${index + 2}` }))
+      ];
       return validateWorkflowPlan({
-        version: 2, failure_policy: "stop_on_required", layout: null,
-        steps: [
-          { id: "control-1", kind: "control", operation: "close", target: closeTarget, value: null, required: false },
-          commandStep(openingTarget.command, openingTarget.security, "command-2")
-        ]
+        version: 2, failure_policy: "stop_on_required", layout: openingPlan.layout,
+        steps
       });
     }
   }
@@ -792,25 +872,27 @@ export function parseControlFollowup(transcript, context = null) {
     operation = "resize"; value = "larger";
   } else if (wantsSmaller) {
     operation = "resize"; value = "smaller";
-  } else if (/\b(maximize|maximise|full ?screen)\b/.test(text)) {
+  } else if (/\b(maximize|maximise|full ?screen)\b/.test(sizeText)) {
     operation = "maximize";
-  } else if (/\b(restore|unmaximize|unmaximise)\b/.test(text)) {
+  } else if (/\b(restore|unmaximize|unmaximise)\b/.test(sizeText)) {
     operation = "restore";
-  } else if (/\b(close|dismiss|remove)\b/.test(text)) {
+  } else if (/\b(close|dismiss|remove)\b/.test(sizeText)) {
     operation = "close";
-  } else if (/\b(focus|bring)\b.*\b(front|forward|focus)\b|^focus\b/.test(text)) {
+  } else if (/\b(focus|bring)\b.*\b(front|forward|focus)\b|^focus\b/.test(sizeText)) {
     operation = "focus";
-  } else if (/\b(download|export)\b/.test(text) && /\b(this|it|current|data|window|panel)\b/.test(text)) {
+  } else if (/\b(download|export)\b/.test(sizeText) && /\b(this|it|current|data|window|panel)\b/.test(sizeText)) {
     operation = "export";
   } else {
     const placement = ["top-left", "top-right", "bottom-left", "bottom-right", "left", "right", "top", "bottom", "full"]
-      .find(place => new RegExp(`\\b${place.replace("-", "[ -]?")}\\b`).test(text));
+      .find(place => new RegExp(`\\b${place.replace("-", "[ -]?")}\\b`).test(sizeText));
     if (placement && /\b(move|put|place|send)\b/.test(text)) {
       operation = "move"; value = placement;
     }
   }
   if (!operation) return null;
-  const controlTarget = target.mode === "command" ? target : { mode: target.mode, command: null, security: null };
+  const correctedTarget = targetFor(sizeText);
+  const finalTarget = correctedTarget.command ? correctedTarget : target;
+  const controlTarget = finalTarget.mode === "command" ? finalTarget : { mode: finalTarget.mode, command: null, security: null };
   return validateWorkflowPlan({
     version: 2,
     failure_policy: "stop_on_any",

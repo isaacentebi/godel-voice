@@ -133,6 +133,7 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
   assert.match(upstreamSession, /\"item\.input_audio_transcription\.logprobs\"/);
   assert.match(upstreamSession, /\"noise_reduction\":\{\"type\":\"far_field\"\}/);
   assert.match(upstreamSession, /\"create_response\":false/);
+  assert.match(upstreamSession, /\"interrupt_response\":false/);
   assert.match(upstreamSession, /\"gpt-4o-transcribe\"/);
   assert.doesNotMatch(upstreamSession, /run_godel_workflow|wait_for_user/);
 
@@ -143,6 +144,7 @@ test("server creates a key-isolated Realtime SDP session and queues only validat
   assert.equal(tool.status, 202);
   const queued = await tool.json();
   assert.equal(queued.kind, "execute");
+  assert.equal(queued.workflow_timeout_ms, 30_000);
   const replay = await (await fetch(`${base}/realtime/request`, {
     method: "POST", headers: { ...auth, "Content-Type": "application/json" },
     body: JSON.stringify({ session_id: sessionId, call_id: "call-1", workflow: structuredWorkflow("different request") })
@@ -209,6 +211,7 @@ test("Realtime deterministic preflight executes common commands without a model 
   })).json();
   assert.equal(first.kind, "execute");
   assert.equal(first.route, "local_preflight");
+  assert.equal(first.workflow_timeout_ms, 30_000);
   assert.match(first.id, /^rt-/);
   const replay = await (await fetch(`${base}/realtime/preflight`, {
     method: "POST", headers: { ...auth, "Content-Type": "application/json" }, body: JSON.stringify(request)
@@ -297,16 +300,25 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /transcriptionConfidence/);
   assert.match(source, /request\.kind === "ignore"/);
   assert.match(source, /response_audio_after_transcript/);
+  assert.match(source, /else if \(responseRequestedAt\) render\("thinking", "Responding"\)/);
   assert.match(source, /transcription_after_stop/);
+  assert.match(source, /I didn't catch that · say it again/);
+  assert.doesNotMatch(source, /render\("error", "I couldn't transcribe/);
   assert.match(source, /tool_choice: "none"/);
   assert.doesNotMatch(source, /toolWatchdog|armToolWatchdog/);
   assert.match(source, /user_transcript/);
   assert.match(source, /tool_result/);
-  assert.match(source, /track\.enabled = enabled/);
+  assert.doesNotMatch(source, /track\.enabled = enabled/);
   assert.match(source, /\/realtime\/preflight/);
   assert.match(source, /TURN_GRACE_MS = 180/);
   assert.match(source, /WORKFLOW_POLL_MS = 160/);
   assert.match(source, /PREFLIGHT_RETRY_MS = 120/);
+  assert.match(source, /SESSION_ROLLOVER_MS = 50 \* 60_000/);
+  assert.match(source, /scheduleSessionRollover/);
+  assert.match(source, /provider_session_rollover/);
+  assert.match(source, /error\?\.status === 404/);
+  assert.match(source, /coordinator\.enqueueTurn\(\{ transcript, turnId \}, \{ front: true \}\)/);
+  assert.match(source, /local_session_lost/);
   assert.match(source, /\/status\?id=/);
   assert.match(source, /new Set\(\["completed", "failed", "cancelled"\]\)/);
   assert.match(source, /Suppressed unsolicited Realtime audio/);
@@ -321,6 +333,22 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /scheduleReconnect/);
   assert.match(source, /preserveMicrophone: true/);
   assert.match(source, /preserveIntent: true/);
+  assert.match(source, /ACTIVE_INTENT_KEY = "godel-voice:jarvis-active-v1"/);
+  assert.match(source, /createIntentStore\(globalThis\.sessionStorage, ACTIVE_INTENT_KEY\)/);
+  assert.match(source, /intentStore\.activate\(\)/);
+  assert.match(source, /intentStore\.deactivate\(\)/);
+  assert.match(source, /coordinator\.reset\(\{ preserveTurns: preserveWork, preserveResponses: preserveWork \}\)/);
+  assert.match(source, /pagehide/);
+  assert.match(source, /preserveIntent: intentStore\.isActive\(\)/);
+  assert.match(source, /preserveWork: false/);
+  assert.match(source, /suspendTransport: true/);
+  assert.match(source, /keepalive: reason === "pagehide"/);
+  assert.match(source, /pageshow/);
+  assert.match(source, /if \(intentStore\.isActive\(\)\) \{[\s\S]*start\(\{ reconnecting: true \}\)/);
+  assert.match(source, /track\.enabled = true/);
+  assert.match(source, /data-channel[\s\S]*authoritative signal/);
+  assert.match(source, /BARGE_IN_CONFIRM_MS = 240/);
+  assert.match(source, /cancelWorkflow\(id\)/);
   assert.doesNotMatch(source, /visibilityState === "hidden" && peer\) teardown/);
   assert.ok(manifest.content_scripts[0].js.includes("realtime.js"));
 });
@@ -328,7 +356,7 @@ test("Realtime browser surface contains no provider credential and has bounded t
 test("verified successes are spoken exactly and first-audio latency is audited separately", () => {
   const source = fs.readFileSync(new URL("../extension/realtime.js", import.meta.url), "utf8");
   assert.match(source, /String\(output\?\.status \?\? ""\) === "completed"/);
-  assert.match(source, /createConversationResponse\(exact, "grounded_result"\)/);
+  assert.match(source, /exactResponse\(exact, "grounded_result"\)/);
   assert.match(source, /responseRequestKind \?\? "response"/);
   assert.match(source, /Date\.now\(\) - responseRequestedAt/);
   assert.match(source, /max_output_tokens: 128/);

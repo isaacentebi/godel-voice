@@ -35,7 +35,7 @@ You do not need to click Godel's command field. Keep the Godel tab visible and s
 | OpenAI Realtime Mini | Low-latency microphone and Jarvis voice; validated local code performs every Godel action | `gpt-realtime-2.1-mini` |
 | OpenAI Realtime | Higher-quality audio option; unnecessary for most Godel commands because it does not plan actions | `gpt-realtime-2.1` |
 | Intent model | Converts requests outside the instant local phrase library into validated Godel plans | GPT-OSS-120B through Cerebras |
-| Accuracy fallback | Handles requests rejected by the fast model | Gemini 3.6 Flash |
+| Intent recovery | Repeats the same Cerebras route once only after a transport or malformed-response failure | GPT-OSS-120B through Cerebras |
 | ElevenLabs | Optional spoken completion voice for VoiceInk mode | `eleven_flash_v2_5` |
 
 VoiceInk can use any transcription model. Parakeet V2 is the tested recommendation.

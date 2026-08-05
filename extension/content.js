@@ -28,6 +28,13 @@
     MOST: ["MOST ACTIVE", "MOST"],
     WEI: ["WORLD EQUITY INDEX", "WEI"],
     WEIF: ["WORLD EQUITY INDEX FUTURES", "WEIF"],
+    GLCO: ["GLOBAL COMMODITY FUTURES", "GLCO"],
+    FX: ["FOREX PAIRS", "FX"],
+    MOSO: ["MOST ACTIVE OPTIONS", "MOSO"],
+    TOP: ["TOP NEWS", "TOP"],
+    TREND: ["TRENDING ON GODEL", "TREND"],
+    IPO: ["INITIAL PUBLIC OFFERINGS", "IPO"],
+    MAP: ["WORLD VENUE MAP", "MAP"],
     HDS: ["HOLDERS", "HDS"],
     SECF: ["SECURITIES FINDER", "SECF"]
   };
@@ -37,6 +44,8 @@
     G: "CHART", N: "NEWS", OMON: "OPTION_MONITOR", EQS: "EQUITY_SCREENER",
     FA: "FINANCIAL_ANALYSIS", HALT: "MARKET_HALTS", TRAN: "TRANSCRIPTS", CF: "COMPANY_FILINGS",
     MOST: "MOST_ACTIVE", WEI: "WORLD_EQUITY_INDEX", WEIF: "WORLD_EQUITY_INDEX_FUTURES",
+    GLCO: "GLOBAL_COMMODITY_FUTURES", FX: "FOREX_PAIRS", MOSO: "MOST_ACTIVE_OPTIONS",
+    TOP: "TOP_NEWS", TREND: "TRENDING", IPO: "INITIAL_PUBLIC_OFFERINGS", MAP: "WORLD_VENUE_MAP",
     HDS: "HOLDERS", SECF: "SECURITIES_FINDER", ANR: "ANALYST_RATINGS", DVD: "DIVIDEND_YIELD"
   };
   const COMMAND_NAMES = {
@@ -47,7 +56,9 @@
     FA: "financial analysis", HALT: "market halts", TRAN: "earnings transcripts",
     CF: "company filings", MOST: "most active stocks", WEI: "world equity indices",
     WEIF: "world equity-index futures", HDS: "institutional holders", SECF: "securities finder",
-    ANR: "analyst ratings", DVD: "dividend yield"
+    GLCO: "global commodity futures", FX: "forex pairs", MOSO: "most active options",
+    TOP: "top news", TREND: "trending searches", IPO: "initial public offerings",
+    MAP: "world venue map", ANR: "analyst ratings", DVD: "dividend yield"
   };
   const SECURITY_NAMES = { META: "Meta", AMZN: "Amazon", MSFT: "Microsoft", AAPL: "Apple", GOOG: "Google", GOOGL: "Google", QQQ: "QQQ", VIX: "VIX" };
   const mainWorldReady = runtimeMessage({ type: "godel-voice:inject-main" })
@@ -627,16 +638,20 @@
   }
 
   function workspaceInternalAction(action, payload = {}) {
-    // A native window id is a stable main-world target. Using the document
-    // element's temporary data attribute races when two geometry updates run
-    // concurrently: one request can replace the other's bridge token.
-    // Some Godel panels (notably EM) render a visible React shell around a
-    // connected native window whose own box has zero visual bounds. It remains
-    // the correct workspace-provider anchor even though windowRoots excludes it
-    // from user-visible targeting.
-    const root = windowRoots()[0]
-      ?? document.querySelector('[id$="-window"]')
-      ?? document.documentElement;
+    // Workspace state is global, while native windows retain the React context
+    // of the screen on which they were created. Anchoring a workspace request
+    // to windowRoots()[0] could therefore mutate a stale screen even though the
+    // visible Voice tab was active. A fixed, fiber-free DOM target forces the
+    // main-world bridge to resolve the one global tab/workspace provider. Its
+    // stable id also keeps concurrent geometry calls from sharing a temporary
+    // dataset selector.
+    let root = document.getElementById("godel-voice-workspace-anchor");
+    if (!(root instanceof HTMLElement)) {
+      root = document.createElement("div");
+      root.id = "godel-voice-workspace-anchor";
+      root.hidden = true;
+      document.documentElement.append(root);
+    }
     return panelInternalAction(root, "WORKSPACE", action, payload);
   }
 
@@ -2487,6 +2502,25 @@
     if (await cancellationRequested(requestId)) throw new CancelledError();
   }
 
+  async function moveWindowToWorkflowScreen(id, targetScreenId) {
+    let lastError = null;
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      try {
+        return await workspaceInternalAction("moveWindowToScreen", {
+          id, target_screen_id: targetScreenId
+        });
+      } catch (error) {
+        lastError = error;
+        // The rendered window can precede Godel's layout-store commit by a
+        // few frames. Retry only that exact transient; every other workspace
+        // mismatch still fails closed immediately.
+        if (!/Expected one Godel screen for window .* found 0/.test(error.message) || attempt === 19) throw error;
+        await pause(25);
+      }
+    }
+    throw lastError ?? new Error("Godel window transfer did not settle");
+  }
+
   async function executeWorkflow(plan, requestId = null) {
     const opened = [];
     const grounded = [];
@@ -2497,6 +2531,8 @@
     const opensNewPanels = plan.steps.some(step => step.kind === "command" && step.command !== "Q");
     const replacesVoiceWorkspace = plan.layout.preserve_existing === false
       && plan.steps.some(step => step.kind === "command");
+    const hasExplicitGeometryControl = plan.steps.some(step => step.kind === "control"
+      && ["maximize", "restore", "move", "resize"].includes(step.operation));
     let workflowScreenId = null;
     try {
     if (replacesVoiceWorkspace) {
@@ -2540,9 +2576,7 @@
             const nativeId = native ? String(windowId(native) ?? "") : "";
             let borrowed = false;
             if (nativeId && workflowScreenId) {
-              const receipt = await workspaceInternalAction("moveWindowToScreen", {
-                id: nativeId, target_screen_id: workflowScreenId
-              });
+              const receipt = await moveWindowToWorkflowScreen(nativeId, workflowScreenId);
               if (receipt?.moved === true) {
                 borrowed = true;
                 borrowedWindowReceipts.set(nativeId, receipt);
@@ -2632,7 +2666,10 @@
     const layoutStartedAt = Date.now();
     let layoutWarning = null;
     try {
-      await arrangeWorkflow(plan, opened);
+      // Explicit geometry is the user's final word. Running the automatic
+      // layout pass afterwards would silently undo “maximize it”, “move it”,
+      // or “make it bigger” even though the control itself succeeded.
+      if (!hasExplicitGeometryControl) await arrangeWorkflow(plan, opened);
     } catch (error) {
       layoutWarning = error.message;
       timings.push({

@@ -13,6 +13,7 @@ import {
 import { estimateRealtimeResponseCost } from "./realtime-cost.mjs";
 import { encodeControlFollowup } from "./control-followup.mjs";
 import { compileNaturalRequest } from "./compile-natural-request.mjs";
+import { parseWorkflowMarker } from "./workflow-plan.mjs";
 
 const projectDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const terminalStates = new Set(["completed", "failed", "cancelled"]);
@@ -79,6 +80,24 @@ function looksLikeIntentionalRealtimeSpeech(value) {
   if (!normalized) return false;
   if (/\bjarvis\b|[?]$/.test(normalized)) return true;
   return /\b(?:open|show|display|launch|pull|bring|close|remove|move|resize|make|arrange|compare|search|find|look up|read|tell|explain|summarize|check|give|download|export|save|what|which|who|how|why|where|when|can you|could you|would you|chart|graph|matrix|heatmap|screener|earnings|transcript|news|price|quote|holders?|ownership|options?|filings?|margin|revenue|ebitda|forward pe|p e|vix|volatility)\b/.test(normalized);
+}
+
+function realtimeWorkflowDeadlineMs(marker) {
+  try {
+    const workflowPlan = parseWorkflowMarker(marker);
+    const legacyPlan = !workflowPlan && String(marker).startsWith("GV1:")
+      ? JSON.parse(String(marker).slice(4)) : null;
+    const plan = workflowPlan ?? legacyPlan;
+    if (!plan) throw new Error("unknown workflow marker");
+    const steps = plan.version === 2 ? plan.steps : [plan];
+    const nestedActions = steps.reduce((total, step) => total + (step.actions?.length ?? 0), 0);
+    const transcriptResearch = steps.some(step => step.command === "TRAN"
+      && step.actions?.some(action => action.feature === "research"));
+    return Math.min(120_000, Math.max(30_000,
+      22_000 + steps.length * 7_000 + nestedActions * 2_000 + (transcriptResearch ? 20_000 : 0)));
+  } catch {
+    return 45_000;
+  }
 }
 
 function appendPrivateAudit(auditPath, clock, type, fields = {}, maxBytes = 5_000_000) {
@@ -571,7 +590,9 @@ export function createHandoffServer({
         // launching a tool call or spoken answer over the user.
         transcription: { model: realtimeTranscriptionModel, language: "en" },
         noise_reduction: { type: "far_field" },
-        turn_detection: { type: "semantic_vad", eagerness: realtimeVadEagerness, create_response: false, interrupt_response: true }
+        // Browser code confirms sustained speech before cancelling output. A
+        // raw VAD start is too noisy to be trusted as a user interruption.
+        turn_detection: { type: "semantic_vad", eagerness: realtimeVadEagerness, create_response: false, interrupt_response: false }
       },
       output: { voice: realtimeVoice }
     },
@@ -697,7 +718,10 @@ export function createHandoffServer({
         const queued = store.enqueue(compiled.marker, requestId);
         queued.entry.realtime = true;
         store.persist();
-        const result = { kind: "execute", id: queued.entry.id, route: compiled.route };
+        const result = {
+          kind: "execute", id: queued.entry.id, route: compiled.route,
+          workflow_timeout_ms: realtimeWorkflowDeadlineMs(compiled.marker)
+        };
         session.calls.set(callId, result);
         session.requests.set(requestKey, { at: clock(), result });
         store.event("realtime_request_queued", { id: queued.entry.id, route: compiled.route });
@@ -798,7 +822,10 @@ export function createHandoffServer({
         const queued = store.enqueue(marker, requestId);
         queued.entry.realtime = true;
         store.persist();
-        const result = { kind: "execute", id: queued.entry.id, route: compiled?.route ?? "local_preflight" };
+        const result = {
+          kind: "execute", id: queued.entry.id, route: compiled?.route ?? "local_preflight",
+          workflow_timeout_ms: realtimeWorkflowDeadlineMs(marker)
+        };
         session.preflights.set(turnId, result);
         session.requests.set(normalizedRealtimeRequest(requestText), { at: clock(), result });
         audit("tool_compiled", {

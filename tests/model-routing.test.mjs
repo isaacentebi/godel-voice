@@ -13,29 +13,26 @@ test("accepts a validated fast-model plan without paying fallback latency", asyn
   assert.equal(routed.escalated, false);
   assert.equal(routed.result.inference.model, "fast");
   assert.equal(calls.length, 1);
+  assert.equal(calls[0].timeoutMs, 1_300);
+  assert.equal(calls[0].retries, 0);
 });
 
-test("escalates only when an execute-shaped fast response has no valid plan", async () => {
+test("treats locally invalid executable plans as terminal instead of model-repairable", async () => {
   const calls = [];
   const routed = await compileWorkflowWithValidatedFallback("complex request", {
     compile: async (_text, options) => {
       calls.push(options);
-      return options.model === "slow" ? executable("slow")
-        : { workflow: { kind: "execute" }, plan: null, plan_error: "invented action" };
+      return { workflow: { kind: "execute" }, plan: null, plan_error: "invented action" };
     },
     fallbackModel: "slow", fallbackProviderOnly: "cerebras"
   });
-  assert.equal(routed.escalated, true);
+  assert.equal(routed.escalated, false);
   assert.equal(routed.primary_error, "invented action");
-  assert.deepEqual(calls[1], {
-    context: null, model: "slow", providerOnly: "cerebras",
-    timeoutMs: 3200, retries: 0, retryBaseMs: 80
-  });
-  assert.equal(routed.routing.attempts[0].status, "rejected");
-  assert.equal(routed.routing.attempts[1].timeout_ms, 3200);
+  assert.equal(calls.length, 1);
+  assert.equal(routed.routing.attempts[0].status, "accepted");
 });
 
-test("fails the primary route fast and gives fallback only the bounded remaining budget", async () => {
+test("retries a timed-out primary once on the same pinned route within the bounded remaining budget", async () => {
   const calls = [];
   const routed = await compileWorkflowWithValidatedFallback("slow primary", {
     compile: async (_text, options) => {
@@ -45,6 +42,8 @@ test("fails the primary route fast and gives fallback only the bounded remaining
     },
     fallbackModel: "slow",
     fallbackProviderOnly: "groq",
+    primaryModel: "fast",
+    primaryProviderOnly: "cerebras",
     primaryTimeoutMs: 10,
     fallbackTimeoutMs: 40,
     routeCeilingMs: 45
@@ -54,7 +53,8 @@ test("fails the primary route fast and gives fallback only the bounded remaining
   assert.equal(routed.routing.attempts[0].timeout_ms, 10);
   assert.ok(calls[1].timeoutMs <= 35);
   assert.equal(calls[1].retries, 0);
-  assert.equal(routed.routing.attempts[1].requested_provider, "groq");
+  assert.equal(calls[1].model, "fast");
+  assert.equal(routed.routing.attempts[1].requested_provider, "cerebras");
 });
 
 test("bounds fallback latency and attaches secret-free route diagnostics to the error", async () => {
@@ -74,7 +74,7 @@ test("bounds fallback latency and attaches secret-free route diagnostics to the 
   });
 });
 
-test("preserves deliberate clarification and unsupported decisions", async () => {
+test("preserves deliberate clarification and unsupported decisions without retrying", async () => {
   for (const kind of ["clarify", "unsupported"]) {
     let calls = 0;
     const routed = await compileWorkflowWithValidatedFallback("ambiguous", {
@@ -86,7 +86,7 @@ test("preserves deliberate clarification and unsupported decisions", async () =>
   }
 });
 
-test("escalates a malformed or failed primary request and propagates when no fallback exists", async () => {
+test("retries a malformed primary response once and propagates non-recoverable provider failures", async () => {
   let calls = 0;
   const routed = await compileWorkflowWithValidatedFallback("repair me", {
     compile: async (_text, options) => {
@@ -94,12 +94,43 @@ test("escalates a malformed or failed primary request and propagates when no fal
       if (!options.model) throw new Error("bad JSON");
       return executable(options.model);
     },
+    primaryModel: "fast",
     fallbackModel: "slow"
   });
   assert.equal(routed.escalated, true);
   assert.equal(routed.primary_error, "bad JSON");
   assert.equal(calls, 2);
   await assert.rejects(compileWorkflowWithValidatedFallback("repair me", {
-    compile: async () => { throw new Error("bad JSON"); }
-  }), /bad JSON/);
+    compile: async () => { throw new Error("Provider error 401: unauthorized"); },
+    primaryModel: "fast",
+    fallbackModel: "slow"
+  }), error => {
+    assert.match(error.message, /401/);
+    assert.equal(error.routing.attempts.length, 1);
+    return true;
+  });
+});
+
+test("caps configured planner budgets at 1.3s primary, 0.9s recovery and 2.3s total", async () => {
+  const calls = [];
+  const routed = await compileWorkflowWithValidatedFallback("recover malformed", {
+    compile: async (_text, options) => {
+      calls.push(options);
+      if (!options.model) throw new SyntaxError("Unexpected token");
+      return executable(options.model);
+    },
+    primaryModel: "openai/gpt-oss-120b",
+    primaryProviderOnly: "cerebras",
+    fallbackModel: "google/gemini-3.6-flash",
+    fallbackProviderOnly: "google-vertex/global",
+    primaryTimeoutMs: 9_000,
+    fallbackTimeoutMs: 9_000,
+    routeCeilingMs: 9_000
+  });
+  assert.equal(routed.routing.ceiling_ms, 2_300);
+  assert.equal(routed.routing.attempts[0].timeout_ms, 1_300);
+  assert.equal(routed.routing.attempts[1].timeout_ms, 900);
+  assert.equal(calls[1].model, "openai/gpt-oss-120b");
+  assert.equal(calls[1].providerOnly, "cerebras");
+  assert.equal(calls[1].retryBaseMs, 0);
 });
