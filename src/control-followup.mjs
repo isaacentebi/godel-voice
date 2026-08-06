@@ -114,6 +114,13 @@ const directOpenModifier = /\b(?:with|as|set|change|switch|compare|versus|vs|dow
 
 function targetFor(text) {
   const security = resolvedEquities(text)[0]?.ticker ?? null;
+  // In Godel, a generic watchlist request means the Quote Monitor (QM).
+  // Keep this exact opening phrase deterministic so it never waits on or
+  // inherits rate limits from the fallback text model. Do not match scoped
+  // phrases such as "news for my watchlist".
+  if (/\b(?:open|show|launch|display|pull up|bring up)\s+(?:me\s+)?(?:a|the|my)?\s*watchlist(?:\s+(?:window|panel))?(?:\s+please)?$/.test(text)) {
+    return { mode: "command", command: "QM", security: null };
+  }
   if (security
       && /\b(?:after[ -]?hours?|pre[ -]?market|before the open)\b/.test(text)
       && /\b(?:how|doing|trading|price|quote|check|show|tell)\b/.test(text)) {

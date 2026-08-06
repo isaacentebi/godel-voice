@@ -21,6 +21,20 @@ test("compiles short contextual window controls without an LLM", () => {
   assert.equal(parseControlFollowup("bring the earnings matrix to the front").steps[0].operation, "focus");
 });
 
+test("generic watchlist opens Quote Monitor locally without model availability", async () => {
+  for (const utterance of ["open a watchlist", "could you please open a watchlist", "show my watchlist please"]) {
+    const plan = parseControlFollowup(utterance);
+    assert.equal(plan.steps[0].command, "QM", utterance);
+    assert.equal(plan.steps[0].terminal_command, "QM", utterance);
+    const compiled = await compileNaturalRequest(utterance, {
+      compile: async () => { throw new Error("model forbidden"); }
+    });
+    assert.equal(compiled.kind, "execute", utterance);
+    assert.equal(compiled.route, "local", utterance);
+  }
+  assert.notEqual(parseControlFollowup("open news for my core watchlist")?.steps?.[0]?.command, "QM");
+});
+
 test("open another preserves one exact connected multi-instance context", () => {
   const chart = parseControlFollowup("open another one", {
     focused_panel: { command: "G", security: "AMZN", connected: true }
