@@ -29,6 +29,16 @@ test("an affined live Jarvis session keeps its deterministic executor and contex
   assert.match(content, /jarvisRealtimeActive = false/);
 });
 
+test("an inactive Jarvis performs no recurring Godel DOM context scans", () => {
+  const content = read("extension/content.js");
+  assert.doesNotMatch(content, /setInterval\(\(\) => publishExecutorContext\(\)\.catch\(\(\) => \{\}\), 2_500\)/);
+  assert.match(content, /function syncExecutorContextRefresh\(\)/);
+  assert.match(content, /if \(!jarvisRealtimeActive\) return;/);
+  assert.match(content, /executorContextRefreshTimer = setInterval/);
+  assert.match(content, /stopExecutorContextRefresh\(\);[\s\S]{0,160}abortNextRequest\(\)/);
+  assert.doesNotMatch(content, /runNextLoop\(\);\s*publishExecutorContext\(\)/);
+});
+
 test("executor queue delivery uses one bounded cancellable long-poll after eligibility", () => {
   const content = read("extension/content.js");
   assert.match(content, /let polling = false/);

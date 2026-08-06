@@ -122,8 +122,8 @@ test("manual Jarvis shutdown empties the owned Voice workspace and preserves ses
 test("startup cleanup adopts only the dedicated Voice screen when explicitly configured", () => {
   const example = fs.readFileSync(new URL("../extension/config.local.example.js", import.meta.url), "utf8");
   const setup = fs.readFileSync(new URL("../bin/setup-local", import.meta.url), "utf8");
-  assert.match(example, /cleanupVoiceOnStart: true/);
-  assert.match(setup, /cleanupVoiceOnStart: true/);
+  assert.match(example, /cleanupVoiceOnStart: false/);
+  assert.match(setup, /cleanupVoiceOnStart: false/);
   assert.match(content, /config\.cleanupVoiceOnStart === true/);
   assert.match(content, /recoveryAdoptionAuthorized: true/);
   assert.match(content, /requestId: `startup-\$\{documentGeneration\}`/);

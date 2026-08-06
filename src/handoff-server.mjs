@@ -868,6 +868,12 @@ export function createHandoffServer({
   if (!secret) throw new Error("handoff secret is required");
   const startedAt = clock();
   const realtimeSessions = new Map();
+  // A provider connection cannot survive this local process. Never restore a
+  // persisted pinned executor without an in-memory Realtime session capable
+  // of releasing it; the browser will reconnect and arm a fresh generation.
+  if (store.armedPinned === true && store.armedExecutorId && store.armedDocumentGeneration) {
+    store.disarmExecutor(store.armedExecutorId, store.armedDocumentGeneration);
+  }
   const realtimeOrigin = "https://app.godelterminal.com";
   const validRealtimeModels = new Set(["gpt-realtime-2.1", "gpt-realtime-2.1-mini"]);
   if (!validRealtimeModels.has(realtimeModel)) throw new Error("unsupported Realtime model");
@@ -1010,12 +1016,22 @@ export function createHandoffServer({
     }
     if (ids.size) store.event("realtime_session_work_cancelled", { reason, workflows: ids.size });
   };
+  const disarmRealtimeExecutorIfUnused = session => {
+    if (!session?.executor_id || session.revoked) return;
+    const stillOwned = [...realtimeSessions.values()].some(candidate => candidate !== session
+      && candidate.closed !== true && candidate.revoked !== true
+      && candidate.executor_id === session.executor_id
+      && candidate.document_generation === session.document_generation);
+    if (!stillOwned) store.disarmExecutor(session.executor_id, session.document_generation);
+  };
   const pruneRealtimeSessions = () => {
-    const cutoff = clock() - 60 * 60_000;
-    for (const [id, session] of realtimeSessions) if (session.createdAt < cutoff) {
+    const cutoff = clock() - 120_000;
+    for (const [id, session] of realtimeSessions) if (Number(session.lastSeenAt ?? session.createdAt) < cutoff) {
       session.closed = true;
       cancelRealtimeSessionWork(session, "session_expired");
       realtimeSessions.delete(id);
+      disarmRealtimeExecutorIfUnused(session);
+      store.event("realtime_session_expired", { session_ref: markerDigest(id).slice(0, 12) });
     }
   };
   const currentRealtimeContext = executorId => {
@@ -1161,7 +1177,7 @@ export function createHandoffServer({
           .filter(result => result?.kind === "execute" && !terminalStates.has(store.status(result.id)?.status))
           .slice(-4);
         realtimeSessions.set(sessionId, {
-          createdAt: clock(), calls: new Map(),
+          createdAt: clock(), lastSeenAt: clock(), calls: new Map(),
           preflights: new Map(carriedWorkflows.map((result, index) => [`carried-${index}`, result])),
           pendingCompilations: new Map(),
           requests: recentRequests,
@@ -1435,6 +1451,20 @@ export function createHandoffServer({
         });
         return respond(response, 200, { recorded: realtimeAuditEnabled });
       }
+      if (request.method === "POST" && url.pathname === "/realtime/heartbeat") {
+        if (request.headers.origin !== realtimeOrigin) return respond(response, 403, { error: "invalid Realtime origin" });
+        pruneRealtimeSessions();
+        const value = JSON.parse(await readBody(request, 1_000));
+        const sessionId = safeOpaqueId(value.session_id, "");
+        const session = realtimeSessions.get(sessionId);
+        if (!session || session.closed || session.revoked) return respond(response, 404, { error: "Realtime session not found" });
+        if (safeOpaqueId(value.executor_id, "") !== session.executor_id
+            || safeOpaqueId(value.document_generation, "") !== session.document_generation) {
+          return respond(response, 409, { error: "Realtime executor affinity changed" });
+        }
+        session.lastSeenAt = clock();
+        return respond(response, 200, { ok: true });
+      }
       if (request.method === "POST" && url.pathname === "/realtime/close") {
         const value = JSON.parse(await readBody(request, 1_000));
         const sessionId = safeOpaqueId(value.session_id, "");
@@ -1443,14 +1473,13 @@ export function createHandoffServer({
         if (session) session.closed = true;
         if (["manual_toggle", "pagehide"].includes(reason)) cancelRealtimeSessionWork(session, reason);
         realtimeSessions.delete(sessionId);
-        if (reason === "manual_toggle" && session?.executor_id && !session.revoked) {
-          store.disarmExecutor(session.executor_id, session.document_generation);
-        }
+        disarmRealtimeExecutorIfUnused(session);
         store.event("realtime_session_closed", { session_ref: markerDigest(sessionId).slice(0, 12) });
         audit("session_closed", { session_ref: markerDigest(sessionId).slice(0, 12), reason });
         return respond(response, 200, { closed: true });
       }
       if (request.method === "GET" && url.pathname === "/next") {
+        pruneRealtimeSessions();
         const clientId = safeOpaqueId(url.searchParams.get("client") || "anonymous");
         const executorId = safeOpaqueId(url.searchParams.get("executor") || clientId);
         const documentGeneration = safeOpaqueId(url.searchParams.get("generation"), "") || null;

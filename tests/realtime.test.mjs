@@ -580,6 +580,65 @@ test("manually stopping Realtime cancels its queued workflows server-side", asyn
   });
   assert.equal(closed.status, 200);
   assert.equal(store.status(prepared.id).status, "cancelled");
+  assert.equal(store.armedExecutor(), null);
+});
+
+test("Realtime heartbeat keeps an exact executor lease alive and stale sessions release it", async t => {
+  let now = 1_800_000_000_000;
+  const clock = () => now;
+  const owner = "gx-heartbeat-owner";
+  const generation = "gd-heartbeat-document";
+  const store = new HandoffStore({ clock });
+  const server = createHandoffServer({
+    secret, store, port: 0, realtimeEnabled: true, openaiApiKey: "private-openai-key", clock,
+    realtimeFetch: async () => new Response(answer, { status: 200, headers: { "Content-Type": "application/sdp" } })
+  });
+  const address = await server.listen();
+  t.after(() => server.close());
+  const base = `http://127.0.0.1:${address.port}`;
+  const sessionResponse = await fetch(`${base}/realtime/session`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/sdp",
+      "X-Godel-Executor-Id": owner, "X-Godel-Document-Generation": generation }, body: offer
+  });
+  const sessionId = sessionResponse.headers.get("x-godel-realtime-session");
+  assert.equal(store.armedExecutor().executor_id, owner);
+
+  now += 100_000;
+  const heartbeat = await fetch(`${base}/realtime/heartbeat`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, executor_id: owner, document_generation: generation })
+  });
+  assert.equal(heartbeat.status, 200);
+  const wrongAffinity = await fetch(`${base}/realtime/heartbeat`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, executor_id: owner, document_generation: "gd-wrong" })
+  });
+  assert.equal(wrongAffinity.status, 409);
+
+  now += 100_000;
+  assert.equal((await fetch(`${base}/next?client=gx-other&executor=gx-other&generation=gd-other`, {
+    headers: auth
+  })).status, 204);
+  assert.equal(store.armedExecutor().executor_id, owner);
+
+  now += 21_000;
+  assert.equal((await fetch(`${base}/next?client=gx-other&executor=gx-other&generation=gd-other`, {
+    headers: auth
+  })).status, 204);
+  assert.equal(store.armedExecutor(), null);
+  assert.equal((await fetch(`${base}/realtime/heartbeat`, {
+    method: "POST", headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, executor_id: owner, document_generation: generation })
+  })).status, 404);
+});
+
+test("server startup never restores a pinned executor whose Realtime connection is gone", () => {
+  const store = new HandoffStore();
+  store.armExecutor("gx-dead-session", "gd-dead-document");
+  assert.equal(store.armedPinned, true);
+  const server = createHandoffServer({ secret, store, port: 0 });
+  assert.equal(store.armedExecutor(), null);
+  server.close();
 });
 
 test("Realtime browser surface contains no provider credential and has bounded teardown", () => {
@@ -613,6 +672,8 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /realtimeState\.workflowPollDelay/);
   assert.match(source, /PREFLIGHT_RETRY_MS = 120/);
   assert.match(source, /SESSION_ROLLOVER_MS = 50 \* 60_000/);
+  assert.match(source, /SESSION_HEARTBEAT_MS = 20_000/);
+  assert.match(source, /\/realtime\/heartbeat/);
   assert.match(source, /scheduleSessionRollover/);
   assert.match(source, /provider_session_rollover/);
   assert.match(source, /error\?\.status === 404/);

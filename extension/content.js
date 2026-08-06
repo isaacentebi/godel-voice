@@ -6,6 +6,10 @@
   const panelInsights = globalThis.GodelPanelInsights;
   const config = globalThis.GodelVoiceConfig;
   if (!core || !layoutEngine || !panelInsights || !config || location.origin !== "https://app.godelterminal.com") return;
+  const executorDiagnostic = globalThis.GodelVoiceExecutorDiagnostic = {
+    phase: "initializing",
+    error: null
+  };
 
   const PANEL_TITLES = {
     IMAP: ["INTRADAY MARKET MAP", "IMAP"],
@@ -1238,6 +1242,27 @@
   }
 
   let jarvisRealtimeActive = false;
+  let executorContextRefreshTimer = null;
+
+  function stopExecutorContextRefresh() {
+    if (executorContextRefreshTimer !== null) {
+      clearInterval(executorContextRefreshTimer);
+      executorContextRefreshTimer = null;
+    }
+  }
+
+  function syncExecutorContextRefresh() {
+    stopExecutorContextRefresh();
+    if (!jarvisRealtimeActive) return;
+    publishExecutorContext().catch(() => {});
+    // Manual changes made while a voice conversation is active should remain
+    // available to follow-up requests. Outside a live conversation there is
+    // deliberately no timer and therefore no recurring Godel DOM work.
+    executorContextRefreshTimer = setInterval(() => {
+      publishExecutorContext().catch(() => {});
+    }, 10_000);
+  }
+
   async function publishExecutorContext() {
     if ((!jarvisRealtimeActive && document.visibilityState !== "visible")
         || (!jarvisRealtimeActive && !document.hasFocus())) return;
@@ -4381,16 +4406,18 @@
   }
   window.addEventListener("godel-voice:session-started", () => {
     jarvisRealtimeActive = true;
+    syncExecutorContextRefresh();
     jarvisSessionEpoch += 1;
     queueVoiceCleanup(jarvisSessionEpoch);
   });
   window.addEventListener("godel-voice:session-state", event => {
     jarvisRealtimeActive = event.detail?.active === true;
-    if (jarvisRealtimeActive) publishExecutorContext().catch(() => {});
-    else if (document.visibilityState !== "visible" || !document.hasFocus()) abortNextRequest();
+    syncExecutorContextRefresh();
+    if (!jarvisRealtimeActive && (document.visibilityState !== "visible" || !document.hasFocus())) abortNextRequest();
   });
   window.addEventListener("godel-voice:cleanup-request", event => {
     jarvisRealtimeActive = false;
+    stopExecutorContextRefresh();
     if (document.visibilityState !== "visible" || !document.hasFocus()) abortNextRequest();
     if (event.detail?.explicit === true) {
       queueVoiceCleanup(jarvisSessionEpoch, {
@@ -4400,19 +4427,22 @@
       });
     }
   });
-  // Context is also published immediately after Realtime work. A slower idle
-  // cadence avoids repeatedly scanning Godel's large dashboard DOM.
-  setInterval(() => publishExecutorContext().catch(() => {}), 2_500);
-  window.addEventListener("focus", () => publishExecutorContext().catch(() => {}));
+  // Context is event-driven while Jarvis is off. Godel dashboards can contain
+  // thousands of live nodes, so even a "slow" permanent scan measurably harms
+  // the host terminal. A live conversation enables the bounded refresh above.
+  window.addEventListener("focus", () => {
+    if (jarvisRealtimeActive) publishExecutorContext().catch(() => {});
+  });
   window.addEventListener("blur", () => {
     if (!jarvisRealtimeActive) abortNextRequest();
   });
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" || jarvisRealtimeActive) publishExecutorContext().catch(() => {});
+    if (jarvisRealtimeActive) publishExecutorContext().catch(() => {});
     else abortNextRequest();
   });
   window.addEventListener("pagehide", () => {
     nextLoopStopped = true;
+    stopExecutorContextRefresh();
     abortNextRequest();
   }, { once: true });
   // A content-script reload must resume an interrupted reset before /next can
@@ -4434,6 +4464,9 @@
       waitForWorkspaceReady: true
     });
   }
-  runNextLoop();
-  publishExecutorContext().catch(() => {});
+  executorDiagnostic.phase = "polling";
+  runNextLoop().catch(error => {
+    executorDiagnostic.phase = "failed";
+    executorDiagnostic.error = String(error?.message ?? error).slice(0, 240);
+  });
 })();

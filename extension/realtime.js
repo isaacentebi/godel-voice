@@ -248,6 +248,7 @@
   let transportSuspended = false;
   let reconnectTimer = null;
   let sessionRolloverTimer = null;
+  let sessionHeartbeatTimer = null;
   let reconnectAttempts = 0;
   const recentAssistantAudits = new Map();
   const TURN_GRACE_MS = 120;
@@ -264,6 +265,7 @@
   // OpenAI Realtime sessions have a hard 60-minute limit. Roll over early so
   // the provider never gets to terminate a session during a user turn.
   const SESSION_ROLLOVER_MS = 50 * 60_000;
+  const SESSION_HEARTBEAT_MS = 20_000;
   const FAST_RECONNECT_ATTEMPTS = 3;
   const MAX_RECONNECT_DELAY_MS = 5_000;
   const RESPONSE_START_TIMEOUT_MS = 4_000;
@@ -331,6 +333,25 @@
       throw error;
     }
     return response;
+  }
+
+  function stopSessionHeartbeat() {
+    if (sessionHeartbeatTimer !== null) {
+      clearInterval(sessionHeartbeatTimer);
+      sessionHeartbeatTimer = null;
+    }
+  }
+
+  function startSessionHeartbeat(runGeneration) {
+    stopSessionHeartbeat();
+    sessionHeartbeatTimer = setInterval(() => {
+      if (runGeneration !== generation || !sessionId || !wantsActive) return stopSessionHeartbeat();
+      api("/realtime/heartbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, executor_id: executorId, document_generation: documentGeneration })
+      }).catch(() => {});
+    }, SESSION_HEARTBEAT_MS);
   }
 
   function send(event) {
@@ -983,6 +1004,7 @@
       });
       sessionId = response.headers.get("X-Godel-Realtime-Session");
       if (!sessionId) throw new Error("Local Jarvis session identity is missing");
+      startSessionHeartbeat(runGeneration);
       await peer.setRemoteDescription({ type: "answer", sdp: await response.text() });
       render("listening");
       transcriptBatcher.speechChanged();
@@ -1036,6 +1058,7 @@
     if (!preserveIntent) wantsActive = false;
     const closingSession = sessionId;
     sessionId = null;
+    stopSessionHeartbeat();
     if (!preserveMicrophone) {
       for (const track of microphone?.getTracks?.() ?? []) track.stop();
       microphone = null;
