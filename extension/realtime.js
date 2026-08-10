@@ -281,10 +281,20 @@
     <style>
       :host{all:initial} .shell{position:fixed;right:18px;bottom:42px;z-index:2147483647;display:flex;align-items:center;gap:9px;
         padding:7px 10px 7px 7px;border:1px solid rgba(130,150,170,.34);border-radius:24px;background:rgba(8,12,16,.93);
-        color:#dce9f2;font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;box-shadow:0 8px 28px rgba(0,0,0,.42);backdrop-filter:blur(9px)}
+        color:#dce9f2;font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;box-shadow:0 8px 28px rgba(0,0,0,.42);backdrop-filter:blur(9px);
+        transition:padding .16s ease,gap .16s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease,opacity .16s ease}
       button{width:34px;height:34px;border:1px solid rgba(150,170,190,.42);border-radius:50%;background:#17212a;color:#dce9f2;
-        font:700 14px ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer;outline:none}
-      button:focus-visible{outline:2px solid #65d8ff;outline-offset:2px}.copy{min-width:112px}.label{font-weight:700}.detail{margin-top:2px;color:#8fa3b2;font-size:10px}
+        font:700 14px ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer;outline:none;flex:0 0 auto;
+        transition:width .16s ease,height .16s ease,opacity .16s ease}
+      button:focus-visible{outline:2px solid #65d8ff;outline-offset:2px}.copy{min-width:112px;max-width:220px;opacity:1;overflow:hidden;white-space:nowrap;
+        transition:max-width .16s ease,opacity .12s ease}.label{font-weight:700}.detail{margin-top:2px;color:#8fa3b2;font-size:10px}
+      .shell[data-state="ready"]{padding:2px;gap:0;background:rgba(8,12,16,.42);border-color:transparent;box-shadow:none;backdrop-filter:none;opacity:.55}
+      .shell[data-state="ready"] button{width:30px;height:30px}
+      .shell[data-state="ready"] .copy{max-width:0;min-width:0;opacity:0}
+      .shell[data-state="ready"]:hover,.shell[data-state="ready"]:focus-within{padding:7px 10px 7px 7px;gap:9px;background:rgba(8,12,16,.93);
+        border-color:rgba(130,150,170,.34);box-shadow:0 8px 28px rgba(0,0,0,.42);backdrop-filter:blur(9px);opacity:1}
+      .shell[data-state="ready"]:hover button,.shell[data-state="ready"]:focus-within button{width:34px;height:34px}
+      .shell[data-state="ready"]:hover .copy,.shell[data-state="ready"]:focus-within .copy{max-width:220px;min-width:112px;opacity:1}
       .shell[data-state="connecting"] button,.shell[data-state="thinking"] button,.shell[data-state="working"] button{background:#6b4f15;border-color:#f2bd4b}
       .shell[data-state="listening"] button{background:#0c6646;border-color:#35d399;animation:pulse 1.35s infinite}
       .shell[data-state="speaking"] button{background:#075c78;border-color:#55d6ff}
