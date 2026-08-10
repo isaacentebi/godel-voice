@@ -652,10 +652,12 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.doesNotMatch(source, /run_godel_workflow/);
   assert.doesNotMatch(source, /Jarvis online/);
   assert.match(source, /Ready when you are/);
-  assert.match(source, /\.shell\[data-state="ready"\]\s*\{[^}]*opacity:\.55/);
-  assert.match(source, /\.shell\[data-state="ready"\] \.copy\s*\{[^}]*max-width:0;[^}]*opacity:0/);
-  assert.doesNotMatch(source, /\.shell\[data-state="ready"\]:focus-within/);
-  assert.match(source, /\.shell\[data-state="ready"\]:hover \.copy[^}]*max-width:220px/);
+  assert.match(source, /\.shell\[data-collapsed="true"\]\s*\{[^}]*opacity:\.55/);
+  assert.match(source, /\.shell\[data-collapsed="true"\] \.copy\s*\{display:none/);
+  assert.match(source, /function setIdleCollapsed\(collapsed\)/);
+  assert.match(source, /setIdleCollapsed\(next === "ready"\)/);
+  assert.match(source, /mouseenter[\s\S]{0,100}setIdleCollapsed\(false\)/);
+  assert.match(source, /mouseleave[\s\S]{0,100}setIdleCollapsed\(true\)/);
   assert.match(source, /transcriptionConfidence/);
   assert.match(source, /request\.kind === "ignore"/);
   assert.match(source, /response_audio_after_transcript/);

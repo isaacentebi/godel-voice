@@ -53,12 +53,14 @@ class HarnessShadowRoot {
   constructor() {
     this.shell = new HarnessElement("div");
     this.button = new HarnessElement("button");
+    this.copy = new HarnessElement("div");
     this.label = new HarnessElement("div");
     this.detail = new HarnessElement("div");
   }
   set innerHTML(_) {}
   querySelector(selector) {
-    return ({ ".shell": this.shell, "button": this.button, ".label": this.label, ".detail": this.detail })[selector] ?? null;
+    return ({ ".shell": this.shell, "button": this.button, ".copy": this.copy,
+      ".label": this.label, ".detail": this.detail })[selector] ?? null;
   }
 }
 

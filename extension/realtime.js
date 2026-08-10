@@ -288,13 +288,9 @@
         transition:width .16s ease,height .16s ease,opacity .16s ease}
       button:focus-visible{outline:2px solid #65d8ff;outline-offset:2px}.copy{min-width:112px;max-width:220px;opacity:1;overflow:hidden;white-space:nowrap;
         transition:max-width .16s ease,opacity .12s ease}.label{font-weight:700}.detail{margin-top:2px;color:#8fa3b2;font-size:10px}
-      .shell[data-state="ready"]{padding:2px;gap:0;background:rgba(8,12,16,.42);border-color:transparent;box-shadow:none;backdrop-filter:none;opacity:.55}
-      .shell[data-state="ready"] button{width:30px;height:30px}
-      .shell[data-state="ready"] .copy{max-width:0;min-width:0;opacity:0}
-      .shell[data-state="ready"]:hover{padding:7px 10px 7px 7px;gap:9px;background:rgba(8,12,16,.93);
-        border-color:rgba(130,150,170,.34);box-shadow:0 8px 28px rgba(0,0,0,.42);backdrop-filter:blur(9px);opacity:1}
-      .shell[data-state="ready"]:hover button{width:34px;height:34px}
-      .shell[data-state="ready"]:hover .copy{max-width:220px;min-width:112px;opacity:1}
+      .shell[data-collapsed="true"]{padding:2px;gap:0;background:rgba(8,12,16,.42);border-color:transparent;box-shadow:none;backdrop-filter:none;opacity:.55}
+      .shell[data-collapsed="true"] button{width:30px;height:30px}
+      .shell[data-collapsed="true"] .copy{display:none}
       .shell[data-state="connecting"] button,.shell[data-state="thinking"] button,.shell[data-state="working"] button{background:#6b4f15;border-color:#f2bd4b}
       .shell[data-state="listening"] button{background:#0c6646;border-color:#35d399;animation:pulse 1.35s infinite}
       .shell[data-state="speaking"] button{background:#075c78;border-color:#55d6ff}
@@ -307,6 +303,7 @@
     </div>`;
   const shell = shadow.querySelector(".shell");
   const button = shadow.querySelector("button");
+  const copy = shadow.querySelector(".copy");
   const label = shadow.querySelector(".label");
   const detail = shadow.querySelector(".detail");
 
@@ -320,15 +317,28 @@
     error: ["Jarvis unavailable", "Click to try again"]
   };
 
+  function setIdleCollapsed(collapsed) {
+    shell.dataset.collapsed = collapsed ? "true" : "false";
+    copy.hidden = collapsed;
+  }
+
   function render(next, message = null) {
     state = next;
     shell.dataset.state = next;
+    setIdleCollapsed(next === "ready");
     const copy = labels[next] ?? labels.ready;
     label.textContent = copy[0];
     detail.textContent = message ?? (sessionCost > 0 && ["ready", "listening"].includes(next)
       ? `${copy[1]} · $${sessionCost.toFixed(4)}` : copy[1]);
     button.setAttribute("aria-label", next === "ready" || next === "error" ? "Start Jarvis" : "Stop Jarvis");
   }
+
+  shell.addEventListener("mouseenter", () => {
+    if (state === "ready") setIdleCollapsed(false);
+  });
+  shell.addEventListener("mouseleave", () => {
+    if (state === "ready") setIdleCollapsed(true);
+  });
 
   async function api(path, options = {}) {
     const response = await fetch(`${config.handoffUrl}${path}`, {
