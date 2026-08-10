@@ -654,7 +654,7 @@ test("Realtime browser surface contains no provider credential and has bounded t
   assert.match(source, /Ready when you are/);
   assert.match(source, /\.shell\[data-state="ready"\]\s*\{[^}]*opacity:\.55/);
   assert.match(source, /\.shell\[data-state="ready"\] \.copy\s*\{[^}]*max-width:0;[^}]*opacity:0/);
-  assert.match(source, /\.shell\[data-state="ready"\]:hover[^}]*focus-within/);
+  assert.doesNotMatch(source, /\.shell\[data-state="ready"\]:focus-within/);
   assert.match(source, /\.shell\[data-state="ready"\]:hover \.copy[^}]*max-width:220px/);
   assert.match(source, /transcriptionConfidence/);
   assert.match(source, /request\.kind === "ignore"/);
